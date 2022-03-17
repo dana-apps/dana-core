@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Start",
+      "type": "node",
+      "request": "launch",
+      "program": "scripts/debug",
+      "cwd": "${workspaceFolder}",
+      "sourceMaps": true,
+      "autoAttachChildProcesses": true,
+      "outFiles": [
+        "${workspaceFolder}/dist/electron/*.js",
+        "!**/node_modules/**"
+      ],
+      "timeout": 15000,
+      "outputCapture": "std",
+      "env": {
+        "START_MAXIMIZED": "true"
+      }
+    }
+  ]
+}

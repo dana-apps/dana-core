@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "make-modules",
+      "type": "shell",
+      "command": "make modules",
+      "problemMatcher": []
+    }
+  ]
+}

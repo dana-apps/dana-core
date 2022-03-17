@@ -1,0 +1,154 @@
+{
+  "name": "dana-core",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/electron/main.cjs",
+  "scripts": {
+    "start": "node scripts/watch",
+    "prepare": "husky install",
+    "format": "prettier --write . && eslint --fix .",
+    "test": "jest --passWithNoTests"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint"
+    ]
+  },
+  "lint-prepush": {
+    "base": "develop",
+    "tasks": {
+      "*.{js,jsx,ts,tsx}": [
+        "eslint --fix"
+      ]
+    }
+  },
+  "dependencies": {
+    "electron-devtools-installer": "^3.2.0",
+    "electron-is-dev": "^2.0.0",
+    "eventemitter3": "^4.0.7",
+    "immer": "^9.0.7",
+    "it-pushable": "^2.0.1",
+    "lodash": "^4.17.21",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "unstated-next": "^1.1.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@storybook/addon-actions": "^6.2.9",
+    "@storybook/addon-essentials": "^6.2.9",
+    "@storybook/addon-links": "^6.2.9",
+    "@storybook/node-logger": "^6.2.9",
+    "@storybook/react": "^6.2.9",
+    "@types/jest": "^27.0.3",
+    "@types/lodash": "^4.14.178",
+    "@types/node": "16.9.1",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "@types/semver": "^7.3.6",
+    "@types/uuid": "^8.3.3",
+    "@typescript-eslint/eslint-plugin": "^5.15.0",
+    "@typescript-eslint/parser": "^5.15.0",
+    "@vitejs/plugin-react": "^1.2.0",
+    "electron": "^17.1.2",
+    "electron-builder": "^22.14.13",
+    "eslint": "^8.11.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-jest": "^26.0.0",
+    "eslint-plugin-jsx-a11y": "^6.5.1",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-react": "^7.28.0",
+    "eslint-plugin-react-hooks": "^4.3.0",
+    "husky": "^7.0.4",
+    "jest": "^27.0.4",
+    "lint-staged": "^12.3.7",
+    "ts-jest": "^27.0.3",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.6.2",
+    "vite": "^2.8.6"
+  },
+  "targets": {
+    "electron-frontend": {
+      "publicUrl": "./"
+    }
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+      "prettier",
+      "plugin:react-hooks/recommended",
+      "plugin:@typescript-eslint/recommended"
+    ],
+    "plugins": [
+      "@typescript-eslint",
+      "prettier",
+      "react",
+      "react-hooks",
+      "jsx-a11y",
+      "jest"
+    ]
+  },
+  "build": {
+    "appId": "com.dana.core",
+    "productName": "Dana Core",
+    "directories": {
+      "output": "dist",
+      "buildResources": "res"
+    },
+    "extraResources": "./static/**",
+    "files": [
+      "package.json",
+      "build/**/*",
+      "node_modules/**/*"
+    ],
+    "dmg": {
+      "background": null,
+      "backgroundColor": "#ffffff",
+      "window": {
+        "width": "400",
+        "height": "300"
+      },
+      "contents": [
+        {
+          "x": 100,
+          "y": 100
+        },
+        {
+          "x": 300,
+          "y": 100,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "mac": {
+      "target": "zip",
+      "category": "public.app-category.utilities",
+      "asarUnpack": [
+        "**/node_modules/sharp/**"
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "dir",
+      "category": "Utility",
+      "asarUnpack": [
+        "**/node_modules/sharp/**"
+      ]
+    }
+  },
+  "browserslist": {
+    "production": [
+      "last 2 chrome version"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

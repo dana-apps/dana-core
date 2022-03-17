@@ -1,0 +1,35 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.205.2/containers/typescript-node
+{
+  "name": "Node.js & TypeScript",
+  "build": {
+    "dockerfile": "Dockerfile",
+    // Update 'VARIANT' to pick a Node version: 16, 14, 12.
+    // Append -bullseye or -buster to pin to an OS version.
+    // Use -bullseye variants on local on arm64/Apple Silicon.
+    "args": {
+      "VARIANT": "16-bullseye"
+    }
+  },
+  "settings": {},
+
+  "containerEnv": {
+    "DISPLAY": ":1.0"
+  },
+
+  "forwardPorts": [6080, 5901, 5858, 9223],
+
+  "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"],
+
+  "postCreateCommand": "yarn install",
+
+  "remoteUser": "node",
+  "features": {
+    "git": "os-provided",
+    "desktop-lite": {
+      "password": "vscode",
+      "webPort": "6080",
+      "vncPort": "5901"
+    }
+  }
+}
