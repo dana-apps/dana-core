@@ -2,10 +2,18 @@
 
 const { ipcRenderer, contextBridge } = require('electron');
 
+const getFrontendConfig = () => {
+  const configArg = process.argv.find((x) =>
+    x.startsWith('--frontend-config=')
+  );
+  const configStr = configArg && configArg.replace(/^--frontend-config=/, '');
+
+  return (configStr && JSON.parse(configStr)) || undefined;
+};
+
 contextBridge.exposeInMainWorld('bridge', {
   // Expose args passed in to the renderer process
-  // TODO: Do this as a structured json options object
-  argv: Array.from(process.argv.slice(2)),
+  config: getFrontendConfig(),
 
   ipcRenderer: {
     ...ipcRenderer,

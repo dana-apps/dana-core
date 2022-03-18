@@ -1,6 +1,6 @@
 import isDev from 'electron-is-dev';
 import path from 'path';
-import { getFileUrl } from '../../lib/platform';
+import { getFileUrl } from '../../common/platform';
 
 /** Relative location of app bundle root */
 const BUILD_ROOT = path.join(__dirname, '..', '..');
@@ -11,7 +11,7 @@ const DEFAULT_FRONTEND_SOURCE_URL = isDev
   : getFileUrl(path.join(BUILD_ROOT, 'build/renderer/desktop.html'));
 
 /** Enable developer tools */
-export const SHOW_DEVTOOLS = process.env.SHOW_DEVTOOLS || isDev ? false : true;
+export const SHOW_DEVTOOLS = process.env.SHOW_DEVTOOLS || isDev ? true : false;
 
 /** Override frontend source URL */
 export const FRONTEND_SOURCE_URL =

@@ -4,7 +4,7 @@ import { getSystray } from '../electron/systray';
 import { createFrontendWindow } from '../electron/window';
 
 function showMainWindow() {
-  createFrontendWindow({ title: 'Hello' });
+  createFrontendWindow({ title: 'Hello', config: {} });
 }
 
 async function main() {
