@@ -1,5 +1,5 @@
 import z from 'zod';
-import { RequestType, RpcInterface } from '../ipc';
+import { RequestType, RpcInterface } from '../ipc.interfaces';
 
 export enum ArchiveOpeningError {
   CANCELLED = 'CANCELLED',

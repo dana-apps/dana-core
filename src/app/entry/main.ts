@@ -1,16 +1,18 @@
 import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
-import { createApp } from '../electron/app';
+import { initApp } from '../electron/app';
 import { SHOW_DEVTOOLS } from '../electron/config';
 import { getSystray } from '../electron/systray';
 import { createFrontendWindow } from '../electron/window';
+import { initIngest } from '../ingest/ingest.module';
 import { ArchivePackage } from '../package/archive-package';
 
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
 
   /** Setup the business logic of the app */
-  const app = await createApp();
+  const app = await initApp();
+  await initIngest(app.router, app.archiveService);
 
   ipcMain.on('restart', () => {
     electronApp.relaunch();

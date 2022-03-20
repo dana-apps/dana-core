@@ -1,5 +1,9 @@
 import type { IpcRenderer } from 'electron';
-import { EventInterface, FrontendIpc, RpcInterface } from '../../common/ipc';
+import {
+  EventInterface,
+  FrontendIpc,
+  RpcInterface
+} from '../../common/ipc.interfaces';
 import { Result } from '../../common/util/error';
 
 /**

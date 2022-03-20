@@ -8,7 +8,7 @@ import { FC } from 'react';
 import { z } from 'zod';
 import { renderHook } from '@testing-library/react-hooks';
 
-import { RpcInterface } from '../../../common/ipc';
+import { RpcInterface } from '../../../common/ipc.interfaces';
 import { IpcContext, useGet, useList } from '../ipc.hooks';
 import { MockIpc } from '../mock-ipc';
 import { ChangeEvent, ResourceList } from '../../../common/resource';

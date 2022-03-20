@@ -8,9 +8,9 @@ import { UnwrapPromise } from '../../common/util/types';
 import { ArchiveService } from '../package/archive.service';
 import { ElectronRouter } from './router';
 
-export type AppInstance = UnwrapPromise<ReturnType<typeof createApp>>;
+export type AppInstance = UnwrapPromise<ReturnType<typeof initApp>>;
 
-export async function createApp() {
+export async function initApp() {
   const archiveService = new ArchiveService();
   const router = new ElectronRouter(ipcMain, archiveService);
 

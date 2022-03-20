@@ -1,5 +1,5 @@
 import z from 'zod';
-import { EventInterface, EventType } from './ipc';
+import { EventInterface, EventType } from './ipc.interfaces';
 
 /** An object with in id */
 export type Resource = { id: string };
@@ -43,3 +43,28 @@ export const ResourceList = <T>(type: z.ZodSchema<T>) =>
     next: z.optional(z.string()),
     prev: z.optional(z.string())
   });
+
+/** Implementation of ResourceList supporting iteration via await (for...in) */
+export class PaginatedResourceList<T extends Resource>
+  implements ResourceList<T>, AsyncIterable<T>
+{
+  constructor(
+    private fetchMore: (page: string) => Promise<ResourceList<T>>,
+    readonly total: number,
+    readonly items: T[],
+    readonly page: string,
+    readonly next?: string | undefined,
+    readonly prev?: string | undefined
+  ) {}
+
+  async *[Symbol.asyncIterator]() {
+    yield* this.items;
+
+    for (let page = this.next; page != undefined; ) {
+      const next = await this.fetchMore(page);
+      yield* next.items;
+
+      page = next.next;
+    }
+  }
+}

@@ -13,6 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "jsx": "react-jsx"

@@ -1,0 +1,316 @@
+{
+  "namespaces": [],
+  "tables": [
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "sha256": {
+          "name": "sha256",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        }
+      },
+      "name": "media_file",
+      "indexes": [
+        {
+          "keyName": "primary",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {}
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        }
+      },
+      "name": "asset",
+      "indexes": [
+        {
+          "keyName": "primary",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {}
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "base_path": {
+          "name": "base_path",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "phase": {
+          "name": "phase",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "enum"
+        }
+      },
+      "name": "import_session",
+      "indexes": [
+        {
+          "keyName": "primary",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {}
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "phase": {
+          "name": "phase",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "enum"
+        }
+      },
+      "name": "asset_import",
+      "indexes": [
+        {
+          "columnNames": [
+            "session_id"
+          ],
+          "composite": false,
+          "keyName": "asset_import_session_id_index",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "primary",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "asset_import_session_id_foreign": {
+          "constraintName": "asset_import_session_id_foreign",
+          "columnNames": [
+            "session_id"
+          ],
+          "localTableName": "asset_import",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "import_session",
+          "deleteRule": "cascade",
+          "updateRule": "cascade"
+        }
+      }
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "media_id": {
+          "name": "media_id",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "json"
+        },
+        "error": {
+          "name": "error",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "enum"
+        }
+      },
+      "name": "file_import",
+      "indexes": [
+        {
+          "columnNames": [
+            "asset_id"
+          ],
+          "composite": false,
+          "keyName": "file_import_asset_id_index",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "media_id"
+          ],
+          "composite": false,
+          "keyName": "file_import_media_id_index",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "primary",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "file_import_asset_id_foreign": {
+          "constraintName": "file_import_asset_id_foreign",
+          "columnNames": [
+            "asset_id"
+          ],
+          "localTableName": "file_import",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "asset_import",
+          "deleteRule": "cascade",
+          "updateRule": "cascade"
+        },
+        "file_import_media_id_foreign": {
+          "constraintName": "file_import_media_id_foreign",
+          "columnNames": [
+            "media_id"
+          ],
+          "localTableName": "file_import",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "media_file",
+          "deleteRule": "set null",
+          "updateRule": "cascade"
+        }
+      }
+    }
+  ]
+}

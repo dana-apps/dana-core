@@ -3,15 +3,16 @@ import {
   ResponseType,
   RpcInterface,
   EventInterface,
-  RequestType
-} from '../../common/ipc';
+  RequestType,
+  EventDispatcher
+} from '../../common/ipc.interfaces';
 import { required } from '../../common/util/assert';
 import { Result } from '../../common/util/error';
 import { ArchivePackage } from '../package/archive-package';
 import { ArchiveService } from '../package/archive.service';
 
 /**  */
-export class ElectronRouter {
+export class ElectronRouter implements EventDispatcher {
   private _windows: Array<{ archiveId?: string; window: WebContents }> = [];
   constructor(private ipc: IpcMain, private archiveService: ArchiveService) {}
 
@@ -21,12 +22,12 @@ export class ElectronRouter {
    * @param descriptor RPC method to route.
    * @param handler Function to handle calls to this method in the electorn app.
    */
-  bindRpc<Rpc extends RpcInterface<unknown, unknown, unknown>>(
+  bindRpc<Rpc extends RpcInterface>(
     descriptor: Rpc,
     handler: (
       request: RequestType<Rpc>,
-      archive?: ArchivePackage,
-      paginationToken?: string
+      paginationToken?: string,
+      archiveId?: string
     ) => Promise<Result<ResponseType<Rpc>>>
   ) {
     this.ipc.handle(
@@ -41,13 +42,9 @@ export class ElectronRouter {
         // to ensure consistent behaviour with the Web UI.
         const validatedRequest = descriptor.request.parse(request);
 
-        const archive = archiveId
-          ? this.archiveService.getArchive(archiveId)
-          : undefined;
-
         const response = await handler(
           validatedRequest,
-          archive,
+          archiveId,
           paginationToken
         );
 
@@ -69,6 +66,26 @@ export class ElectronRouter {
         };
       }
     );
+  }
+
+  bindArchiveRpc<Rpc extends RpcInterface>(
+    descriptor: Rpc,
+    handler: (
+      archive: ArchivePackage,
+      request: RequestType<Rpc>,
+      paginationToken?: string
+    ) => Promise<Result<ResponseType<Rpc>>>
+  ) {
+    this.bindRpc(descriptor, (request, paginationToken, archiveIdParam) => {
+      const archiveId = required(archiveIdParam, 'Expected archive id');
+      const archive = required(
+        this.archiveService.getArchive(archiveId),
+        'Archive is not open',
+        archiveId
+      );
+
+      return handler(archive, request, paginationToken);
+    });
   }
 
   /**

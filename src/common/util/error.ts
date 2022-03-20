@@ -8,13 +8,33 @@ export type OkResult<T = undefined> = { status: 'ok'; value: T };
 export type ErrorResult<Err> = { status: 'error'; error: Err };
 
 /** Convenience for creating an OkResult */
-export function ok(): OkResult<undefined>;
+export function ok(): OkResult<object>;
 export function ok<T>(value: T): OkResult<T>;
-export function ok(value?: unknown): OkResult<unknown> {
+export function ok(value: unknown = {}): OkResult<unknown> {
   return { status: 'ok', value };
 }
 
 /** Convenience for creating an ErrorResult */
 export function error<Err>(error: Err): ErrorResult<Err> {
   return { status: 'error', error };
+}
+
+export function okIfExists<T>(
+  value: T | undefined | null
+): Result<T, FetchError> {
+  if (value === undefined || value === null) {
+    return {
+      status: 'error',
+      error: FetchError.DOES_NOT_EXIST
+    };
+  }
+
+  return {
+    status: 'ok',
+    value
+  };
+}
+
+export enum FetchError {
+  DOES_NOT_EXIST = 'DOES_NOT_EXIST'
 }

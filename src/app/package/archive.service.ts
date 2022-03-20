@@ -99,7 +99,7 @@ function readSchema() {
     isClass
   );
   const exportedMigrations = discoverModuleExports<Constructor<Migration>>(
-    import.meta.globEager('../migrations/*'),
+    import.meta.globEager('../migrations/*.ts'),
     isClass
   );
 

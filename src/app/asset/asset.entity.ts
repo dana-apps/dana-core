@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 @Entity({
   tableName: 'asset'
 })
-export class Asset {
+export class AssetEntity {
   @PrimaryKey({ type: 'string' })
   id = randomUUID();
 }

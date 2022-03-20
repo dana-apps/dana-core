@@ -43,7 +43,11 @@ export interface FrontendIpc {
 /**
  * Represent a backend RPC service called by the frontend.
  **/
-export interface RpcInterface<Request, Response, Error = never> {
+export interface RpcInterface<
+  Request = unknown,
+  Response = unknown,
+  Error = unknown
+> {
   /** Unique identifier for the rpc call */
   id: string;
 
@@ -90,3 +94,11 @@ export type ErrorType<T extends RpcInterface<unknown, unknown, unknown>> =
 export type EventType<T extends EventInterface<unknown>> = z.TypeOf<
   NonNullable<T['type']>
 >;
+
+export interface EventDispatcher {
+  emit<Event>(
+    descriptor: EventInterface<Event>,
+    event: Event,
+    targetArchiveId?: string
+  ): void;
+}

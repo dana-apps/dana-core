@@ -8,7 +8,11 @@ import {
   useRef,
   useState
 } from 'react';
-import { EventInterface, FrontendIpc, RpcInterface } from '../../common/ipc';
+import {
+  EventInterface,
+  FrontendIpc,
+  RpcInterface
+} from '../../common/ipc.interfaces';
 import { ChangeEvent, Resource, ResourceList } from '../../common/resource';
 import { required } from '../../common/util/assert';
 import { Result } from '../../common/util/error';
@@ -87,7 +91,7 @@ export function useRPC() {
  * @returns Result object containing the latest value of the resource, or undefined if it the call has not yet resolved.
  */
 export function useGet<T extends Resource, Err>(
-  resource: RpcInterface<Resource, T>,
+  resource: RpcInterface<Resource, T, Err>,
   id: string
 ): Result<T, Err> | undefined {
   const rpc = useRPC();
