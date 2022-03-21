@@ -1,5 +1,11 @@
 import { Theme } from 'theme-ui';
 
+const controlHover = {
+  '&:hover': {
+    opacity: 0.5
+  }
+};
+
 export const theme: Theme = {
   config: {
     useCustomProperties: true,
@@ -34,6 +40,9 @@ export const theme: Theme = {
   borders: {
     primary: '2px solid var(--theme-ui-colors-border)',
     selected: '2px solid var(--theme-ui-colors-accent)'
+  },
+  radii: {
+    control: 0
   },
   shadows: {
     vertical: '0px 2px 10px 2px rgba(0,0,0,0.1)',
@@ -79,17 +88,23 @@ export const theme: Theme = {
   },
   buttons: {
     primary: {
-      cursor: 'pointer'
+      ...controlHover,
+      color: 'text',
+      backgroundColor: 'primary',
+      borderRadius: 'control'
     },
     icon: {
-      '&:hover': {
-        opacity: 0.6
-      }
+      ...controlHover
     },
-    accent: {
-      cursor: 'pointer',
-      color: 'accent',
-      bg: 'transparent'
+    secondary: {
+      ...controlHover,
+      color: 'background',
+      bg: 'secondary'
+    },
+    primaryTransparent: {
+      ...controlHover,
+      color: 'primary',
+      backgroundColor: 'transparent'
     }
   },
   styles: {

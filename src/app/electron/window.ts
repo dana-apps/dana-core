@@ -49,7 +49,7 @@ export function createFrontendWindow({ title, config }: CreateFrontendWindow) {
       additionalArguments: [
         '--frontend-config=' + JSON.stringify(mergedConfig)
       ],
-      webSecurity: true,
+      // webSecurity: true,
       preload: getResourcePath('preload/browser-preload.js')
     }
   });

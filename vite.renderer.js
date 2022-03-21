@@ -29,8 +29,7 @@ const config = {
 
     assetsDir: '.',
     rollupOptions: {
-      input: join(SRC_ROOT, 'desktop.html'),
-      external: [...builtinModules.flatMap((p) => [p, `node:${p}`])]
+      input: join(SRC_ROOT, 'desktop.html')
     },
     emptyOutDir: true,
     brotliSize: false

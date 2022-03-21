@@ -1,6 +1,7 @@
 import { node } from './.electron-vendors.cache.json';
 import { join, resolve } from 'path';
 import { builtinModules } from 'module';
+import { dependencies } from './package.json';
 
 const SRC_ROOT = resolve('src');
 
@@ -23,7 +24,8 @@ const config = {
       external: [
         'electron',
         'electron-devtools-installer',
-        ...builtinModules.flatMap((p) => [p, `node:${p}`])
+        ...builtinModules.flatMap((p) => [p, `node:${p}`]),
+        ...Object.keys(dependencies)
       ],
       output: {
         entryFileNames: '[name].cjs'
