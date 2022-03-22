@@ -1,10 +1,6 @@
 import type { IpcRenderer } from 'electron';
-import {
-  EventInterface,
-  FrontendIpc,
-  IpcInvokeResult,
-  RpcInterface
-} from '../../common/ipc';
+import { EventInterface, FrontendIpc, RpcInterface } from '../../common/ipc';
+import { Result } from '../../common/util/error';
 
 /**
  * Electron frontend RPC bindings
@@ -17,7 +13,7 @@ export class ElectronRendererIpc implements FrontendIpc {
     req: Req,
     sourceArchiveId?: string,
     paginationToken?: string
-  ): Promise<IpcInvokeResult<Res, Err>> {
+  ): Promise<Result<Res, Err>> {
     return this.ipc.invoke(
       descriptor.id,
       req,

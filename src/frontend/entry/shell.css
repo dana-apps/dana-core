@@ -8,12 +8,3 @@ body,
   width: 100vw;
   overflow: hidden;
 }
-
-.drag-region {
-  -webkit-app-region: drag;
-  user-select: none;
-}
-
-.drag-region > * {
-  -webkit-app-region: no-drag;
-}

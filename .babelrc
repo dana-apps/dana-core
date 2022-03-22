@@ -7,7 +7,8 @@
           { "targets": { "esmodules": false, "node": "current" } }
         ],
         "babel-preset-vite",
-        "@babel/preset-typescript"
+        "@babel/preset-typescript",
+        ["@babel/preset-react", { "runtime": "automatic" }]
       ]
     }
   }

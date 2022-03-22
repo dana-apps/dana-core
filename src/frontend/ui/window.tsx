@@ -19,8 +19,15 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
         width: '100%',
         height: '100%',
 
+        userSelect: 'none',
+        WebkitAppRegion: 'drag',
+        '> *': {
+          WebkitAppRegion: 'no-drag'
+        },
+
         bg: 'background',
         transition: 'background-color 0.2s ease-in-out',
+
         scrollbarColor: 'foreground',
         scrollbarWidth: 'thin',
         '&::WebkitScrollbar': {
@@ -37,6 +44,7 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
       }}
       {...props}
     >
+      {/* Linux can't render window chrome in frameless mode, so do it here instead */}
       {platform === 'linuxish' && (
         <div
           sx={{

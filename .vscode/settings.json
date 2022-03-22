@@ -22,5 +22,6 @@
     "package-lock.json": true,
     "*.{css,sass,scss}.d.ts": true
   },
-  "jest.jestCommandLine": "yarn jest"
+  "jest.jestCommandLine": "yarn jest",
+  "jest.autoRun": "off"
 }

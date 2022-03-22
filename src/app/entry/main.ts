@@ -1,14 +1,7 @@
-import {
-  app as electronApp,
-  BrowserWindow,
-  ipcMain,
-  ipcRenderer,
-  Menu
-} from 'electron';
+import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
-import { createApp } from '../app';
+import { createApp } from '../electron/app';
 import { SHOW_DEVTOOLS } from '../electron/config';
-import { ElectronRouter } from '../electron/router';
 import { getSystray } from '../electron/systray';
 import { createFrontendWindow } from '../electron/window';
 import { ArchivePackage } from '../package/archive-package';
@@ -16,29 +9,42 @@ import { ArchivePackage } from '../package/archive-package';
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
 
-  initDevtools();
-  initSystray();
-
-  const ipc = new ElectronRouter(ipcMain);
-  const app = await createApp(ipc);
-
-  // Quit when all windows are closed.
-  app.archiveService.on('opened', ({ archive }) => {
-    showArchiveWindow(archive);
-  });
-
-  // Quit when all windows are closed.
-  electronApp.on('window-all-closed', () => {
-    electronApp.dock?.hide();
-  });
+  /** Setup the business logic of the app */
+  const app = await createApp();
 
   ipcMain.on('restart', () => {
     electronApp.relaunch();
     electronApp.exit();
   });
 
-  // First-launch
-  showNewArchiveWindow();
+  initDevtools();
+  initSystray();
+  initWindows();
+  initArchive();
+  showLandingScreen();
+
+  function initArchive() {
+    // When an archive document is opened, show its window.
+    app.archiveService.on('opened', ({ archive }) => {
+      showArchiveWindow(archive);
+    });
+  }
+
+  function initWindows() {
+    // Move to 'background' mode when all windows are closed.
+    electronApp.on('window-all-closed', () => {
+      electronApp.dock?.hide();
+    });
+
+    // Ensure windows are added to and removed from router when they are opened and closed.
+    electronApp.on('browser-window-created', (_, window) => {
+      app.router.addWindow(window.webContents);
+
+      window.on('close', () => {
+        app.router.removeWindow(window.webContents);
+      });
+    });
+  }
 
   function showArchiveWindow(archive: ArchivePackage) {
     const window = createFrontendWindow({
@@ -46,15 +52,14 @@ async function main() {
       config: { documentId: archive.location }
     });
 
+    app.router.addWindow(window.webContents, archive.location);
+
     window.on('close', () => {
       app.archiveService.closeArchive(archive.location);
-      ipc.removeWindow(window.webContents);
     });
-
-    electronApp.dock?.show();
   }
 
-  function showNewArchiveWindow() {
+  function showLandingScreen() {
     if (newArchiveWindow) {
       newArchiveWindow.focus();
       return;
@@ -63,17 +68,16 @@ async function main() {
     const window = createFrontendWindow({ title: 'New Archive', config: {} });
 
     window.on('close', () => {
-      ipc.removeWindow(window.webContents);
+      app.router.removeWindow(window.webContents);
       newArchiveWindow = undefined;
     });
 
-    electronApp.dock?.show();
     newArchiveWindow = window;
   }
 
   function initSystray() {
     const systray = getSystray();
-    systray.on('click', showNewArchiveWindow);
+    systray.on('click', showLandingScreen);
 
     systray.setContextMenu(
       Menu.buildFromTemplate([
@@ -89,6 +93,7 @@ async function main() {
     electronApp.dock?.hide();
   }
 
+  /** If we're running in dev mode, show the de */
   function initDevtools() {
     if (SHOW_DEVTOOLS) {
       const {

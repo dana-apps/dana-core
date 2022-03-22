@@ -28,7 +28,12 @@
       "disableOptimisticBPs": true,
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "yarn",
-      "args": ["jest", "--runInBand", "--watchAll=false"]
+      "args": [
+        "jest",
+        "--runInBand",
+        "--watchAll=false",
+        "--testTimeout=100000"
+      ]
     }
   ]
 }

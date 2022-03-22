@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { uniqueId } from 'lodash';
 
 import { FrontendConfig } from '../../common/frontend-config';
@@ -49,7 +49,7 @@ export function createFrontendWindow({ title, config }: CreateFrontendWindow) {
       additionalArguments: [
         '--frontend-config=' + JSON.stringify(mergedConfig)
       ],
-      // webSecurity: true,
+      webSecurity: true,
       preload: getResourcePath('preload/browser-preload.js')
     }
   });
@@ -57,9 +57,12 @@ export function createFrontendWindow({ title, config }: CreateFrontendWindow) {
   showWindowAfterFirstRender(mergedConfig, frontendWindow);
   frontendWindow.loadURL(FRONTEND_SOURCE_URL);
 
+  app.dock?.show();
+
   return frontendWindow;
 }
 
+/** Don't show the window immediately – wait for react to render first */
 function showWindowAfterFirstRender(
   config: FrontendConfig,
   window: BrowserWindow
