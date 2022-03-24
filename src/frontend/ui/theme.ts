@@ -1,4 +1,5 @@
 import { Theme } from 'theme-ui';
+import * as polished from 'polished';
 
 const controlHover = {
   '&:hover': {
@@ -27,8 +28,9 @@ export const theme: Theme = {
   },
   space: [0, 3, 5, 8, 13, 21, 34],
   colors: {
-    ...colors,
     text: 'black',
+    success: colors.green,
+    error: polished.setHue(0, colors.green),
     border: colors.grey,
     highlight: colors.charcoal,
     highlightHint: colors.grey1,
