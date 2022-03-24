@@ -2,7 +2,6 @@
 
 import { chrome } from './.electron-vendors.cache.json';
 import { join, resolve } from 'path';
-import { builtinModules } from 'module';
 import react from '@vitejs/plugin-react';
 
 const SRC_ROOT = resolve('src');

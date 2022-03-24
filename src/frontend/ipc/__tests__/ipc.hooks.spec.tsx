@@ -6,7 +6,7 @@
 
 import { FC } from 'react';
 import { z } from 'zod';
-import { renderHook } from '@testing-library/react-hooks';
+import { act, renderHook } from '@testing-library/react-hooks';
 
 import { RpcInterface } from '../../../common/ipc.interfaces';
 import { IpcContext, useGet, useList } from '../ipc.hooks';
@@ -104,7 +104,8 @@ describe('useList', () => {
     const pages = [
       [{ id: '1' }, { id: '2' }],
       [{ id: '3' }, { id: '4' }],
-      [{ id: '5' }, { id: '6' }]
+      [{ id: '5' }, { id: '6' }],
+      [{ id: '7' }, { id: '8' }]
     ];
 
     ipc.handle({
@@ -131,44 +132,38 @@ describe('useList', () => {
     });
 
     // Loading state
-    expect(hook.result.current.getPage()).toBeUndefined();
+    expect(hook.result.current).toBeUndefined();
 
     // Initial value
     await hook.waitForNextUpdate();
-    const initialPage = hook.result.current.getPage();
-    expect(initialPage).toEqual({
-      items: pages[0],
-      page: '0',
-      prev: undefined,
-      next: '1'
-    });
-    expect(hook.result.current.totalCount).toEqual(6);
+    expect(hook.result.current).toBeDefined();
+    expect(hook.result.current?.items).toEqual(pages[0]);
 
     // Subsequent pages
-    const nextPageCursor = initialPage!.next!;
-    expect(hook.result.current.getPage(nextPageCursor)).toBeUndefined();
-
-    await hook.waitForNextUpdate();
-    expect(hook.result.current.getPage(nextPageCursor)).toEqual({
-      items: pages[1],
-      page: '1',
-      prev: '0',
-      next: '2'
+    act(() => {
+      hook.result.current?.fetchMore(1, 4);
     });
-
-    // Remote data changes
-    hook.result.current.setCurrentPage(nextPageCursor);
-    pages[1] = [{ id: '3a' }, { id: '4a' }];
-    ipc.emit(ChangeEvent, { type: ExampleQuery.id, ids: [] });
-
-    // Refetch of current page is immediately available
     await hook.waitForNextUpdate();
-    expect(hook.result.current.getPage(nextPageCursor)).toEqual({
-      items: pages[1],
-      page: '1',
-      prev: '0',
-      next: '2'
+    expect(hook.result.current?.items).toEqual([
+      ...pages[0],
+      ...pages[1],
+      ...pages[2]
+    ]);
+
+    // Fetch beyond end of data
+    act(() => {
+      hook.result.current?.fetchMore(3, 10);
     });
+    await hook.waitForNextUpdate();
+    expect(hook.result.current?.items).toEqual(pages.flat());
+
+    // Refetch on data invalidation
+    pages[0] = [{ id: '3a' }, { id: '4a' }];
+    act(() => ipc.emit(ChangeEvent, { type: ExampleQuery.id, ids: [] }));
+    await hook.waitForNextUpdate();
+
+    expect(hook.result.current).toBeDefined();
+    expect(hook.result.current?.items).toEqual(pages[0]);
   });
 
   test('presents errors to user', async () => {
@@ -188,10 +183,9 @@ describe('useList', () => {
       hookFn: () => useList(ExampleQuery, () => ({}), [])
     });
 
-    hook.result.current.getPage();
     await hook.waitForNextUpdate();
 
-    expect(hook.result.current.error).toEqual('oh no');
+    expect(hook.result.current?.error).toEqual('oh no');
   });
 });
 

@@ -16,8 +16,8 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        width: '100%',
-        height: '100%',
+        width: '100vw',
+        height: '100vh',
 
         userSelect: 'none',
         WebkitAppRegion: 'drag',

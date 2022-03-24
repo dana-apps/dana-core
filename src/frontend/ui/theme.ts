@@ -6,6 +6,18 @@ const controlHover = {
   }
 };
 
+const colors = {
+  dark: '#010000',
+  grey: '#D9D4D3',
+  grey1: '#EDE9E9',
+  grey2: '#F9F7F7',
+  green: '#60D39B',
+  muted: '#818B88',
+  brown: '#81683E',
+  charcoal: '#3C3746',
+  blue: '#28108A'
+};
+
 export const theme: Theme = {
   config: {
     useCustomProperties: true,
@@ -13,29 +25,21 @@ export const theme: Theme = {
     useRootStyles: true,
     useBorderBox: true
   },
+  space: [0, 3, 5, 8, 13, 21, 34],
   colors: {
-    text: 'white',
-    border: 'black',
-    background: '#1E1E1E',
-    primary: '#429CFF',
-    secondary: '#414141',
-    highlight: '#0058D0',
+    ...colors,
+    text: 'black',
+    border: colors.grey,
+    highlight: colors.charcoal,
+    highlightHint: colors.grey1,
+    highlightContrast: 'white',
+    background: colors.grey2,
+    foreground: 'white',
+    primary: '#28108A',
+    secondary: '#81683E',
     accent: '#008FFF',
-    muted: '#2A2A2A',
-    gray: '#414141',
-    foreground: '#2C2C2C',
-    modes: {
-      dark: {
-        text: '#fff',
-        background: '#060606',
-        primary: '#3cf',
-        secondary: '#e0f',
-        muted: '#191919',
-        highlight: '#29112c',
-        gray: '#999',
-        accent: '#c0f'
-      }
-    }
+    muted: '#818B88',
+    gray: '#414141'
   },
   borders: {
     primary: '2px solid var(--theme-ui-colors-border)',
@@ -78,6 +82,13 @@ export const theme: Theme = {
       fontWeight: 'display',
       letterSpacing: '-0.03em',
       mt: 3
+    },
+    section: {
+      textTransform: 'uppercase',
+      fontWeight: 700,
+      fontSize: 1,
+      color: 'muted',
+      letterSpacing: 1.05
     }
   },
   images: {
