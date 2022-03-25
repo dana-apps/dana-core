@@ -17,6 +17,10 @@ export enum FileImportError {
   UNEXPECTED_ERROR = 'UNEXPECTED_ERROR'
 }
 
+export enum CommitIngestSessionError {
+  VALIDATION_ERROR = 'VALIDATION_ERROR'
+}
+
 export const IngestedAsset = z.object({
   ...Asset.shape,
   phase: z.nativeEnum(ImportPhase)
@@ -62,6 +66,17 @@ export const GetIngestSession = RpcInterface({
 });
 
 /**
+ * Get the ingest session identified by `sessionId`.
+ **/
+export type ListIngestSessionRequest = RequestType<typeof ListIngestSession>;
+export type ListIngestSessionResponse = ResponseType<typeof ListIngestSession>;
+export const ListIngestSession = RpcInterface({
+  id: 'ingest/get',
+  request: z.object({}),
+  response: ResourceList(IngestSession)
+});
+
+/**
  * Complete the ingest session.
  *
  * Moves the assets in the ingest session `sessionId` into the main database and deletes the session.
@@ -71,7 +86,8 @@ export const CommitIngestSession = RpcInterface({
   request: z.object({
     sessionId: z.string()
   }),
-  response: z.object({})
+  response: z.object({}),
+  error: z.nativeEnum(CommitIngestSessionError)
 });
 export type CommitIngestSessionRequest = RequestType<
   typeof CommitIngestSession
@@ -80,9 +96,24 @@ export type CommitIngestSessionResponse = ResponseType<
   typeof CommitIngestSession
 >;
 
-export enum CommitIngestSessionError {
-  VALIDATION_ERROR = 'VALIDATION_ERROR'
-}
+/**
+ * Complete the ingest session.
+ *
+ * Moves the assets in the ingest session `sessionId` into the main database and deletes the session.
+ **/
+export const CancelIngestSession = RpcInterface({
+  id: 'ingest/cancel',
+  request: z.object({
+    sessionId: z.string()
+  }),
+  response: z.object({})
+});
+export type CancelIngestSessionRequest = RequestType<
+  typeof CancelIngestSession
+>;
+export type CancelIngestSessionResponse = ResponseType<
+  typeof CancelIngestSession
+>;
 
 /**
  * Complete the ingest session.

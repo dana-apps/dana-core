@@ -67,4 +67,19 @@ export class PaginatedResourceList<T extends Resource>
       page = next.next;
     }
   }
+
+  map<MapT extends Resource>(fn: (val: T) => MapT) {
+    return new PaginatedResourceList<MapT>(
+      (page) =>
+        this.fetchMore(page).then((val) => ({
+          ...val,
+          items: val.items.map(fn)
+        })),
+      this.total,
+      this.items.map(fn),
+      this.page,
+      this.next,
+      this.prev
+    );
+  }
 }

@@ -1,11 +1,23 @@
 import { EventEmitter } from 'eventemitter3';
-import { ImportPhase } from '../../common/ingest.interfaces';
+import { compact } from 'lodash';
+import { Asset } from '../../common/asset.interfaces';
+import { ImportPhase, IngestedAsset } from '../../common/ingest.interfaces';
+import { ResourceList } from '../../common/resource';
 import { DefaultMap } from '../../common/util/collection';
+import { AssetService } from '../asset/asset.service';
+import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetImportEntity, ImportSessionEntity } from './asset-import.entity';
 import { AssetImportOperation } from './asset-import.operation';
 
 export class AssetIngestService extends EventEmitter<Events> {
+  constructor(
+    private mediaService: MediaFileService,
+    private assetService: AssetService
+  ) {
+    super();
+  }
+
   private archiveSessions = new DefaultMap<string, ArchiveSessions>(
     defaultArchiveSessions
   );
@@ -47,8 +59,9 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param basePath Absolute path to the local directory to ingest from.
    */
   async beginSession(archive: ArchivePackage, basePath: string) {
-    return new AssetImportOperation(
+    const session = this.openSession(
       archive,
+
       await archive.useDb((em) => {
         const session = em.create(ImportSessionEntity, {
           basePath,
@@ -56,9 +69,30 @@ export class AssetIngestService extends EventEmitter<Events> {
         });
         em.persist(session);
         return session;
-      }),
-      this
+      })
     );
+
+    session.run();
+
+    return session;
+  }
+
+  /**
+   * Get an active ingest session.
+   *
+   * @param archive Archive to import files into.
+   * @param id Id of the session to return.
+   */
+  listSessions(archive: ArchivePackage): ResourceList<AssetImportOperation> {
+    const sessions = this.archiveSessions
+      .get(archive.id)
+      .sessions.filter((x) => x.archive.id === archive.id);
+
+    return {
+      total: sessions.length,
+      items: sessions,
+      page: 'all'
+    };
   }
 
   /**
@@ -85,24 +119,105 @@ export class AssetIngestService extends EventEmitter<Events> {
     sessionId: string,
     paginationToken?: string
   ) {
-    return archive.list(
+    const res = await archive.list(
       AssetImportEntity,
       { session: sessionId },
-      paginationToken
+      { populate: ['files.media'], paginationToken }
     );
+
+    return res.map<IngestedAsset>((entity) => ({
+      id: entity.id,
+      metadata: entity.metadata,
+      phase: entity.phase,
+      media: compact(
+        entity.files.getItems().map(
+          ({ media }) =>
+            media && {
+              id: media.id,
+              mimeType: media.mimeType,
+              type: 'image'
+            }
+        )
+      )
+    }));
   }
 
+  /**
+   * Commit an ingest session.
+   *
+   * @param archive Archive to import files into.
+   * @param id Id of the session to return.
+   * @param paginationToken Paginate over
+   */
   async commitSession(archive: ArchivePackage, sessionId: string) {
-    throw Error('Not implemented');
+    await archive.useDbTransaction(async (db) => {
+      const assets = await db.find(AssetImportEntity, { session: sessionId });
+
+      for (const assetImport of assets) {
+        await assetImport.files.loadItems({
+          populate: ['media']
+        });
+
+        this.assetService.createAsset(archive, {
+          metadata: assetImport.metadata,
+          media: compact(assetImport.files.getItems().map((item) => item.media))
+        });
+      }
+
+      db.remove(db.getReference(ImportSessionEntity, sessionId));
+    });
+
+    await this.closeSession(archive, sessionId);
   }
 
-  async discardSession(archive: ArchivePackage, sessionId: string) {
-    throw Error('Not implemented');
+  async cancelSession(archive: ArchivePackage, sessionId: string) {
+    const session = this.getSession(archive, sessionId);
+    if (!session) {
+      return;
+    }
+
+    // Stop any pending activity in the session
+    await session.teardown();
+
+    // Delete the import, returning any imported media
+    const importedMedia = await archive.useDbTransaction(async (db) => {
+      const importedMedia = await archive.useDb((db) =>
+        session
+          .queryFiles(db)
+          .populate([{ field: 'media' }])
+          .getResultList()
+      );
+
+      db.remove(db.getReference(ImportSessionEntity, sessionId));
+
+      return compact(importedMedia.map((file) => file.media?.id));
+    });
+
+    // Delete the imported media
+    await this.mediaService.deleteFiles(archive, importedMedia);
+
+    await this.closeSession(archive, sessionId);
+  }
+
+  private async closeSession(archive: ArchivePackage, sessionId: string) {
+    // Remove the import service
+    const { sessions } = this.archiveSessions.get(archive.id);
+    sessions.splice(sessions.findIndex((s) => s.id === sessionId));
+
+    this.emit('status', {
+      archive,
+      assetIds: []
+    });
   }
 
   private openSession(archive: ArchivePackage, state: ImportSessionEntity) {
     const activeSessions = this.archiveSessions.get(archive.id);
-    const session = new AssetImportOperation(archive, state, this);
+    const session = new AssetImportOperation(
+      archive,
+      state,
+      this,
+      this.mediaService
+    );
 
     activeSessions.sessions.push(session);
 
@@ -121,11 +236,12 @@ export class AssetIngestService extends EventEmitter<Events> {
  */
 interface Events {
   status: [ImportStateChanged];
+  importRunCompleted: [AssetImportOperation];
 }
 
 export interface ImportStateChanged {
   archive: ArchivePackage;
-  session: AssetImportOperation;
+  session?: AssetImportOperation;
   assetIds: string[];
 }
 

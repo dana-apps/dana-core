@@ -1,17 +1,15 @@
 import {
+  AnyEntity,
   Constructor,
   FilterQuery,
   MikroORM,
   RequestContext
 } from '@mikro-orm/core';
+import { AutoPath } from '@mikro-orm/core/typings';
 import { SqlEntityManager, SqliteDriver } from '@mikro-orm/sqlite';
 import path from 'path';
 
-import {
-  PaginatedResourceList,
-  Resource,
-  ResourceList
-} from '../../common/resource';
+import { PaginatedResourceList, Resource } from '../../common/resource';
 
 export class ArchivePackage {
   constructor(readonly location: string, private db: MikroORM<SqliteDriver>) {}
@@ -31,7 +29,7 @@ export class ArchivePackage {
   }
 
   useDbTransaction<T>(cb: (db: SqlEntityManager<SqliteDriver>) => Promise<T>) {
-    return this.db.em.transactional(cb);
+    return this.useDb((db) => db.transactional(cb));
   }
 
   get<T extends Resource>(
@@ -43,18 +41,24 @@ export class ArchivePackage {
     });
   }
 
-  list<T extends Resource>(
+  list<T extends Resource & AnyEntity<T>, P extends string = never>(
     type: Constructor<T>,
     query?: FilterQuery<T>,
-    paginationToken?: string
+    opts: string | ListOpts<T, P> = {}
   ) {
+    const { paginationToken, populate } =
+      typeof opts === 'string'
+        ? ({ paginationToken: opts } as ListOpts<T>)
+        : opts;
+
     return this.useDb(async (db): Promise<PaginatedResourceList<T>> => {
       const PAGE_SIZE = 100;
-      const pageNumber = paginationToken ? Number(paginationToken) : 0;
+      const pageNumber = opts ? Number(paginationToken) : 0;
 
       const [items, count] = await db.findAndCount(type, query, {
         offset: pageNumber * PAGE_SIZE,
-        limit: PAGE_SIZE
+        limit: PAGE_SIZE,
+        populate: populate
       });
 
       const lastPage = Math.floor(count / PAGE_SIZE);
@@ -73,4 +77,9 @@ export class ArchivePackage {
   get blobPath() {
     return path.join(this.location, 'blob');
   }
+}
+
+interface ListOpts<T extends AnyEntity<T>, P extends string = never> {
+  paginationToken?: string;
+  populate?: Array<AutoPath<T, P>>;
 }

@@ -1,3 +1,4 @@
+import { EntityManager } from '@mikro-orm/sqlite';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
@@ -7,7 +8,7 @@ import {
   ImportPhase,
   IngestSession
 } from '../../common/ingest.interfaces';
-import { putMediaFile } from '../media/media-types';
+import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 
 import {
@@ -43,7 +44,8 @@ export class AssetImportOperation implements IngestSession {
   constructor(
     readonly archive: ArchivePackage,
     readonly session: ImportSessionEntity,
-    private events: AssetIngestService
+    private ingestService: AssetIngestService,
+    private mediaService: MediaFileService
   ) {}
 
   get id() {
@@ -66,15 +68,31 @@ export class AssetImportOperation implements IngestSession {
     return this._filesRead;
   }
 
+  get active() {
+    return this._active;
+  }
+
   /** Continue the import operation from its current stage, starting it if necessary */
   async run() {
+    if (this._active) {
+      console.warn(
+        'Attempting to call run() on an ingest sesison that is already running.'
+      );
+      return;
+    }
+
     this._active = true;
 
-    if (this.session.phase === ImportPhase.READ_METADATA) {
-      await this.readMetadata();
-    }
-    if (this.session.phase === ImportPhase.READ_FILES) {
-      await this.readMediaFiles();
+    try {
+      if (this.session.phase === ImportPhase.READ_METADATA) {
+        await this.readMetadata();
+      }
+      if (this.session.phase === ImportPhase.READ_FILES) {
+        await this.readMediaFiles();
+      }
+    } finally {
+      this._active = false;
+      this.ingestService.emit('importRunCompleted', this);
     }
 
     return this;
@@ -181,17 +199,12 @@ export class AssetImportOperation implements IngestSession {
     await this.archive.useDb(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
 
-      this._totalFiles = await db
-        .createQueryBuilder(FileImport)
-        .join('asset', 'asset')
-        .where({ asset: { session_id: this.session.id } })
-        .getCount();
+      this._totalFiles = await this.queryFiles(db).getCount();
 
-      this._filesRead = await db
-        .createQueryBuilder(FileImport)
+      // Assume a file is read if it either has an error or a media file
+      this._filesRead = await this.queryFiles(db)
         .where({
-          $or: [{ media: { $ne: null } }, { error: { $ne: null } }],
-          asset: { session_id: this.session.id }
+          $or: [{ media: { $ne: null } }, { error: { $ne: null } }]
         })
         .getCount();
 
@@ -219,6 +232,13 @@ export class AssetImportOperation implements IngestSession {
     });
   }
 
+  queryFiles(db: EntityManager) {
+    return db
+      .createQueryBuilder(FileImport)
+      .join('asset', 'asset')
+      .where({ asset: { session_id: this.session.id } });
+  }
+
   /** Ingest all metadata files under a path */
   async readAssetMediaFiles(asset: AssetImportEntity) {
     await this.archive.useDb(async (db) => {
@@ -228,7 +248,7 @@ export class AssetImportOperation implements IngestSession {
         }
 
         try {
-          const res = await putMediaFile(
+          const res = await this.mediaService.putFile(
             this.archive,
             path.join(this.mediaPath, file.path)
           );
@@ -267,7 +287,7 @@ export class AssetImportOperation implements IngestSession {
   }
 
   emitStatus(affectedIds: string[] = []) {
-    this.events.emit('status', {
+    this.ingestService.emit('status', {
       archive: this.archive,
       assetIds: affectedIds,
       session: this

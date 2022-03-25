@@ -24,6 +24,7 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
     const db = await MikroORM.init<SqliteDriver>({
       type: 'sqlite',
       dbName: path.join(location, 'db.sqlite3'),
+      debug: !!process.env.SQL_LOG_ENABLED,
       entities,
       migrations: {
         migrationsList: migrations
@@ -40,7 +41,7 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
     }
 
     try {
-      await mkdir(path.join(location, 'blob'));
+      await mkdir(path.join(location, 'blob'), { recursive: true });
     } catch {
       return error(ArchiveOpeningError.IO_ERROR);
     }

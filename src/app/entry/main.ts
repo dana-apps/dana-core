@@ -1,10 +1,12 @@
 import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
+import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
 import { SHOW_DEVTOOLS } from '../electron/config';
 import { getSystray } from '../electron/systray';
 import { createFrontendWindow } from '../electron/window';
-import { initIngest } from '../ingest/ingest.module';
+import { initIngest } from '../ingest/ingest.init';
+import { initMedia } from '../media/media.init';
 import { ArchivePackage } from '../package/archive-package';
 
 async function main() {
@@ -12,7 +14,14 @@ async function main() {
 
   /** Setup the business logic of the app */
   const app = await initApp();
-  await initIngest(app.router, app.archiveService);
+  const assets = initAssets();
+  const media = initMedia();
+  await initIngest(
+    app.router,
+    app.archiveService,
+    media.fileService,
+    assets.assetService
+  );
 
   ipcMain.on('restart', () => {
     electronApp.relaunch();

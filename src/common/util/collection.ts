@@ -13,6 +13,8 @@ export class DefaultMap<Key, Val> extends Map<Key, Val> {
   }
 }
 
-export function tuple<T extends unknown[]>(...args: T) {
+export function tuple<T extends string[]>(...args: T): T;
+export function tuple<T extends unknown[]>(...args: T): T;
+export function tuple<T extends unknown[]>(...args: T): T {
   return args;
 }

@@ -32,7 +32,7 @@ export class ImportSessionEntity {
 
 /** Track the progress of an imported asset */
 @Entity({ tableName: 'asset_import' })
-export class AssetImportEntity implements Asset {
+export class AssetImportEntity {
   @PrimaryKey({ type: 'string' })
   id = randomUUID();
 
