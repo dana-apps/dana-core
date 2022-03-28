@@ -67,4 +67,6 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
 };
 
 /** Inset window content to ensure it isn't obscured by chrome  */
-export const WindowInset = () => <div sx={{ height: TITLEBAR_HEIGHT }} />;
+export const WindowInset = () => (
+  <div sx={{ height: TITLEBAR_HEIGHT, WebkitAppRegion: 'drag' }} />
+);

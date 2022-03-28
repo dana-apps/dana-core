@@ -1,23 +1,47 @@
-import { FC, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Box, BoxOwnProps, BoxProps } from 'theme-ui';
+import { compact } from 'lodash';
+import React, { FC, useState } from 'react';
+import { DropzoneOptions, useDropzone } from 'react-dropzone';
+import { Box, BoxProps } from 'theme-ui';
 
 interface DropzoneProps extends BoxProps {
-  onDropFile: <T extends File>(acceptedFiles: T[]) => void;
+  onAcceptFiles: (items: FileSystemEntry[]) => void;
+  dropzoneOptions?: Omit<
+    DropzoneOptions,
+    | 'onDrop'
+    | 'onDragEnter'
+    | 'onDragLeave'
+    | 'onDropAccepted'
+    | 'useFsAccessApi'
+  >;
 }
 
 export const Dropzone: FC<DropzoneProps> = ({
-  onDropFile,
+  onAcceptFiles,
   children,
+  dropzoneOptions,
   ...props
 }) => {
   const [over, setOver] = useState(false);
 
   const { getRootProps, getInputProps } = useDropzone({
     noClick: true,
-    onDrop: (files) => {
+    ...dropzoneOptions,
+    useFsAccessApi: true,
+
+    onDropAccepted: (_, event) => {
+      if ('dataTransfer' in event) {
+        const { dataTransfer } = event as { dataTransfer: DataTransfer };
+        const entries = compact(
+          Array.from(dataTransfer.items).map((x) => x.webkitGetAsEntry())
+        );
+
+        if (entries.length > 0) {
+          onAcceptFiles(entries);
+        }
+      }
+    },
+    onDrop: () => {
       setOver(false);
-      onDropFile(files);
     },
     onDragEnter: () => setOver(true),
     onDragLeave: () => setOver(false)

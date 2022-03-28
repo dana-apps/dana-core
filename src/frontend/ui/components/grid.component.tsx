@@ -169,3 +169,5 @@ function Cell<T extends Resource>({
     </div>
   );
 }
+
+export const TextCell = (value: string) => <>{value}</>;

@@ -19,7 +19,7 @@ export const StandardDropzone = ({ onDrop }: any) => {
         justifyContent: 'center',
         height: '100vh'
       }}
-      onDropFile={onDrop}
+      onAcceptFiles={onDrop}
     >
       <Text>Drop something here</Text>
     </Dropzone>

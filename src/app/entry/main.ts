@@ -60,7 +60,7 @@ async function main() {
   function showArchiveWindow(archive: ArchivePackage) {
     const window = createFrontendWindow({
       title: path.basename(archive.location, path.extname(archive.location)),
-      config: { documentId: archive.location }
+      config: { documentId: archive.id }
     });
 
     app.router.addWindow(window.webContents, archive.location);

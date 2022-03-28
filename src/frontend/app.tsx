@@ -7,12 +7,15 @@ import { Box, Button, Flex, Text } from 'theme-ui';
 import { CreateArchive } from '../common/interfaces/archive.interfaces';
 
 import { useRPC } from './ipc/ipc.hooks';
+import { ArchiveScreen } from './screens/archive.screen';
+import { ArchiveIngestScreen } from './screens/ingest.screen';
 import { WindowInset } from './ui/window';
 
 export const ArchiveWindow: FC = () => (
   <Routes>
-    <Route path="/">
-      <Route path="initial" />
+    <Route path="/" element={<ArchiveScreen />}>
+      <Route index element={<></>} />
+      <Route path="ingest/:sessionId" element={<ArchiveIngestScreen />} />
     </Route>
   </Routes>
 );

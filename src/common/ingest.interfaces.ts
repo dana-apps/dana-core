@@ -71,7 +71,7 @@ export const GetIngestSession = RpcInterface({
 export type ListIngestSessionRequest = RequestType<typeof ListIngestSession>;
 export type ListIngestSessionResponse = ResponseType<typeof ListIngestSession>;
 export const ListIngestSession = RpcInterface({
-  id: 'ingest/get',
+  id: 'ingest/list',
   request: z.object({}),
   response: ResourceList(IngestSession)
 });

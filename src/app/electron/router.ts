@@ -35,8 +35,8 @@ export class ElectronRouter implements EventDispatcher {
       async (
         _,
         request: Request,
-        archiveId?: string,
-        paginationToken?: string
+        paginationToken?: string,
+        archiveId?: string
       ): Promise<Result> => {
         // The schema validators aren't strictly needed in the electron app, but we use them here anyway
         // to ensure consistent behaviour with the Web UI.

@@ -11,7 +11,7 @@ export type CreateArchiveRequest = RequestType<typeof CreateArchive>;
 
 export const CreateArchive = RpcInterface({
   id: 'create-archive',
-  request: z.undefined(),
+  request: z.object({}),
   response: z.object({}),
   error: z.nativeEnum(ArchiveOpeningError)
 });
