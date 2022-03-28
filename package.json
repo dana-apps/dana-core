@@ -58,7 +58,7 @@
     "babel-core": "^6.26.3",
     "babel-jest": "^27.5.1",
     "babel-preset-vite": "^1.0.4",
-    "electron": "^17.1.2",
+    "electron": "^17.2.0",
     "electron-builder": "^23.0.3",
     "eslint": "^8.11.0",
     "eslint-config-airbnb": "^19.0.4",
