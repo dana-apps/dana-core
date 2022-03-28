@@ -5,7 +5,6 @@ import {
   RpcInterface
 } from '../../common/ipc.interfaces';
 import { Result } from '../../common/util/error';
-import { Dict } from '../../common/util/types';
 
 /**
  * Electron frontend RPC bindings

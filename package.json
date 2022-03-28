@@ -55,9 +55,11 @@
     "react-virtualized-auto-sizer": "^1.0.6",
     "react-window": "^1.8.6",
     "react-window-infinite-loader": "^1.0.7",
+    "secure-json-parse": "^2.4.0",
     "theme-ui": "^0.12.1",
     "unstated-next": "^1.1.0",
     "uuid": "^8.3.2",
+    "xlsx": "^0.18.5",
     "zod": "^3.14.2"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
-const { ipcRenderer, contextBridge } = require('electron');
+const { ipcRenderer, contextBridge, Menu } = require('electron');
 
 const getFrontendConfig = () => {
   const configArg = process.argv.find((x) =>
@@ -14,6 +14,15 @@ const getFrontendConfig = () => {
 contextBridge.exposeInMainWorld('bridge', {
   // Expose args passed in to the renderer process
   config: getFrontendConfig(),
+
+  ui: {
+    showContextMenu: (location, contents) => {
+      const menu = Menu.buildFromTemplate(contents);
+      menu.popup(location);
+
+      return () => menu.closePopup();
+    }
+  },
 
   ipcRenderer: {
     ...ipcRenderer,

@@ -1,6 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import faker from '@faker-js/faker';
+import { EventEmitter } from 'eventemitter3';
 import { noop, times } from 'lodash';
 import { useMemo, useState } from 'react';
 import { Box } from 'theme-ui';
@@ -25,7 +26,7 @@ export const ExampleDataGrid = () => {
     () => ({
       active: false,
       items: state,
-      stateKey: '1',
+      events: new EventEmitter(),
       totalCount: 1000,
       setCurrentPage: noop,
       fetchMore: async (start, end) => {

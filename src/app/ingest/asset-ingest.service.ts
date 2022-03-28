@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventemitter3';
 import { compact } from 'lodash';
-import { Asset } from '../../common/asset.interfaces';
+
 import { ImportPhase, IngestedAsset } from '../../common/ingest.interfaces';
 import { ResourceList } from '../../common/resource';
 import { DefaultMap } from '../../common/util/collection';
@@ -47,7 +47,7 @@ export class AssetIngestService extends EventEmitter<Events> {
     const state = this.archiveSessions.get(archive.id);
     this.archiveSessions.delete(archive.id);
 
-    for (const sessions of state.sessions) {
+    for (const sessions of state.sessions.values()) {
       sessions.teardown();
     }
   }
@@ -84,9 +84,9 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param id Id of the session to return.
    */
   listSessions(archive: ArchivePackage): ResourceList<AssetImportOperation> {
-    const sessions = this.archiveSessions
-      .get(archive.id)
-      .sessions.filter((x) => x.archive.id === archive.id);
+    const sessions = Array.from(
+      this.archiveSessions.get(archive.id).sessions.values()
+    );
 
     return {
       total: sessions.length,
@@ -102,9 +102,7 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param id Id of the session to return.
    */
   getSession(archive: ArchivePackage, id: string) {
-    return this.archiveSessions
-      .get(archive.id)
-      .sessions.find((x) => x.id === id);
+    return this.archiveSessions.get(archive.id).sessions.get(id);
   }
 
   /**
@@ -202,7 +200,7 @@ export class AssetIngestService extends EventEmitter<Events> {
   private async closeSession(archive: ArchivePackage, sessionId: string) {
     // Remove the import service
     const { sessions } = this.archiveSessions.get(archive.id);
-    sessions.splice(sessions.findIndex((s) => s.id === sessionId));
+    sessions.delete(sessionId);
 
     this.emit('status', {
       archive,
@@ -212,14 +210,14 @@ export class AssetIngestService extends EventEmitter<Events> {
 
   private openSession(archive: ArchivePackage, state: ImportSessionEntity) {
     const activeSessions = this.archiveSessions.get(archive.id);
-    const session = new AssetImportOperation(
-      archive,
-      state,
-      this,
-      this.mediaService
-    );
+    let session = activeSessions.sessions.get(archive.id);
+    if (session) {
+      return session;
+    }
 
-    activeSessions.sessions.push(session);
+    session = new AssetImportOperation(archive, state, this, this.mediaService);
+
+    activeSessions.sessions.set(session.id, session);
 
     this.emit('status', {
       archive,
@@ -246,7 +244,7 @@ export interface ImportStateChanged {
 }
 
 interface ArchiveSessions {
-  sessions: AssetImportOperation[];
+  sessions: Map<string, AssetImportOperation>;
 }
 
-const defaultArchiveSessions = () => ({ sessions: [] });
+const defaultArchiveSessions = () => ({ sessions: new Map() });

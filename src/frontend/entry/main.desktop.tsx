@@ -34,7 +34,7 @@ const app = (
           <FrontendConfigContext.Provider value={bridge.config}>
             <Window>
               {bridge.config.documentId ? (
-                <ArchiveWindow />
+                <ArchiveWindow title={bridge.config.title} />
               ) : (
                 <NewArchiveWindow />
               )}

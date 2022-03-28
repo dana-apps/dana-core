@@ -1,13 +1,15 @@
+import { dialog } from 'electron';
 import {
   CancelIngestSession,
   CommitIngestSession,
   GetIngestSession,
   ListIngestAssets,
   ListIngestSession,
-  StartIngest
+  StartIngest,
+  StartIngestSessionError
 } from '../../common/ingest.interfaces';
 import { ChangeEvent } from '../../common/resource';
-import { ok, okIfExists } from '../../common/util/error';
+import { error, ok, okIfExists } from '../../common/util/error';
 import { AssetService } from '../asset/asset.service';
 import type { ElectronRouter } from '../electron/router';
 import { MediaFileService } from '../media/media-file.service';
@@ -49,6 +51,21 @@ export async function initIngest(
   });
 
   router.bindArchiveRpc(StartIngest, async (archive, { basePath }) => {
+    if (!basePath) {
+      const openRes = await dialog.showOpenDialog(undefined as any, {
+        title: 'Import assets',
+        message: 'Select a directory of assets and metadata to import',
+        properties: ['openDirectory'],
+        buttonLabel: 'Import'
+      });
+
+      basePath = openRes.filePaths[0];
+
+      if (!basePath) {
+        return error(StartIngestSessionError.CANCELLED);
+      }
+    }
+
     const session = await assetIngest.beginSession(archive, basePath);
     return ok(session);
   });

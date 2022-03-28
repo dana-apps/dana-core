@@ -19,7 +19,8 @@ export function createFrontendWindow({ title, config }: CreateFrontendWindow) {
   const mergedConfig: FrontendConfig = {
     ...config,
     windowId: uniqueId(),
-    platform: getFrontendPlatform()
+    platform: getFrontendPlatform(),
+    title
   };
 
   const frontendWindow = new BrowserWindow({
@@ -73,12 +74,17 @@ function showWindowAfterFirstRender(
     }
 
     ipcMain.off('render-window', onWindowRendered);
+    if (window.isDestroyed()) {
+      return;
+    }
 
     window.show();
 
     if (SHOW_DEVTOOLS) {
       window.maximize();
-      window.webContents.openDevTools();
+      setTimeout(() => {
+        window.webContents.openDevTools();
+      }, 2000);
     }
   };
 

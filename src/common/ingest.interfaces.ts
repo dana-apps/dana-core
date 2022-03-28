@@ -21,6 +21,10 @@ export enum CommitIngestSessionError {
   VALIDATION_ERROR = 'VALIDATION_ERROR'
 }
 
+export enum StartIngestSessionError {
+  CANCELLED = 'CANCELLED'
+}
+
 export const IngestedAsset = z.object({
   ...Asset.shape,
   phase: z.nativeEnum(ImportPhase)
@@ -29,6 +33,7 @@ export type IngestedAsset = z.TypeOf<typeof IngestedAsset>;
 
 export const IngestSession = z.object({
   id: z.string(),
+  title: z.string(),
   basePath: z.string(),
   phase: z.nativeEnum(ImportPhase),
   filesRead: z.optional(z.number()),
@@ -44,10 +49,10 @@ export type IngestSession = z.TypeOf<typeof IngestSession>;
 export const StartIngest = RpcInterface({
   id: 'ingest/start',
   request: z.object({
-    basePath: z.string()
+    basePath: z.string().optional()
   }),
   response: IngestSession,
-  error: z.nativeEnum(FetchError)
+  error: z.nativeEnum(FetchError).or(z.nativeEnum(StartIngestSessionError))
 });
 export type StartIngestRequest = RequestType<typeof StartIngest>;
 export type StartIngestResponse = ResponseType<typeof StartIngest>;

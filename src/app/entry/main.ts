@@ -1,8 +1,13 @@
 import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
+import { z } from 'zod';
 import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
-import { SHOW_DEVTOOLS } from '../electron/config';
+import {
+  getUserConfig,
+  SHOW_DEVTOOLS,
+  updateUserConfig
+} from '../electron/config';
 import { getSystray } from '../electron/systray';
 import { createFrontendWindow } from '../electron/window';
 import { initIngest } from '../ingest/ingest.init';
@@ -32,12 +37,24 @@ async function main() {
   initSystray();
   initWindows();
   initArchive();
-  showLandingScreen();
+  initAutoOpen();
+  await showInitialScreen();
 
   function initArchive() {
     // When an archive document is opened, show its window.
     app.archiveService.on('opened', ({ archive }) => {
       showArchiveWindow(archive);
+    });
+
+    electronApp.getPath('userData');
+  }
+
+  async function initAutoOpen() {
+    // When an archive document is opened, add it to the autoload array
+    app.archiveService.on('opened', async ({ archive }) => {
+      updateUserConfig((config) => {
+        config.autoload[archive.location] = { autoload: true };
+      });
     });
   }
 
@@ -70,6 +87,22 @@ async function main() {
     });
   }
 
+  async function showInitialScreen() {
+    const settings = await getUserConfig();
+    let hasOpenedSomething = false;
+
+    for (const [location, opts] of Object.entries(settings.autoload)) {
+      if (opts.autoload) {
+        app.archiveService.openArchive(location);
+        hasOpenedSomething = true;
+      }
+    }
+
+    if (!hasOpenedSomething) {
+      showLandingScreen();
+    }
+  }
+
   function showLandingScreen() {
     if (newArchiveWindow) {
       newArchiveWindow.focus();
@@ -88,7 +121,7 @@ async function main() {
 
   function initSystray() {
     const systray = getSystray();
-    systray.on('click', showLandingScreen);
+    systray.on('click', showInitialScreen);
 
     systray.setContextMenu(
       Menu.buildFromTemplate([

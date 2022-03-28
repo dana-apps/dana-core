@@ -1,5 +1,4 @@
 import EventEmitter from 'eventemitter3';
-import { omit, uniq, uniqueId } from 'lodash';
 import {
   createContext,
   useCallback,
@@ -14,14 +13,9 @@ import {
   FrontendIpc,
   RpcInterface
 } from '../../common/ipc.interfaces';
-import {
-  ChangeEvent,
-  PaginatedResourceList,
-  Resource,
-  ResourceList
-} from '../../common/resource';
+import { ChangeEvent, Resource, ResourceList } from '../../common/resource';
 import { required } from '../../common/util/assert';
-import { Result } from '../../common/util/error';
+import { ok, Result } from '../../common/util/error';
 import { Scheduler } from '../../common/util/scheduler';
 
 export const IpcContext = createContext<IpcContext | undefined>(undefined);
@@ -138,7 +132,7 @@ export function useList<T extends Resource, Q, Err>(
   query: () => Q,
   deps: unknown[]
 ): ListCursor<T, Err> | undefined {
-  type DataState = Omit<ListCursor<T, Err>, 'fetchMore' | 'active'>;
+  type DataState = Omit<ListCursor<T, Err>, 'fetchMore' | 'active' | 'events'>;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const q = useMemo(query, deps);
@@ -150,13 +144,20 @@ export function useList<T extends Resource, Q, Err>(
   const [active, setActive] = useState(false);
 
   const scheduler = useMemo(() => new Scheduler(), []);
+  const events = useMemo(() => new EventEmitter<{ change: [] }>(), []);
 
   const paginationToken = useRef<{ next?: string }>();
+  const firstLoad = useRef(true);
 
   // Triggered on first load, data change and when the query changes
   const refetchAll = useCallback(
     () =>
       scheduler.run(async () => {
+        if (!firstLoad.current) {
+          events.emit('change');
+        }
+
+        firstLoad.current = false;
         setActive(true);
 
         try {
@@ -165,8 +166,7 @@ export function useList<T extends Resource, Q, Err>(
             return setState({
               items: [],
               error: data.error,
-              totalCount: 0,
-              stateKey: uniqueId()
+              totalCount: 0
             });
           }
 
@@ -174,14 +174,13 @@ export function useList<T extends Resource, Q, Err>(
 
           setState({
             items: data.value.items,
-            stateKey: uniqueId(),
             totalCount: data.value.total
           });
         } finally {
           setActive(false);
         }
       }),
-    [q, resource, rpc, scheduler]
+    [events, q, resource, rpc, scheduler]
   );
 
   // Refetch all when the query changes or on first load
@@ -197,6 +196,7 @@ export function useList<T extends Resource, Q, Err>(
     // that may be invalidated by edits to other types of objects in the database.
     if (type === resource.id) {
       refetchAll();
+      events.emit('change');
     }
   });
 
@@ -204,6 +204,7 @@ export function useList<T extends Resource, Q, Err>(
     () =>
       state && {
         ...state,
+        events,
         active,
         reset: refetchAll,
         fetchMore: (start, end) =>
@@ -241,7 +242,7 @@ export function useList<T extends Resource, Q, Err>(
             setActive(false);
           })
       },
-    [active, q, refetchAll, resource, rpc, scheduler, state]
+    [active, q, refetchAll, resource, rpc, events, scheduler, state]
   );
 }
 
@@ -270,6 +271,8 @@ export function useListAll<T extends Resource, Q, Err>(
         items.push(...res.value.items);
         page = res.value.next;
       } while (page);
+
+      return ok(items);
     };
 
     fetchAll().then(setData);
@@ -282,7 +285,7 @@ export function useListAll<T extends Resource, Q, Err>(
 export interface ListCursor<T extends Resource = Resource, Err = unknown> {
   error?: Err;
   totalCount: number;
-  stateKey: string;
+  events: EventEmitter<{ change: [] }>;
   items: T[];
   fetchMore: (start: number, end: number) => Promise<void>;
   active: boolean;

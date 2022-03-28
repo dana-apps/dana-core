@@ -5,7 +5,7 @@ import { X } from 'react-bootstrap-icons';
 import { IconButton } from 'theme-ui';
 import { useFrontendConfig } from '../config';
 
-const TITLEBAR_HEIGHT = '36px';
+const TITLEBAR_HEIGHT = '64px';
 
 export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
   const { platform } = useFrontendConfig();
@@ -67,6 +67,13 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
 };
 
 /** Inset window content to ensure it isn't obscured by chrome  */
-export const WindowInset = () => (
-  <div sx={{ height: TITLEBAR_HEIGHT, WebkitAppRegion: 'drag' }} />
+export const WindowInset: FC<HTMLAttributes<unknown>> = (props) => (
+  <div
+    sx={{
+      height: TITLEBAR_HEIGHT,
+      WebkitAppRegion: 'drag',
+      'button, input, label': { WebkitAppRegion: 'no-drag' }
+    }}
+    {...props}
+  />
 );

@@ -8,9 +8,8 @@
       "program": "scripts/debug",
       "cwd": "${workspaceFolder}",
       "sourceMaps": true,
-      "autoAttachChildProcesses": true,
       "outFiles": [
-        "${workspaceFolder}/dist/electron/*.js",
+        "${workspaceFolder}/build/electron/*.cjs",
         "!**/node_modules/**"
       ],
       "timeout": 15000,

@@ -28,7 +28,7 @@ export const Dropzone: FC<DropzoneProps> = ({
     ...dropzoneOptions,
     useFsAccessApi: true,
 
-    onDropAccepted: (_, event) => {
+    onDrop: (accept, reject, event) => {
       if ('dataTransfer' in event) {
         const { dataTransfer } = event as { dataTransfer: DataTransfer };
         const entries = compact(
@@ -39,9 +39,13 @@ export const Dropzone: FC<DropzoneProps> = ({
           onAcceptFiles(entries);
         }
       }
-    },
-    onDrop: () => {
       setOver(false);
+    },
+    onDragOver: (e) => {
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'copy';
+      }
+      e.preventDefault();
     },
     onDragEnter: () => setOver(true),
     onDragLeave: () => setOver(false)

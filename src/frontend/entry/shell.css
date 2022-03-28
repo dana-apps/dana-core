@@ -8,3 +8,8 @@ body,
   width: 100vw;
   overflow: hidden;
 }
+
+.link-reset {
+  color: inherit;
+  text-decoration: inherit;
+}

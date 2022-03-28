@@ -9,9 +9,9 @@ const controlHover = {
 
 const colors = {
   dark: '#010000',
-  grey: '#D9D4D3',
-  grey1: '#EDE9E9',
-  grey2: '#F9F7F7',
+  gray: '#D9D4D3',
+  gray1: '#EDE9E9',
+  gray2: '#F9F7F7',
   green: '#60D39B',
   muted: '#818B88',
   brown: '#81683E',
@@ -28,20 +28,20 @@ export const theme: Theme = {
   },
   space: [0, 3, 5, 8, 13, 21, 34],
   colors: {
+    ...colors,
     text: 'black',
     success: colors.green,
     error: polished.setHue(0, colors.green),
-    border: colors.grey,
+    border: colors.gray,
     highlight: colors.charcoal,
-    highlightHint: colors.grey1,
+    highlightHint: polished.transparentize(0.8, colors.charcoal),
     highlightContrast: 'white',
-    background: colors.grey2,
+    background: colors.gray2,
     foreground: 'white',
     primary: '#28108A',
     secondary: '#81683E',
     accent: '#008FFF',
-    muted: '#818B88',
-    gray: '#414141'
+    muted: '#818B88'
   },
   borders: {
     primary: '2px solid var(--theme-ui-colors-border)',

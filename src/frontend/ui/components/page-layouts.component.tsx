@@ -22,7 +22,6 @@ export const ListSection: FC<{ label: string }> = ({
 );
 
 export const ListItem: FC<{ label: string; active?: boolean }> = ({
-  children,
   active,
   label,
   ...props
@@ -56,16 +55,26 @@ export const ScreenLayout: FC<ScreenLayoutProps> = ({
   sidebarButtons,
   main
 }) => {
-  const borderStyle = { borderColor: 'border' };
   return (
-    <ReflexContainer windowResizeAware orientation="vertical">
+    <ReflexContainer
+      sx={{
+        '&.reflex-container.vertical > .reflex-splitter': {
+          borderRight: '1px solid var(--theme-ui-colors-border)',
+          borderLeft: 'none'
+        },
+        '> .reflex-element': {
+          overflow: 'hidden'
+        }
+      }}
+      windowResizeAware
+      orientation="vertical"
+    >
       <ReflexElement
         sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
         flex={0.25}
         minSize={100}
         maxSize={300}
       >
-        <WindowInset />
         <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
           {sidebar}
         </Box>
@@ -85,7 +94,7 @@ export const ScreenLayout: FC<ScreenLayoutProps> = ({
         )}
       </ReflexElement>
 
-      <ReflexSplitter sx={borderStyle} propagate={true} />
+      <ReflexSplitter propagate={true} />
 
       <ReflexElement minSize={320}>{main}</ReflexElement>
     </ReflexContainer>

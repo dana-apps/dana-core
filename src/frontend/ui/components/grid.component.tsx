@@ -3,11 +3,16 @@
 import { ReactElement, useCallback, useEffect, useMemo, useRef } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
-import { GridChildComponentProps, FixedSizeGrid as Grid } from 'react-window';
+import {
+  GridChildComponentProps,
+  VariableSizeGrid as Grid
+} from 'react-window';
 import { Box, BoxProps, useThemeUI } from 'theme-ui';
 
 import { Resource } from '../../../common/resource';
 import { ListCursor } from '../../ipc/ipc.hooks';
+import { last, sumBy } from 'lodash';
+import { useEventEmitter } from '../hooks/state.hooks';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   data: ListCursor<T>;
@@ -18,9 +23,10 @@ export interface DataGridProps<T extends Resource> extends BoxProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface GridColumn<T extends Resource = Resource, Val = any> {
   id: string;
-  label: string;
+  label?: string;
   getData: (x: T) => Val;
   render: (x: Val) => ReactElement;
+  width?: number;
 }
 
 export function DataGrid<T extends Resource>({
@@ -48,17 +54,29 @@ export function DataGrid<T extends Resource>({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const loaderRef = useRef<Loader | null>(null);
 
-  useEffect(() => {
-    if (loaderRef.current) {
-      loaderRef.current.resetloadMoreItemsCache(true);
-    }
-  }, [data.stateKey]);
+  useEventEmitter(data.events, 'change', () => {
+    loaderRef.current?.resetloadMoreItemsCache();
+  });
 
   return (
     <Box sx={{ fontSize: 0 }} {...props}>
       <AutoSizer>
         {({ height, width }) => {
-          const columnWidth = Math.max(200, Math.floor(width / columns.length));
+          const availableWidth = width - sumBy(columns, (c) => c.width ?? 0);
+          const flexColumns = columns.filter(
+            (c) => typeof c.width === 'undefined'
+          );
+          const defaultWidth = Math.max(
+            200,
+            Math.floor(availableWidth / flexColumns.length)
+          );
+          const columnOffsets = columns.reduce(
+            (prev: number[], x) => [
+              ...prev,
+              (last(prev) ?? 0) + (x.width ?? defaultWidth)
+            ],
+            []
+          );
 
           return (
             <>
@@ -78,12 +96,12 @@ export function DataGrid<T extends Resource>({
               >
                 {columns.map((col, i) => (
                   <div
-                    key={col.label}
+                    key={col.id}
                     sx={{
-                      width: columnWidth,
+                      width: col.width ?? defaultWidth,
                       position: 'absolute',
                       borderRight: '1px solid var(--theme-ui-colors-border)',
-                      left: columnWidth * i,
+                      left: columnOffsets[i - 1] ?? 0,
                       textAlign: 'center',
                       top: rowHeight / 2,
                       transform: 'translateY(-50%)'
@@ -105,7 +123,7 @@ export function DataGrid<T extends Resource>({
                     <Grid<CellData<T>>
                       ref={ref}
                       height={height - rowHeight}
-                      columnWidth={columnWidth}
+                      columnWidth={(i) => columns[i].width ?? defaultWidth}
                       onScroll={({ scrollLeft }) => {
                         if (headerRef.current) {
                           headerRef.current.style.transform = `translateX(-${scrollLeft}px)`;
@@ -113,7 +131,7 @@ export function DataGrid<T extends Resource>({
                       }}
                       rowCount={data.totalCount}
                       columnCount={columns.length}
-                      rowHeight={rowHeight}
+                      rowHeight={() => rowHeight}
                       itemData={dataVal}
                       onItemsRendered={(props) => {
                         onItemsRendered({

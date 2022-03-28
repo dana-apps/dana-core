@@ -3,11 +3,13 @@
 import { FC } from 'react';
 import { useParams } from 'react-router-dom';
 import {
+  ImportPhase,
   IngestedAsset,
   ListIngestAssets
 } from '../../common/ingest.interfaces';
 import { required } from '../../common/util/assert';
 import { useList } from '../ipc/ipc.hooks';
+import { LoadingCell } from '../ui/components/atoms.component';
 import {
   DataGrid,
   GridColumn,
@@ -16,10 +18,31 @@ import {
 
 const GRID_COLUMNS: GridColumn<IngestedAsset>[] = [
   {
-    id: 'title',
-    getData: (x) => x.metadata.title,
+    id: 'progress',
+    getData: (x): { error?: string; progress?: number } => {
+      if (x.phase === ImportPhase.ERROR) {
+        return { error: ImportPhase.ERROR };
+      }
+      if (x.phase === ImportPhase.COMPLETED) {
+        return { progress: 1 };
+      }
+
+      return { progress: -1 };
+    },
+    render: (x) => (
+      <div
+        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+      >
+        <LoadingCell {...x} />
+      </div>
+    ),
+    width: 36
+  },
+  {
+    id: 'id',
+    getData: (x) => x.id,
     render: TextCell,
-    label: 'Tilte'
+    label: 'Id'
   }
 ];
 

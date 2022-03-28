@@ -2,6 +2,7 @@ import { EntityManager } from '@mikro-orm/sqlite';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
+import * as xlsx from 'xlsx';
 
 import {
   FileImportError,
@@ -17,6 +18,8 @@ import {
   ImportSessionEntity
 } from './asset-import.entity';
 import { AssetIngestService } from './asset-ingest.service';
+import { Dict } from '../../common/util/types';
+import { compact } from 'lodash';
 
 /**
  * Encapsulates an import operation.
@@ -41,6 +44,8 @@ export class AssetImportOperation implements IngestSession {
   private _filesRead?: number;
   private _active = false;
 
+  private static SPREADSHEET_TYPES = ['.xlsx', '.csv', '.xls', '.ods'];
+
   constructor(
     readonly archive: ArchivePackage,
     readonly session: ImportSessionEntity,
@@ -50,6 +55,10 @@ export class AssetImportOperation implements IngestSession {
 
   get id() {
     return this.session.id;
+  }
+
+  get title() {
+    return path.basename(this.session.basePath);
   }
 
   get basePath() {
@@ -136,6 +145,12 @@ export class AssetImportOperation implements IngestSession {
       if (path.extname(item.name) === '.json') {
         await this.readJsonMetadata(path.join(currentPath, item.name));
       }
+
+      if (
+        AssetImportOperation.SPREADSHEET_TYPES.includes(path.extname(item.name))
+      ) {
+        await this.readMetadataSheet(path.join(currentPath, item.name));
+      }
     }
   }
 
@@ -157,6 +172,33 @@ export class AssetImportOperation implements IngestSession {
 
     const { metadata, files = [] } = contents.data;
 
+    await this.readMetadataObject(metadata, files, relativePath);
+  }
+
+  async readMetadataSheet(sheetPath: string) {
+    const workbook = xlsx.readFile(sheetPath);
+    const relativePath = path.relative(this.metadataPath, sheetPath);
+
+    for (const [sheetName, sheet] of Object.entries(workbook.Sheets)) {
+      const rows = xlsx.utils.sheet_to_json<Dict>(sheet);
+      let i = 0;
+
+      for (const { files: fileRecord = '', ...metadata } of rows) {
+        const locator = `${relativePath}:${sheetName},${i}`;
+        const files = compact(String(fileRecord).split(';'));
+
+        await this.readMetadataObject(metadata, files, locator);
+
+        i += 1;
+      }
+    }
+  }
+
+  async readMetadataObject(
+    metadata: Dict,
+    files: string[],
+    relativePath: string
+  ) {
     await this.archive.useDbTransaction(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
       const fileRepository = db.getRepository(FileImport);
