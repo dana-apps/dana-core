@@ -48,33 +48,40 @@ describe('AssetImportOperation', () => {
 
     await fixture.givenThatAnImportSessionHasRunSuccessfuly();
 
-    expect(events).toEqual([
-      {
-        phase: ImportPhase.READ_FILES,
-        filesRead: undefined,
-        totalFiles: undefined
-      },
-      {
-        phase: ImportPhase.READ_FILES,
-        filesRead: 0,
-        totalFiles: 2
-      },
-      {
-        phase: ImportPhase.READ_FILES,
-        filesRead: 1,
-        totalFiles: 2
-      },
-      {
-        phase: ImportPhase.READ_FILES,
-        filesRead: 2,
-        totalFiles: 2
-      },
-      {
-        phase: ImportPhase.COMPLETED,
-        filesRead: 2,
-        totalFiles: 2
-      }
-    ]);
+    expect(events).toEqual(
+      expect.arrayContaining([
+        {
+          phase: ImportPhase.READ_METADATA,
+          filesRead: undefined,
+          totalFiles: undefined
+        },
+        {
+          phase: ImportPhase.READ_FILES,
+          filesRead: undefined,
+          totalFiles: undefined
+        },
+        {
+          phase: ImportPhase.READ_FILES,
+          filesRead: 0,
+          totalFiles: 2
+        },
+        {
+          phase: ImportPhase.READ_FILES,
+          filesRead: 1,
+          totalFiles: 2
+        },
+        {
+          phase: ImportPhase.READ_FILES,
+          filesRead: 2,
+          totalFiles: 2
+        },
+        {
+          phase: ImportPhase.COMPLETED,
+          filesRead: 2,
+          totalFiles: 2
+        }
+      ])
+    );
   });
 
   test('resumes asset imports if the import is interrupted', async () => {
@@ -98,10 +105,7 @@ describe('AssetImportOperation', () => {
   test('returns active sessions', async () => {
     const fixture = await setup();
 
-    const session = await fixture.importService.beginSession(
-      fixture.archive,
-      BASIC_EXAMPLE
-    );
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
 
     const sessionGet = fixture.importService.getSession(
       fixture.archive,
@@ -113,12 +117,20 @@ describe('AssetImportOperation', () => {
   test('lists active sessions', async () => {
     const fixture = await setup();
 
-    await fixture.importService.beginSession(fixture.archive, BASIC_EXAMPLE);
-    await fixture.importService.beginSession(fixture.archive, BASIC_EXAMPLE);
+    const begunSessions = await Promise.all([
+      fixture.importService.beginSession(fixture.archive, BASIC_EXAMPLE),
+      fixture.importService.beginSession(fixture.archive, BASIC_EXAMPLE)
+    ]);
 
     const sessions = fixture.importService.listSessions(fixture.archive);
 
     expect(sessions.items).toHaveLength(2);
+
+    await Promise.all(
+      begunSessions.map((session) =>
+        waitUntilEvent(fixture.importService, 'importRunCompleted', session)
+      )
+    );
   });
 
   test('cancelling a session removes all imported assets and media files and emits a change event', async () => {

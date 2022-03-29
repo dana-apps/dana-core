@@ -117,6 +117,8 @@ export class AssetImportOperation implements IngestSession {
       return;
     }
 
+    this.emitStatus();
+
     await this.archive.useDb(async (db) => {
       await this.readDirectoryMetadata(this.metadataPath);
 
@@ -228,6 +230,8 @@ export class AssetImportOperation implements IngestSession {
         )
       );
     });
+
+    this.emitStatus();
   }
 
   /**
