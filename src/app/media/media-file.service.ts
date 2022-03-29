@@ -1,11 +1,9 @@
 import { createReadStream } from 'fs';
 import { copyFile, unlink } from 'fs/promises';
+import mime from 'mime';
 import path from 'path';
 
-import {
-  FileImportResult,
-  FileImportError
-} from '../../common/ingest.interfaces';
+import { FileImportResult, IngestError } from '../../common/ingest.interfaces';
 import { error, ok } from '../../common/util/error';
 import { ArchivePackage } from '../package/archive-package';
 import { hashStream } from '../util/stream-utils';
@@ -13,12 +11,19 @@ import { MediaFile } from './media-file.entity';
 import { getMediaType } from './media-types';
 
 export class MediaFileService {
+  /**
+   * Persist a media file in the archive.
+   *
+   * @param archive Archive to store the file in
+   * @param source File path to the source file
+   * @returns A MediaFile instance representing the file
+   */
   putFile(archive: ArchivePackage, source: string) {
     return archive.useDb(async (db): Promise<FileImportResult<MediaFile>> => {
       const mediaRepository = db.getRepository(MediaFile);
       const mediaType = getMediaType(source);
       if (!mediaType) {
-        return error(FileImportError.UNSUPPORTED_MEDIA_TYPE);
+        return error(IngestError.UNSUPPORTED_MEDIA_TYPE);
       }
 
       const sha256 = await hashStream(createReadStream(source));
@@ -28,9 +33,9 @@ export class MediaFileService {
       });
 
       try {
-        await copyFile(source, path.join(archive.blobPath, sha256));
+        await copyFile(source, this.getMediaPath(archive, mediaFile));
       } catch {
-        return error(FileImportError.IO_ERROR);
+        return error(IngestError.IO_ERROR);
       }
 
       await mediaRepository.persistAndFlush(mediaFile);
@@ -39,36 +44,58 @@ export class MediaFileService {
     });
   }
 
-  async deleteFiles(archive: ArchivePackage, ids: string[]) {
-    const orphanedBlobs = await archive.useDbTransaction(async (db) => {
+  /**
+   * Delete one or more media files from the archive.
+   *
+   * @param archive Archive to store the file in
+   * @param ids Ids of the files to delete
+   * @returns Success or failure of each deletion request
+   */
+  async deleteFiles(
+    archive: ArchivePackage,
+    ids: string[]
+  ): Promise<FileImportResult[]> {
+    const results: FileImportResult[] = [];
+
+    await archive.useDbTransaction(async (db) => {
       const fileRecords = await db.find(MediaFile, { id: ids });
 
-      // Mark them for deletion
-      db.remove(fileRecords);
+      for (const file of fileRecords) {
+        // Remove the file
+        try {
+          await unlink(this.getMediaPath(archive, file));
 
-      // Find all the file records referencing a deleted file record's blob
-      const remainingRefs = await db.find(MediaFile, {
-        sha256: fileRecords.map((file) => file.sha256)
-      });
+          // Mark record for deletion
+          db.remove(file);
 
-      // Return all the blobs that have become unreferenced
-      const remainingRefShas = new Set(remainingRefs.map((ref) => ref.sha256));
-      return fileRecords
-        .filter((file) => !remainingRefShas.has(file.sha256))
-        .map((file) => file.sha256);
+          results.push(ok());
+        } catch {
+          results.push(error(IngestError.IO_ERROR));
+        }
+      }
     });
 
-    // Delete the oprhaned blobs after the transaction commits
-    for await (const file of orphanedBlobs) {
-      await unlink(this.getMediaPath(archive, file));
-    }
+    return results;
   }
 
+  /**
+   * List all media files in an archive
+   *
+   * @param archive Archive to list media from
+   * @returns List of media files
+   */
   listMedia(archive: ArchivePackage) {
     return archive.list(MediaFile);
   }
 
-  private getMediaPath(archive: ArchivePackage, id: string) {
-    return path.join(archive.blobPath, id);
+  /**
+   * Return the absolute path for the file represented by a MediaFile instance
+   *
+   * @param archive Archive that `mediaFile` belongs to.
+   * @returns Absolute path for the file represented by a MediaFile instance
+   */
+  private getMediaPath(archive: ArchivePackage, mediaFile: MediaFile) {
+    const ext = mime.getExtension(mediaFile.mimeType);
+    return path.join(archive.blobPath, mediaFile.id + ext);
   }
 }

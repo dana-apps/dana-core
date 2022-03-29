@@ -2,31 +2,57 @@
 
 import { FC } from 'react';
 import { Icon, Check, ExclamationTriangleFill } from 'react-bootstrap-icons';
-import { Button, Donut, IconButton, IconButtonProps, Spinner } from 'theme-ui';
+import { Button, Donut, IconButtonProps, Spinner } from 'theme-ui';
 
 interface LoadingCellProps {
-  error?: string;
-  progress?: number;
+  /** Represents progress to display */
+  value?: ProgressValue;
+
+  /** Size in pixels */
   size?: number;
 }
 
-export const LoadingCell: FC<LoadingCellProps> = ({
-  error,
-  progress,
+/**
+ * - Undefined to hide
+ * - Value < 1 for indeterminate state
+ * - Value between 0-1 for percent progress
+ * - Value >= 1 for completion
+ */
+export type ProgressValue = number | 'error' | undefined;
+
+/**
+ * Represents the loading progress of an indivudal item.
+ *
+ * This is for representing the progress of an operation affecting a single object
+ * (for example, as a cell in a in list view, rather than when a page is loading)
+ */
+export const ProgressIndicator: FC<LoadingCellProps> = ({
+  value,
   size = 18,
   ...props
 }) => {
-  if (progress && progress < 0) {
-    return <Spinner {...props} size={size} strokeWidth={6} />;
-  }
-
-  if (progress && progress < 1) {
+  if (value === 'error') {
     return (
-      <Donut {...props} size={size} strokeWidth={6} value={progress ?? 1} />
+      <ExclamationTriangleFill
+        color="var(--theme-ui-colors-error)"
+        size={size}
+      />
     );
   }
 
-  if (progress && progress >= 1) {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (value < 0) {
+    return <Spinner {...props} size={size} strokeWidth={6} />;
+  }
+
+  if (value < 1) {
+    return <Donut {...props} size={size} strokeWidth={6} value={value} />;
+  }
+
+  if (value >= 1) {
     return (
       <Check
         sx={{
@@ -39,23 +65,20 @@ export const LoadingCell: FC<LoadingCellProps> = ({
     );
   }
 
-  if (error) {
-    return (
-      <ExclamationTriangleFill
-        color="var(--theme-ui-colors-error)"
-        size={size}
-      />
-    );
-  }
-
   return null;
 };
 
 interface ToolbarButtonProps extends IconButtonProps {
+  /** Toolbar icon */
   icon: Icon;
+
+  /** Toolbar label */
   label: string;
 }
 
+/**
+ * Represent a button in a window's top-level toolbar
+ */
 export const ToolbarButton: FC<ToolbarButtonProps> = ({
   icon: Icon,
   label,

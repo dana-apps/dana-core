@@ -74,7 +74,8 @@ const setupMainPackageWatcher = ({ config: { server } }) => {
       spawnProcess = spawn(String(electronPath), [
         '.',
         '--no-sandbox',
-        '--remote-debugging-port=9223'
+        '--remote-debugging-port=9223',
+        '--disable-dev-shm-usage'
       ]);
 
       spawnProcess.stdout.on(

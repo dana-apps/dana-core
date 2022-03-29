@@ -1,14 +1,14 @@
 import { EventEmitter } from 'eventemitter3';
 import { compact } from 'lodash';
 
-import { ImportPhase, IngestedAsset } from '../../common/ingest.interfaces';
+import { IngestPhase, IngestedAsset } from '../../common/ingest.interfaces';
 import { ResourceList } from '../../common/resource';
 import { DefaultMap } from '../../common/util/collection';
 import { AssetService } from '../asset/asset.service';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetImportEntity, ImportSessionEntity } from './asset-import.entity';
-import { AssetImportOperation } from './asset-import.operation';
+import { AssetIngestOperation } from './asset-ingest.operation';
 
 export class AssetIngestService extends EventEmitter<Events> {
   constructor(
@@ -27,7 +27,7 @@ export class AssetIngestService extends EventEmitter<Events> {
    *
    * Loads any uncomitted ingest operations and resumes them.
    *
-   * @param archive
+   * @param archive Archive to start managing ingests for.
    */
   async addArchive(archive: ArchivePackage) {
     const savedState = await archive.list(ImportSessionEntity);
@@ -41,7 +41,7 @@ export class AssetIngestService extends EventEmitter<Events> {
   /**
    * Stop managing ingest sessions for an open archive (for example when it is closed)
    *
-   * @param archive
+   * @param archive Archive to stop managing ingests for.
    */
   removeArchive(archive: ArchivePackage) {
     const state = this.archiveSessions.get(archive.id);
@@ -65,7 +65,7 @@ export class AssetIngestService extends EventEmitter<Events> {
       await archive.useDb((em) => {
         const session = em.create(ImportSessionEntity, {
           basePath,
-          phase: ImportPhase.READ_METADATA
+          phase: IngestPhase.READ_METADATA
         });
         em.persist(session);
         return session;
@@ -78,12 +78,11 @@ export class AssetIngestService extends EventEmitter<Events> {
   }
 
   /**
-   * Get an active ingest session.
+   * List all active ingest sessions for an archive.
    *
-   * @param archive Archive to import files into.
-   * @param id Id of the session to return.
+   * @param archive Archive owning the sessions.
    */
-  listSessions(archive: ArchivePackage): ResourceList<AssetImportOperation> {
+  listSessions(archive: ArchivePackage): ResourceList<AssetIngestOperation> {
     const sessions = Array.from(
       this.archiveSessions.get(archive.id).sessions.values()
     );
@@ -98,7 +97,7 @@ export class AssetIngestService extends EventEmitter<Events> {
   /**
    * Get an active ingest session.
    *
-   * @param archive Archive to import files into.
+   * @param archive Archive owning the session.
    * @param id Id of the session to return.
    */
   getSession(archive: ArchivePackage, id: string) {
@@ -106,10 +105,10 @@ export class AssetIngestService extends EventEmitter<Events> {
   }
 
   /**
-   * Get an active ingest session.
+   * List the assets in an active ingest session.
    *
    * @param archive Archive to import files into.
-   * @param id Id of the session to return.
+   * @param sessionId Id of the session to return.
    * @param paginationToken Paginate over
    */
   async listSessionAssets(
@@ -141,11 +140,10 @@ export class AssetIngestService extends EventEmitter<Events> {
   }
 
   /**
-   * Commit an ingest session.
+   * Move all the assets ingested as part of an ingest operation into the archive and delete the operation.
    *
    * @param archive Archive to import files into.
-   * @param id Id of the session to return.
-   * @param paginationToken Paginate over
+   * @param sessionId Id of the session to return.
    */
   async commitSession(archive: ArchivePackage, sessionId: string) {
     await archive.useDbTransaction(async (db) => {
@@ -168,6 +166,12 @@ export class AssetIngestService extends EventEmitter<Events> {
     await this.closeSession(archive, sessionId);
   }
 
+  /**
+   * Remove a session and delete its associated metadata and media files. The source directory is not affected.
+   *
+   * @param archive Archive to import files into.
+   * @param sessionId Id of the session to return.
+   */
   async cancelSession(archive: ArchivePackage, sessionId: string) {
     const session = this.getSession(archive, sessionId);
     if (!session) {
@@ -181,7 +185,7 @@ export class AssetIngestService extends EventEmitter<Events> {
     const importedMedia = await archive.useDbTransaction(async (db) => {
       const importedMedia = await archive.useDb((db) =>
         session
-          .queryFiles(db)
+          .queryImportedFiles(db)
           .populate([{ field: 'media' }])
           .getResultList()
       );
@@ -197,6 +201,12 @@ export class AssetIngestService extends EventEmitter<Events> {
     await this.closeSession(archive, sessionId);
   }
 
+  /**
+   * Remove the AssetIngestOperation instance managing an ingest session.
+   *
+   * @param archive Archive associated with the operation.
+   * @param sessionId Id of the session to close.
+   */
   private async closeSession(archive: ArchivePackage, sessionId: string) {
     // Remove the import service
     const { sessions } = this.archiveSessions.get(archive.id);
@@ -208,6 +218,12 @@ export class AssetIngestService extends EventEmitter<Events> {
     });
   }
 
+  /**
+   * Add the AssetIngestOperation instance managing an ingest session to the list of active sessions.
+   *
+   * @param archive Archive associated with the operation.
+   * @param state Database entity holding state for the operation.
+   */
   private openSession(archive: ArchivePackage, state: ImportSessionEntity) {
     const activeSessions = this.archiveSessions.get(archive.id);
     let session = activeSessions.sessions.get(archive.id);
@@ -215,7 +231,7 @@ export class AssetIngestService extends EventEmitter<Events> {
       return session;
     }
 
-    session = new AssetImportOperation(archive, state, this, this.mediaService);
+    session = new AssetIngestOperation(archive, state, this, this.mediaService);
 
     activeSessions.sessions.set(session.id, session);
 
@@ -234,17 +250,31 @@ export class AssetIngestService extends EventEmitter<Events> {
  */
 interface Events {
   status: [ImportStateChanged];
-  importRunCompleted: [AssetImportOperation];
+  importRunCompleted: [AssetIngestOperation];
 }
 
+/**
+ * Emitted whenever any state change occurs affecting asset ingestion for an archive.
+ */
 export interface ImportStateChanged {
+  /**
+   * Archive affected by the change.
+   **/
   archive: ArchivePackage;
-  session?: AssetImportOperation;
+
+  /**
+   * The operatiom whose state updated.
+   *
+   * This will be undefined for archive-level changes (for example adding or remiving a session)
+   **/
+  session?: AssetIngestOperation;
+
+  /** Ids for any ingested assets that have been updated by the change */
   assetIds: string[];
 }
 
 interface ArchiveSessions {
-  sessions: Map<string, AssetImportOperation>;
+  sessions: Map<string, AssetIngestOperation>;
 }
 
 const defaultArchiveSessions = () => ({ sessions: new Map() });

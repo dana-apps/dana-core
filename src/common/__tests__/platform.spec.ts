@@ -1,5 +1,5 @@
 import path from 'path';
-import { getFileUrl } from '../platform';
+import { getFileUrl } from '../../app/util/platform';
 
 describe('getFileUrl', () => {
   test('creates file urls from windows path', () => {

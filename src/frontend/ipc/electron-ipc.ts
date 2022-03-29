@@ -7,7 +7,7 @@ import {
 import { Result } from '../../common/util/error';
 
 /**
- * Electron frontend RPC bindings
+ * Binds an electron frontend to apis in the main process set up using `ElectronRouter`
  */
 export class ElectronRendererIpc implements FrontendIpc {
   constructor(private ipc: IpcRenderer) {}

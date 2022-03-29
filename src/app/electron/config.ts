@@ -3,7 +3,7 @@ import isDev from 'electron-is-dev';
 import { mkdir } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import { getFileUrl } from '../../common/platform';
+import { getFileUrl } from '../util/platform';
 import { readJson, writeJson } from '../util/json-utils';
 
 const CONFIG_DIR = path.join(app.getPath('userData'), 'danacore');
@@ -23,7 +23,11 @@ export const SHOW_DEVTOOLS = process.env.SHOW_DEVTOOLS || isDev ? true : false;
 export const FRONTEND_SOURCE_URL =
   process.env.FRONTEND_SOURCE_URL ?? DEFAULT_FRONTEND_SOURCE_URL;
 
+/**
+ * Schema for the user's config file.
+ */
 const UserConfig = z.object({
+  /** List of archives to automatically open on load */
   autoload: z.record(
     z.object({
       autoload: z.boolean()
@@ -32,6 +36,11 @@ const UserConfig = z.object({
 });
 export type UserConfig = z.TypeOf<typeof UserConfig>;
 
+/**
+ * Load and return the saved user config, or return the default configuration if none previously saved.
+ *
+ * @returns Config object for the current user.
+ */
 export async function getUserConfig() {
   await mkdir(CONFIG_DIR, { recursive: true });
   return readJson(path.join(CONFIG_DIR, 'settings.json'), UserConfig, {
@@ -39,14 +48,23 @@ export async function getUserConfig() {
   });
 }
 
+/**
+ * Save configuration for the current user.
+ */
 export async function writeUserConfig(val: UserConfig) {
   await mkdir(CONFIG_DIR, { recursive: true });
   return writeJson(path.join(CONFIG_DIR, 'settings.json'), UserConfig, val);
 }
 
-export async function updateUserConfig(fn: (val: UserConfig) => void) {
+/**
+ * Convenience function for loading, updating and saving the user config.
+ *
+ * @param updater Updater function to mutate the user config before saving
+ * @returns The updated user config.
+ */
+export async function updateUserConfig(updater: (val: UserConfig) => void) {
   const config = await getUserConfig();
-  fn(config);
+  updater(config);
   await writeUserConfig(config);
 
   return config;

@@ -1,5 +1,8 @@
 import * as mime from 'mime';
 
+/**
+ * List of mime types that we know how to manage.
+ */
 const ACCEPTED_TYPES = new Set([
   'application/pdf',
   'image/png',

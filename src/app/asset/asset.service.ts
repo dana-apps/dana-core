@@ -6,11 +6,25 @@ import { ArchivePackage } from '../package/archive-package';
 import { AssetEntity, AssetStringProperty } from './asset.entity';
 
 interface CreateAssetOpts {
+  /** Metadata to associate with the asset. This must be valid according to the archive schema */
   metadata: Record<string, unknown>;
+
+  /** Media to associate with the asset */
   media?: MediaFile[];
 }
 
 export class AssetService extends EventEmitter<AssetEvents> {
+  /**
+   * Persist an asset to the database, associate it with zero or more media files and index its metadata.
+   *
+   * Emits `change` to inform observers that the asset has changed.
+   *
+   * This should fail if the asset's metadata is not valid according to the archive's schema.
+   *
+   * @param archive The archive to store the asset in.
+   * @param param1 Options for
+   * @returns An `Asset` object representing the inserted asset.
+   */
   async createAsset(
     archive: ArchivePackage,
     { metadata, media = [] }: CreateAssetOpts
@@ -51,6 +65,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
     return res;
   }
 
+  /**
+   * List assets in the archive.
+   *
+   * @returns ResourceList representing the query.
+   */
   async listAssets(
     archive: ArchivePackage,
     paginationToken?: string
@@ -60,7 +79,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
         AssetEntity,
         {},
         {
-          populate: AssetEntity.defaultPopulate,
+          populate: AssetEntity.MEDIA_AND_METADATA_RELATIONS,
           paginationToken
         }
       );
@@ -75,7 +94,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
               type: 'image',
               mimeType: file.mimeType
             })),
-            metadata: await entity.loadMetadata()
+            metadata: entity.metadataValues()
           }))
         )
       };
@@ -87,6 +106,8 @@ interface AssetEvents {
   change: [AssetsChangedEvent];
 }
 
+/** Emitted when the assets managed by the archive have changed */
 export interface AssetsChangedEvent {
+  /** Ids of newly created assets */
   created: string[];
 }

@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useEffect, useState } from 'react';
-import { LoadingCell } from '../atoms.component';
+import { ProgressIndicator } from '../atoms.component';
 
 export default {
   title: 'Components/Atoms'
@@ -31,8 +31,8 @@ export const Progress: FC = () => {
     };
   }, []);
 
-  return <LoadingCell progress={progress} />;
+  return <ProgressIndicator value={progress} />;
 };
 
-export const Success = () => <LoadingCell progress={1} />;
-export const Error = () => <LoadingCell error="yikes" />;
+export const Success = () => <ProgressIndicator value={1} />;
+export const Error = () => <ProgressIndicator value="error" />;

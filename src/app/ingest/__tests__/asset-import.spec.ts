@@ -1,7 +1,7 @@
 import { compact } from 'lodash';
 import path from 'path';
 
-import { ImportPhase } from '../../../common/ingest.interfaces';
+import { IngestPhase } from '../../../common/ingest.interfaces';
 import { collectEvents, waitUntilEvent } from '../../../test/event';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { AssetsChangedEvent, AssetService } from '../../asset/asset.service';
@@ -32,9 +32,9 @@ describe('AssetImportOperation', () => {
       items.map((x) => x.files.loadItems({ populate: ['media'] }))
     ).then((x) => x.flat());
 
-    expect(session.phase).toBe(ImportPhase.COMPLETED);
+    expect(session.phase).toBe(IngestPhase.COMPLETED);
     expect(items).toHaveLength(2);
-    expect(items.every((x) => x.phase === ImportPhase.COMPLETED)).toBeTruthy();
+    expect(items.every((x) => x.phase === IngestPhase.COMPLETED)).toBeTruthy();
     expect(compact(files.map((file) => file.media))).toHaveLength(2);
   });
 
@@ -51,32 +51,32 @@ describe('AssetImportOperation', () => {
     expect(events).toEqual(
       expect.arrayContaining([
         {
-          phase: ImportPhase.READ_METADATA,
-          filesRead: undefined,
+          phase: IngestPhase.READ_METADATA,
+          filesRead: 0,
           totalFiles: undefined
         },
         {
-          phase: ImportPhase.READ_FILES,
-          filesRead: undefined,
+          phase: IngestPhase.READ_FILES,
+          filesRead: 0,
           totalFiles: undefined
         },
         {
-          phase: ImportPhase.READ_FILES,
+          phase: IngestPhase.READ_FILES,
           filesRead: 0,
           totalFiles: 2
         },
         {
-          phase: ImportPhase.READ_FILES,
+          phase: IngestPhase.READ_FILES,
           filesRead: 1,
           totalFiles: 2
         },
         {
-          phase: ImportPhase.READ_FILES,
+          phase: IngestPhase.READ_FILES,
           filesRead: 2,
           totalFiles: 2
         },
         {
-          phase: ImportPhase.COMPLETED,
+          phase: IngestPhase.COMPLETED,
           filesRead: 2,
           totalFiles: 2
         }
@@ -99,7 +99,7 @@ describe('AssetImportOperation', () => {
     );
     await waitUntilEvent(fixture.importService, 'importRunCompleted', session);
 
-    expect(session.phase).toBe(ImportPhase.COMPLETED);
+    expect(session.phase).toBe(IngestPhase.COMPLETED);
   });
 
   test('returns active sessions', async () => {

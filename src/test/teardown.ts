@@ -9,6 +9,10 @@ afterEach(async () => {
   cleanup = [];
 });
 
+/**
+ * Utility for registering test cleanup blocks when setting up test fixtures.
+ * @param fn Cleanup block to call after test completes.
+ */
 export function onCleanup(fn: Cleanup) {
   cleanup.push(fn);
 }

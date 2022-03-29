@@ -5,6 +5,11 @@ import { required } from '../common/util/assert';
 export const FrontendConfigContext =
   createContext<FrontendConfig | undefined>(undefined);
 
+/**
+ * Gets configuration data passed into the frontend.
+ *
+ * @returns The current frontend configuration
+ */
 export const useFrontendConfig = () =>
   required(
     useContext(FrontendConfigContext),

@@ -1,22 +1,13 @@
 import EventEmitter from 'eventemitter3';
 import { useEffect, useRef } from 'react';
 
-export function useOnChanged<T>(
-  val: T,
-  fn: (current: T, prev: T) => void,
-  deps: unknown[]
-) {
-  const prev = useRef(val);
-  useEffect(() => {
-    if (prev.current && val !== prev.current) {
-      fn(val, prev.current);
-      prev.current = val;
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [val, ...deps]);
-}
-
+/**
+ * Listens to an eventemitter and tears down the subscription on unmount.
+ *
+ * @param ee Eventemitter to listen to
+ * @param event Event to subscribe to
+ * @param fn Handler function
+ */
 export function useEventEmitter<T extends unknown[], Key extends string>(
   ee: EventEmitter<{ [P in Key]: T }>,
   event: Key,

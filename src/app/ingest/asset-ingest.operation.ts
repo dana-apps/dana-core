@@ -3,10 +3,11 @@ import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
 import * as xlsx from 'xlsx';
+import * as SecureJSON from 'secure-json-parse';
 
 import {
-  FileImportError,
-  ImportPhase,
+  IngestError,
+  IngestPhase,
   IngestSession
 } from '../../common/ingest.interfaces';
 import { MediaFileService } from '../media/media-file.service';
@@ -24,26 +25,25 @@ import { compact } from 'lodash';
 /**
  * Encapsulates an import operation.
  *
- * Import is the first stage of the ingest process.
+ * A directory containing asset files (schema documents with references to media files) is used to populate the
+ * database with staged imported assets and copy the media files into the archive.
  *
- * A directory containing asset files (JSON documents with a flexible metadata schema and references to media files) is
- * used to populate the database with staged imported assets and copy the media files into the archive.
  *
- * This stage:
+ *
+ * This stage should:
  * - Validates that the media files are supported by the archive.
  * - Copies media into the archive.
  * - Stages assets for inserting into the archive.
  * - Can recover from interruptions if the import is cancelled.
  *
- * It does not:
- * - Perform any validation of the metadata.
- * - Create assets in the archive – a subsequent phase is required to do this.
+ *
  */
-export class AssetImportOperation implements IngestSession {
+export class AssetIngestOperation implements IngestSession {
   private _totalFiles?: number;
   private _filesRead?: number;
   private _active = false;
 
+  /** Supported file extensions for metadata sheets */
   private static SPREADSHEET_TYPES = ['.xlsx', '.csv', '.xls', '.ods'];
 
   constructor(
@@ -53,35 +53,72 @@ export class AssetImportOperation implements IngestSession {
     private mediaService: MediaFileService
   ) {}
 
+  /**
+   * Unique id for this operation
+   **/
   get id() {
     return this.session.id;
   }
 
+  /**
+   * Human-readable name for the session
+   **/
   get title() {
     return path.basename(this.session.basePath);
   }
 
+  /**
+   * Local file path to ingest from
+   **/
   get basePath() {
     return this.session.basePath;
   }
 
+  /**
+   * The current phase of the ingest operation
+   **/
   get phase() {
     return this.session.phase;
   }
 
+  /**
+   * The total of media files being ingested, or undefined if this is not yet known
+   **/
   get totalFiles() {
     return this._totalFiles;
   }
 
+  /**
+   * The total of media files that have been read so far
+   **/
   get filesRead() {
-    return this._filesRead;
+    return this._filesRead ?? 0;
   }
 
+  /**
+   * Whether the ingest operation is currently processing assets or files.
+   **/
   get active() {
     return this._active;
   }
 
-  /** Continue the import operation from its current stage, starting it if necessary */
+  /**
+   * Absolute path to root directory of imported metadata
+   **/
+  get metadataPath() {
+    return path.join(this.session.basePath, 'metadata');
+  }
+
+  /**
+   * Absolute path to root directory of imported media files
+   **/
+  get mediaPath() {
+    return path.join(this.session.basePath, 'media');
+  }
+
+  /**
+   * Either start or continue the import operation from its most recent point
+   **/
   async run() {
     if (this._active) {
       console.warn(
@@ -93,47 +130,46 @@ export class AssetImportOperation implements IngestSession {
     this._active = true;
 
     try {
-      if (this.session.phase === ImportPhase.READ_METADATA) {
+      if (this.session.phase === IngestPhase.READ_METADATA) {
         await this.readMetadata();
       }
-      if (this.session.phase === ImportPhase.READ_FILES) {
+      if (this.session.phase === IngestPhase.READ_FILES) {
         await this.readMediaFiles();
       }
     } finally {
       this._active = false;
       this.ingestService.emit('importRunCompleted', this);
     }
-
-    return this;
   }
 
+  /**
+   * Abort any pending tasks for the ingest operation.
+   **/
   async teardown() {
     this._active = false;
   }
 
-  /** Read all metadata files into the database */
+  /**
+   * Read all metadata files under `basePath` into the database and stage them for import
+   **/
   async readMetadata() {
-    if (!this._active) {
-      return;
-    }
-
     this.emitStatus();
 
     await this.archive.useDb(async (db) => {
       await this.readDirectoryMetadata(this.metadataPath);
 
-      this.session.phase = ImportPhase.READ_FILES;
+      this.session.phase = IngestPhase.READ_FILES;
       await db.persistAndFlush(this.session);
       this.emitStatus();
     });
   }
 
-  /** Read all metadata files into the database under a path */
+  /**
+   * Read all metadata files under a specified path into the database and stage them for import
+   *
+   * @param currentPath Directory to traverse for files to ignest
+   */
   async readDirectoryMetadata(currentPath: string) {
-    if (!this._active) {
-      return;
-    }
-
     for (const item of await readdir(currentPath, { withFileTypes: true })) {
       if (!this._active) {
         return;
@@ -149,24 +185,28 @@ export class AssetImportOperation implements IngestSession {
       }
 
       if (
-        AssetImportOperation.SPREADSHEET_TYPES.includes(path.extname(item.name))
+        AssetIngestOperation.SPREADSHEET_TYPES.includes(path.extname(item.name))
       ) {
         await this.readMetadataSheet(path.join(currentPath, item.name));
       }
     }
   }
 
-  /** Read a metadata file into the database and move it to the `READ_FILES` phase */
+  /**
+   * Read a metadata json file into the database and move it to the `READ_FILES` phase
+   *
+   * @param jsonPath Absolute path to a json file of metadata
+   **/
   async readJsonMetadata(jsonPath: string) {
     const contents = MetadataFileSchema.safeParse(
-      JSON.parse(await readFile(jsonPath, 'utf8'))
+      SecureJSON.parse(await readFile(jsonPath, 'utf8'))
     );
 
     const relativePath = path.relative(this.metadataPath, jsonPath);
 
     if (!contents.success) {
       await this.archive.useDb((db) => {
-        this.session.phase = ImportPhase.ERROR;
+        this.session.phase = IngestPhase.ERROR;
         db.persistAndFlush(this.session);
       });
       return;
@@ -177,6 +217,11 @@ export class AssetImportOperation implements IngestSession {
     await this.readMetadataObject(metadata, files, relativePath);
   }
 
+  /**
+   * Read all metadata rows from a spreadsheet into the database and move it to the `READ_FILES` phase
+   *
+   * @param sheetPath Absolute path to a spreadsheet of metadata
+   **/
   async readMetadataSheet(sheetPath: string) {
     const workbook = xlsx.readFile(sheetPath);
     const relativePath = path.relative(this.metadataPath, sheetPath);
@@ -196,17 +241,20 @@ export class AssetImportOperation implements IngestSession {
     }
   }
 
-  async readMetadataObject(
-    metadata: Dict,
-    files: string[],
-    relativePath: string
-  ) {
+  /**
+   * Read a single asset's metadata into the database and move it to the `READ_FILES` phase
+   *
+   * @param metadata Record of metadata to import
+   * @param files Array of paths to media files (relative to `mediaPath`) to import
+   * @param locator Unique string representing the location (path, path + line number, etc) this item was imported from
+   */
+  async readMetadataObject(metadata: Dict, files: string[], locator: string) {
     await this.archive.useDbTransaction(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
       const fileRepository = db.getRepository(FileImport);
 
       const exists = !!(await assetsRepository.count({
-        path: relativePath,
+        path: locator,
         session: this.session
       }));
       if (exists) {
@@ -215,9 +263,9 @@ export class AssetImportOperation implements IngestSession {
 
       const asset = assetsRepository.create({
         metadata,
-        path: relativePath,
+        path: locator,
         session: this.session,
-        phase: ImportPhase.READ_FILES
+        phase: IngestPhase.READ_FILES
       });
       assetsRepository.persist(asset);
 
@@ -238,17 +286,17 @@ export class AssetImportOperation implements IngestSession {
    * For every asset in the `READ_FILES' phase:
    *
    * - Ensure that the media file it references exists and is a supported format.
-   * - Resolve the media files it references and load it into the archive.
-   * - Associate the media with the
+   * - Resolve the media files it references and load them into the archive.
+   * - Associate the media files with the imported asset.
    **/
   async readMediaFiles() {
     await this.archive.useDb(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
 
-      this._totalFiles = await this.queryFiles(db).getCount();
+      this._totalFiles = await this.queryImportedFiles(db).getCount();
 
       // Assume a file is read if it either has an error or a media file
-      this._filesRead = await this.queryFiles(db)
+      this._filesRead = await this.queryImportedFiles(db)
         .where({
           $or: [{ media: { $ne: null } }, { error: { $ne: null } }]
         })
@@ -258,7 +306,7 @@ export class AssetImportOperation implements IngestSession {
 
       const assets = await assetsRepository.find({
         session: this.session,
-        phase: ImportPhase.READ_FILES
+        phase: IngestPhase.READ_FILES
       });
 
       for (const asset of assets) {
@@ -267,25 +315,22 @@ export class AssetImportOperation implements IngestSession {
         }
 
         await this.readAssetMediaFiles(asset);
-        asset.phase = ImportPhase.COMPLETED;
+        asset.phase = IngestPhase.COMPLETED;
 
         await db.persistAndFlush(asset);
       }
 
-      this.session.phase = ImportPhase.COMPLETED;
+      this.session.phase = IngestPhase.COMPLETED;
       await db.persistAndFlush(this.session);
       this.emitStatus();
     });
   }
 
-  queryFiles(db: EntityManager) {
-    return db
-      .createQueryBuilder(FileImport)
-      .join('asset', 'asset')
-      .where({ asset: { session_id: this.session.id } });
-  }
-
-  /** Ingest all metadata files under a path */
+  /**
+   * Ingest all media files referenced by an asset
+   *
+   * @param asset Imported asset to find media files for
+   **/
   async readAssetMediaFiles(asset: AssetImportEntity) {
     await this.archive.useDb(async (db) => {
       for (const file of await asset.files.loadItems()) {
@@ -314,7 +359,7 @@ export class AssetImportOperation implements IngestSession {
           file.media = res.value;
           db.persist(file);
         } catch {
-          file.error = FileImportError.UNEXPECTED_ERROR;
+          file.error = IngestError.UNEXPECTED_ERROR;
           db.persist(file);
           continue;
         }
@@ -322,17 +367,25 @@ export class AssetImportOperation implements IngestSession {
     });
   }
 
-  /** Absolute path to root directory of imported metadata */
-  get metadataPath() {
-    return path.join(this.session.basePath, 'metadata');
+  /**
+   * Query the files imported by this ingest session
+   *
+   * @param db Database entity manager to use for running the query
+   * @returns QueryBuilder of `FileImport` entities representing all files imported by this session
+   */
+  queryImportedFiles(db: EntityManager) {
+    return db
+      .createQueryBuilder(FileImport)
+      .join('asset', 'asset')
+      .where({ asset: { session_id: this.session.id } });
   }
 
-  /** Absolute path to root directory of imported media files */
-  get mediaPath() {
-    return path.join(this.session.basePath, 'media');
-  }
-
-  emitStatus(affectedIds: string[] = []) {
+  /**
+   * Convenience for emitting a `status` event for this ingest operation.
+   *
+   * @param affectedIds Asset ids affected by the current change.
+   */
+  private emitStatus(affectedIds: string[] = []) {
     this.ingestService.emit('status', {
       archive: this.archive,
       assetIds: affectedIds,

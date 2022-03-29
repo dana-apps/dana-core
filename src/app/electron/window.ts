@@ -1,8 +1,9 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { uniqueId } from 'lodash';
+import isDev from 'electron-is-dev';
 
 import { FrontendConfig } from '../../common/frontend-config';
-import { getFrontendPlatform } from '../../common/platform';
+import { getFrontendPlatform } from '../util/platform';
 import { FRONTEND_SOURCE_URL, SHOW_DEVTOOLS } from './config';
 import { getResourcePath } from './resources';
 
@@ -49,6 +50,7 @@ export function createFrontendWindow({ title, config }: CreateFrontendWindow) {
     webPreferences: {
       additionalArguments: [
         '--frontend-config=' + JSON.stringify(mergedConfig)
+        // ...(isDev ? ['] : [])
       ],
       webSecurity: true,
       preload: getResourcePath('preload/browser-preload.js')
@@ -82,6 +84,9 @@ function showWindowAfterFirstRender(
 
     if (SHOW_DEVTOOLS) {
       window.maximize();
+
+      // Showing devtools immediately after loading the window seems to break devtools and result in a blank pane.
+      // Wait for a few seconds before opening in order to keep electron happy.
       setTimeout(() => {
         window.webContents.openDevTools();
       }, 2000);

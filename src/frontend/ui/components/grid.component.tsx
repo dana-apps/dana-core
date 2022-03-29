@@ -1,6 +1,6 @@
 /** @jsxImportSource theme-ui */
 
-import { ReactElement, useCallback, useEffect, useMemo, useRef } from 'react';
+import { FC, useCallback, useMemo, useRef } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
 import {
@@ -15,20 +15,21 @@ import { last, sumBy } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
+  /** Data to present */
   data: ListCursor<T>;
+
+  /** Specification of the grid columns */
   columns: GridColumn<T>[];
+
+  /** Font size used to size grid rows and set their inner font size */
   fontSize?: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface GridColumn<T extends Resource = Resource, Val = any> {
-  id: string;
-  label?: string;
-  getData: (x: T) => Val;
-  render: (x: Val) => ReactElement;
-  width?: number;
-}
-
+/**
+ * Spreadsheet-style virtualized datagrid component.
+ *
+ * Suitable for displaying 1000s of rows.
+ */
 export function DataGrid<T extends Resource>({
   data,
   columns,
@@ -143,7 +144,7 @@ export function DataGrid<T extends Resource>({
                       }}
                       width={width}
                     >
-                      {Cell}
+                      {CellWrapper}
                     </Grid>
                   </div>
                 )}
@@ -156,12 +157,34 @@ export function DataGrid<T extends Resource>({
   );
 }
 
-interface CellData<T extends Resource> {
-  rows: T[];
-  columns: GridColumn<T>[];
+/**
+ * Specify data access and presentation for a grid row.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface GridColumn<T extends Resource = Resource, Val = any> {
+  /** Unique id of the column */
+  id: string;
+
+  /** Title of the column. If not given, the column will have no title */
+  label?: string;
+
+  /** Title of the column. If not given, the column will have no title */
+  getData: (x: T) => Val;
+
+  /** Presentation component for the cell */
+  cell: DataGridCell<Val>;
+
+  /** Explicit size for the cell in pixels. If not provided, will be auto-sized by the view */
+  width?: number;
 }
 
-function Cell<T extends Resource>({
+/** Presentation component for a datagrid */
+export type DataGridCell<Val = unknown> = FC<{ value: Val }>;
+
+/**
+ * Internal. Extract cell data from context and render using the cell component.
+ */
+function CellWrapper<T extends Resource>({
   data: { rows, columns },
   style,
   columnIndex,
@@ -171,10 +194,12 @@ function Cell<T extends Resource>({
   const column = columns[columnIndex];
   const sx = {
     bg: rowIndex % 2 === 0 ? 'background' : 'foreground',
-    borderLeft: '1px solid var(--theme-ui-colors-border)',
     py: 1,
     px: 2,
-    height: '100%'
+    height: '100%',
+    '&:not:first-of-type': {
+      borderLeft: '1px solid var(--theme-ui-colors-border)'
+    }
   };
 
   if (!colData) {
@@ -183,9 +208,13 @@ function Cell<T extends Resource>({
 
   return (
     <div sx={sx} style={style}>
-      {column.render(column.getData(colData))}
+      <column.cell value={column.getData(colData)} />
     </div>
   );
 }
 
-export const TextCell = (value: string) => <>{value}</>;
+/** Data and context for grid cells */
+interface CellData<T extends Resource> {
+  rows: T[];
+  columns: GridColumn<T>[];
+}

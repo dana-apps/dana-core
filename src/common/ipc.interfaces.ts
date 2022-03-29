@@ -1,6 +1,5 @@
 import z from 'zod';
 import { Result } from './util/error';
-import { Dict } from './util/types';
 
 /**
  * Frontend interface for IPC bindings.
@@ -95,11 +94,3 @@ export type ErrorType<T extends RpcInterface<unknown, unknown, unknown>> =
 export type EventType<T extends EventInterface<unknown>> = z.TypeOf<
   NonNullable<T['type']>
 >;
-
-export interface EventDispatcher {
-  emit<Event>(
-    descriptor: EventInterface<Event>,
-    event: Event,
-    targetArchiveId?: string
-  ): void;
-}

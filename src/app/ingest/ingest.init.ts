@@ -6,7 +6,7 @@ import {
   ListIngestAssets,
   ListIngestSession,
   StartIngest,
-  StartIngestSessionError
+  StartIngestError
 } from '../../common/ingest.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { error, ok, okIfExists } from '../../common/util/error';
@@ -16,6 +16,11 @@ import { MediaFileService } from '../media/media-file.service';
 import { ArchiveService } from '../package/archive.service';
 import { AssetIngestService } from './asset-ingest.service';
 
+/**
+ * Starts the ingest-related application services and binds them to the frontend.
+ *
+ * @returns Service instances for managing ingested assets and media.
+ */
 export async function initIngest(
   router: ElectronRouter,
   archiveService: ArchiveService,
@@ -24,14 +29,17 @@ export async function initIngest(
 ) {
   const assetIngest = new AssetIngestService(mediaService, assetService);
 
+  // When an archive opens, start managing its ingest operations
   archiveService.on('opened', ({ archive }) => {
     assetIngest.addArchive(archive);
   });
 
+  // When an archive closes, stop managing its ingest operations
   archiveService.on('closed', ({ archive }) => {
     assetIngest.removeArchive(archive);
   });
 
+  // Notify the frontend about state changes
   assetIngest.on('status', ({ archive, session, assetIds }) => {
     router.emit(
       ChangeEvent,
@@ -62,7 +70,7 @@ export async function initIngest(
       basePath = openRes.filePaths[0];
 
       if (!basePath) {
-        return error(StartIngestSessionError.CANCELLED);
+        return error(StartIngestError.CANCELLED);
       }
     }
 

@@ -2,7 +2,7 @@
 
 import { FC, useCallback } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Upload } from 'react-bootstrap-icons';
+import { FolderPlus } from 'react-bootstrap-icons';
 import { Box, Flex, Text } from 'theme-ui';
 
 import { ListIngestSession, StartIngest } from '../../common/ingest.interfaces';
@@ -10,20 +10,22 @@ import { Resource } from '../../common/resource';
 import { Result } from '../../common/util/error';
 import { useListAll, useRPC } from '../ipc/ipc.hooks';
 import { ToolbarButton } from '../ui/components/atoms.component';
-import { Dropzone } from '../ui/components/dropzone.component';
 import {
-  ListItem,
-  ListSection,
-  ScreenLayout
+  NavListItem,
+  NavListSection,
+  ArchiveWindowLayout
 } from '../ui/components/page-layouts.component';
-import { WindowInset } from '../ui/window';
+import { WindowDragArea, WindowInset } from '../ui/window';
 
+/**
+ * The wrapper component for an archive window. Shows the screen's top-level navigation and renders the active route.
+ */
 export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const imports = useListAll(ListIngestSession, () => ({}), []);
-  const acceptUpload = useAcceptUpload();
+  const acceptImport = useStartImport();
 
   return (
-    <ScreenLayout
+    <ArchiveWindowLayout
       sidebar={
         <>
           <Box sx={{ bg: 'gray1', height: '100%' }}>
@@ -31,26 +33,22 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
 
             {/* Import Sessions */}
             {renderIfPresent(imports, (imports) => (
-              <ListSection label="Imports">
+              <NavListSection title="Imports">
                 {imports.map((session) => (
-                  <NavLink
+                  <NavListItem
                     key={session.id}
-                    className="link-reset"
-                    to={`/ingest/${session.id}`}
-                  >
-                    {({ isActive }) => (
-                      <ListItem label={session.title} active={isActive} />
-                    )}
-                  </NavLink>
+                    title={session.title}
+                    path={`/ingest/${session.id}`}
+                  />
                 ))}
-              </ListSection>
+              </NavListSection>
             ))}
           </Box>
         </>
       }
       main={
         <>
-          <WindowInset
+          <WindowDragArea
             sx={{
               bg: 'gray1',
               display: 'flex',
@@ -61,9 +59,9 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
           >
             <Text sx={{ fontWeight: 600 }}>{title}</Text>
 
-            <Flex
+            <WindowDragArea
               sx={{
-                px: 5,
+                px: 6,
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'flex-end',
@@ -74,12 +72,12 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
             >
               <ToolbarButton
                 sx={{ color: 'primaryContrast' }}
-                icon={Upload}
-                label="Upload Files"
-                onClick={acceptUpload}
+                icon={FolderPlus}
+                label="Import Assets"
+                onClick={acceptImport}
               />
-            </Flex>
-          </WindowInset>
+            </WindowDragArea>
+          </WindowDragArea>
 
           <Outlet />
         </>
@@ -88,11 +86,16 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   );
 };
 
-function useAcceptUpload() {
+/**
+ * Return a callback that starts a new import section and navigates to it if starts successfuly.
+ *
+ * TODO: Show an error if it fails.
+ */
+function useStartImport() {
   const navigate = useNavigate();
   const rpc = useRPC();
 
-  const handleDrop = useCallback(async () => {
+  const startImport = useCallback(async () => {
     const session = await rpc(StartIngest, {});
 
     if (session.status === 'ok') {
@@ -100,24 +103,31 @@ function useAcceptUpload() {
     }
   }, [navigate, rpc]);
 
-  return handleDrop;
+  return startImport;
 }
 
+/**
+ * Helper for the navlist's sections, which we want to hide if their query returns an empty result.
+ *
+ * @param queryResult Result returned by the query.
+ * @param fn Render function called with the result items if the query succeeds and is non-empty
+ * @returns Rendered output
+ */
 function renderIfPresent<T extends Resource[], Return>(
-  resource: Result<T> | undefined,
+  queryResult: Result<T> | undefined,
   fn: (x: T) => Return
 ) {
-  if (!resource) {
+  if (!queryResult) {
     return null;
   }
 
-  if (resource.status === 'error') {
+  if (queryResult.status === 'error') {
     return null;
   }
 
-  if (resource.value.length === 0) {
+  if (queryResult.value.length === 0) {
     return null;
   }
 
-  return fn(resource.value);
+  return fn(queryResult.value);
 }

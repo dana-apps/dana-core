@@ -144,7 +144,7 @@ export function useList<T extends Resource, Q, Err>(
   const [active, setActive] = useState(false);
 
   const scheduler = useMemo(() => new Scheduler(), []);
-  const events = useMemo(() => new EventEmitter<{ change: [] }>(), []);
+  const events = useMemo(() => new EventEmitter<ListCursorEvents>(), []);
 
   const paginationToken = useRef<{ next?: string }>();
   const firstLoad = useRef(true);
@@ -252,6 +252,7 @@ export function useListAll<T extends Resource, Q, Err>(
   deps: unknown[]
 ): Result<T[]> | undefined {
   const rpc = useRPC();
+  const { ipc } = useIpc();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const q = useMemo(query, deps);
@@ -276,17 +277,41 @@ export function useListAll<T extends Resource, Q, Err>(
     };
 
     fetchAll().then(setData);
-  }, [q, resource, rpc]);
+
+    return ipc.listen(ChangeEvent, (event) => {
+      if (event.type === resource.id) {
+        fetchAll().then(setData);
+      }
+    });
+  }, [ipc, q, resource, rpc]);
 
   return data;
 }
 
-/** Represents an ongoing list query */
+/**
+ * Represents a paginated list query suitable for display in a virtualized list view.
+ **/
 export interface ListCursor<T extends Resource = Resource, Err = unknown> {
+  /** Error that ocurred while making the query */
   error?: Err;
+
+  /** The total number of values represented by the query */
   totalCount: number;
-  events: EventEmitter<{ change: [] }>;
+
+  /** Events relating to the query */
+  events: EventEmitter<ListCursorEvents>;
+
+  /** All items fetched so far */
   items: T[];
+
+  /** Extend the cursor's range over the query */
   fetchMore: (start: number, end: number) => Promise<void>;
+
+  /** True if data is currently being fetched */
   active: boolean;
+}
+
+interface ListCursorEvents {
+  /** Emitted when the query is invalidated and any downstream cache should be cleared. */
+  change: [];
 }

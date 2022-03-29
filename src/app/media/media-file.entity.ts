@@ -8,12 +8,15 @@ export class MediaFile {
   @PrimaryKey({ type: 'string' })
   id = randomUUID();
 
+  /** Hash of the file contents */
   @Property({ type: 'string', nullable: false })
   sha256!: string;
 
+  /** Mime type of the media file */
   @Property({ type: 'string', nullable: false })
   mimeType!: string;
 
-  @ManyToOne(() => AssetEntity, { nullable: true })
+  /** Asset that owns the media file. This will be undefined for uncommited imports */
+  @ManyToOne(() => AssetEntity, { nullable: true, onDelete: 'set null' })
   asset?: Asset;
 }

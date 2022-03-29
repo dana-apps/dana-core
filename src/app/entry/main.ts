@@ -33,24 +33,22 @@ async function main() {
     electronApp.exit();
   });
 
-  initDevtools();
-  initSystray();
-  initWindows();
-  initArchive();
-  initAutoOpen();
+  await initDevtools();
+  await initSystray();
+  await initWindows();
+  await initArchives();
   await showInitialScreen();
 
-  function initArchive() {
+  /**
+   * Setup electon bindings for archives.
+   */
+  async function initArchives() {
     // When an archive document is opened, show its window.
     app.archiveService.on('opened', ({ archive }) => {
       showArchiveWindow(archive);
     });
 
-    electronApp.getPath('userData');
-  }
-
-  async function initAutoOpen() {
-    // When an archive document is opened, add it to the autoload array
+    // When an archive document is opened, add it to the autoload array.
     app.archiveService.on('opened', async ({ archive }) => {
       updateUserConfig((config) => {
         config.autoload[archive.location] = { autoload: true };
@@ -58,7 +56,11 @@ async function main() {
     });
   }
 
-  function initWindows() {
+  /**
+   * Ensure that all opened windows are registered/unregistered with the ipc router and setup behaviour when all
+   * windows are closed.
+   */
+  async function initWindows() {
     // Move to 'background' mode when all windows are closed.
     electronApp.on('window-all-closed', () => {
       electronApp.dock?.hide();
@@ -66,6 +68,9 @@ async function main() {
 
     // Ensure windows are added to and removed from router when they are opened and closed.
     electronApp.on('browser-window-created', (_, window) => {
+      // Move to 'foreground' mode.
+      electronApp.dock?.show();
+
       app.router.addWindow(window.webContents);
 
       window.on('close', () => {
@@ -74,7 +79,10 @@ async function main() {
     });
   }
 
-  function showArchiveWindow(archive: ArchivePackage) {
+  /**
+   * Show the window for an archive.
+   */
+  async function showArchiveWindow(archive: ArchivePackage) {
     const window = createFrontendWindow({
       title: path.basename(archive.location, path.extname(archive.location)),
       config: { documentId: archive.id }
@@ -87,23 +95,30 @@ async function main() {
     });
   }
 
+  /**
+   * Restore the previously opened windows, or else show the first launch window.
+   */
   async function showInitialScreen() {
-    const settings = await getUserConfig();
-    let hasOpenedSomething = false;
+    let hasAutoloaded = false;
 
+    // Open any autoloaded archives
+    const settings = await getUserConfig();
     for (const [location, opts] of Object.entries(settings.autoload)) {
       if (opts.autoload) {
+        hasAutoloaded = true;
         app.archiveService.openArchive(location);
-        hasOpenedSomething = true;
       }
     }
 
-    if (!hasOpenedSomething) {
+    if (!hasAutoloaded) {
       showLandingScreen();
     }
   }
 
-  function showLandingScreen() {
+  /**
+   * Show the 'first launch' window if we have nothing else to show.
+   */
+  async function showLandingScreen() {
     if (newArchiveWindow) {
       newArchiveWindow.focus();
       return;
@@ -119,7 +134,10 @@ async function main() {
     newArchiveWindow = window;
   }
 
-  function initSystray() {
+  /**
+   * Setup the systray menu and bind its event handlers.
+   */
+  async function initSystray() {
     const systray = getSystray();
     systray.on('click', showInitialScreen);
 
@@ -138,7 +156,7 @@ async function main() {
   }
 
   /** If we're running in dev mode, show the de */
-  function initDevtools() {
+  async function initDevtools() {
     if (SHOW_DEVTOOLS) {
       const {
         default: installExtension,

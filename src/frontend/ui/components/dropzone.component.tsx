@@ -1,20 +1,20 @@
-import { compact } from 'lodash';
-import React, { FC, useState } from 'react';
+/** @jsxImportSource theme-ui */
+
+import { FC, useState } from 'react';
 import { DropzoneOptions, useDropzone } from 'react-dropzone';
 import { Box, BoxProps } from 'theme-ui';
 
 interface DropzoneProps extends BoxProps {
-  onAcceptFiles: (items: FileSystemEntry[]) => void;
+  onAcceptFiles: (items: File[]) => void;
   dropzoneOptions?: Omit<
     DropzoneOptions,
-    | 'onDrop'
-    | 'onDragEnter'
-    | 'onDragLeave'
-    | 'onDropAccepted'
-    | 'useFsAccessApi'
+    'onDrop' | 'onDragEnter' | 'onDragLeave' | 'onDropAccepted'
   >;
 }
 
+/**
+ * Dropzone with themed drop-target affordances.
+ */
 export const Dropzone: FC<DropzoneProps> = ({
   onAcceptFiles,
   children,
@@ -26,19 +26,9 @@ export const Dropzone: FC<DropzoneProps> = ({
   const { getRootProps, getInputProps } = useDropzone({
     noClick: true,
     ...dropzoneOptions,
-    useFsAccessApi: true,
 
-    onDrop: (accept, reject, event) => {
-      if ('dataTransfer' in event) {
-        const { dataTransfer } = event as { dataTransfer: DataTransfer };
-        const entries = compact(
-          Array.from(dataTransfer.items).map((x) => x.webkitGetAsEntry())
-        );
-
-        if (entries.length > 0) {
-          onAcceptFiles(entries);
-        }
-      }
+    onDropAccepted: (files) => {
+      onAcceptFiles(files);
       setOver(false);
     },
     onDragOver: (e) => {

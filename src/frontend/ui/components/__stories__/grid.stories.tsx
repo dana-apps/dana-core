@@ -9,6 +9,7 @@ import { Box } from 'theme-ui';
 import { Resource } from '../../../../common/resource';
 import { ListCursor } from '../../../ipc/ipc.hooks';
 import { Window } from '../../window';
+import { TextCell } from '../grid-cell.component';
 import { DataGrid, GridColumn } from '../grid.component';
 
 export default {
@@ -52,13 +53,13 @@ export const ExampleDataGrid = () => {
         id: 'name',
         label: 'Name',
         getData: (x: GridDatum) => x.name,
-        render: (data: string) => <Box>{data}</Box>
+        cell: TextCell
       },
       {
         id: 'favouriteDog',
         label: 'Dog',
         getData: (x: GridDatum) => x.favouriteDog,
-        render: (data: string) => <Box>{data}</Box>
+        cell: TextCell
       }
     ],
     []

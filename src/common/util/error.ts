@@ -19,6 +19,7 @@ export function error<Err>(error: Err): ErrorResult<Err> {
   return { status: 'error', error };
 }
 
+/** Returns OkResult if a value is defined and non-null, otherwise returns an error object */
 export function okIfExists<T>(
   value: T | undefined | null
 ): Result<T, FetchError> {
@@ -36,5 +37,6 @@ export function okIfExists<T>(
 }
 
 export enum FetchError {
+  /** The requested object does not exist */
   DOES_NOT_EXIST = 'DOES_NOT_EXIST'
 }

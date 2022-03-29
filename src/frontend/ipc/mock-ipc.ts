@@ -21,6 +21,9 @@ type MockedResult<Req, Res, Err> = (
   paginationToken?: string
 ) => Promise<Result<Res, Err>>;
 
+/**
+ * Mock instance of FrontendIpc for tests.
+ */
 export class MockIpc implements FrontendIpc {
   private events = new EventEmitter();
   private rpcCalls: MockedIpcMethod[] = [];
