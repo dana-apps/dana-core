@@ -22,7 +22,7 @@ import {
 import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { compact } from 'lodash';
-import { ObjectQuery, QBFilterQuery } from '@mikro-orm/core';
+import { ObjectQuery } from '@mikro-orm/core';
 
 /**
  * Encapsulates an import operation.

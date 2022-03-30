@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useCallback } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { FolderPlus } from 'react-bootstrap-icons';
 import { Box, Flex, Text } from 'theme-ui';
 

@@ -1,6 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { uniqueId } from 'lodash';
-import isDev from 'electron-is-dev';
 
 import { FrontendConfig } from '../../common/frontend-config';
 import { getFrontendPlatform } from '../util/platform';

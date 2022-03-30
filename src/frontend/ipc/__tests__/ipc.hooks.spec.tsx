@@ -12,7 +12,6 @@ import { RpcInterface } from '../../../common/ipc.interfaces';
 import { IpcContext, useGet, useList } from '../ipc.hooks';
 import { MockIpc } from '../mock-ipc';
 import { ChangeEvent, ResourceList } from '../../../common/resource';
-import { required } from '../../../common/util/assert';
 
 const ExampleResource = RpcInterface({
   id: 'example-resource',

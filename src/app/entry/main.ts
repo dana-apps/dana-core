@@ -1,6 +1,5 @@
 import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
-import { z } from 'zod';
 import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
 import {

@@ -4,7 +4,6 @@ import faker from '@faker-js/faker';
 import { EventEmitter } from 'eventemitter3';
 import { noop, times } from 'lodash';
 import { useMemo, useState } from 'react';
-import { Box } from 'theme-ui';
 
 import { Resource } from '../../../../common/resource';
 import { ListCursor } from '../../../ipc/ipc.hooks';

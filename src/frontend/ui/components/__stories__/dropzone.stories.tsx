@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Text } from 'theme-ui';
 import { Dropzone } from '../dropzone.component';
 

@@ -1,4 +1,4 @@
-import { dialog } from 'electron';
+import { BrowserWindow, dialog } from 'electron';
 import {
   CancelIngestSession,
   CommitIngestSession,
@@ -60,12 +60,16 @@ export async function initIngest(
 
   router.bindArchiveRpc(StartIngest, async (archive, { basePath }) => {
     if (!basePath) {
-      const openRes = await dialog.showOpenDialog(undefined as any, {
-        title: 'Import assets',
-        message: 'Select a directory of assets and metadata to import',
-        properties: ['openDirectory'],
-        buttonLabel: 'Import'
-      });
+      // Electron's types are wrong – it's fine for this to be undefined
+      const openRes = await dialog.showOpenDialog(
+        undefined as unknown as BrowserWindow,
+        {
+          title: 'Import assets',
+          message: 'Select a directory of assets and metadata to import',
+          properties: ['openDirectory'],
+          buttonLabel: 'Import'
+        }
+      );
 
       basePath = openRes.filePaths[0];
 
