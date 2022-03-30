@@ -194,20 +194,6 @@ describe('AssetImportOperation', () => {
     expect(assets.total).toBe(2);
     expect(assets.items.map((item) => item.media)).toHaveLength(2);
 
-    // Assigns metadata to assets
-    const metadata = await Promise.all(assets.items.map((x) => x.metadata));
-
-    expect(metadata).toMatchObject(
-      expect.arrayContaining([
-        expect.objectContaining({
-          property: 'value1'
-        }),
-        expect.objectContaining({
-          property: 'value2'
-        })
-      ])
-    );
-
     // Emits change events for each created assets
     expect(assetEvents.flatMap((event) => event.created)).toHaveLength(2);
   });

@@ -22,6 +22,7 @@ import {
 import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { compact } from 'lodash';
+import { ObjectQuery, QBFilterQuery } from '@mikro-orm/core';
 
 /**
  * Encapsulates an import operation.
@@ -43,7 +44,7 @@ export class AssetIngestOperation implements IngestSession {
   private _totalFiles?: number;
   private _filesRead?: number;
   private _active = false;
-  private log = new Logger({ name: 'AssetIngestOperation' });
+  private log = new Logger({ name: 'AssetIngestOperation: ' + this.id });
 
   /** Supported file extensions for metadata sheets */
   private static SPREADSHEET_TYPES = ['.xlsx', '.csv', '.xls', '.ods'];
@@ -123,13 +124,15 @@ export class AssetIngestOperation implements IngestSession {
    **/
   async run() {
     if (this._active) {
-      console.warn(
+      this.log.warn(
         'Attempting to call run() on an ingest sesison that is already running.'
       );
       return;
     }
 
     this._active = true;
+
+    this.log.info('Starting session');
 
     try {
       if (this.session.phase === IngestPhase.READ_METADATA) {
@@ -142,6 +145,8 @@ export class AssetIngestOperation implements IngestSession {
       this._active = false;
       this.ingestService.emit('importRunCompleted', this);
     }
+
+    this.log.info('Completed session');
   }
 
   /**
@@ -307,11 +312,9 @@ export class AssetIngestOperation implements IngestSession {
       this._totalFiles = await this.queryImportedFiles(db).getCount();
 
       // Assume a file is read if it either has an error or a media file
-      this._filesRead = await this.queryImportedFiles(db)
-        .where({
-          $or: [{ media: { $ne: null } }, { error: { $ne: null } }]
-        })
-        .getCount();
+      this._filesRead = await this.queryImportedFiles(db, {
+        $or: [{ media: { $ne: null } }, { error: { $ne: null } }]
+      }).getCount();
 
       this.emitStatus();
 
@@ -345,6 +348,8 @@ export class AssetIngestOperation implements IngestSession {
    * @param asset Imported asset to find media files for
    **/
   async readAssetMediaFiles(asset: AssetImportEntity) {
+    this.log.info('Read media file for asset', asset.path);
+
     await this.archive.useDb(async (db) => {
       for (const file of await asset.files.loadItems()) {
         if (!this._active) {
@@ -393,11 +398,11 @@ export class AssetIngestOperation implements IngestSession {
    * @param db Database entity manager to use for running the query
    * @returns QueryBuilder of `FileImport` entities representing all files imported by this session
    */
-  queryImportedFiles(db: EntityManager) {
+  queryImportedFiles(db: EntityManager, where: ObjectQuery<FileImport> = {}) {
     return db
       .createQueryBuilder(FileImport)
       .join('asset', 'asset')
-      .where({ asset: { session_id: this.session.id } });
+      .where({ asset: { session_id: this.session.id }, ...where });
   }
 
   /**

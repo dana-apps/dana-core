@@ -8,6 +8,8 @@ import {
 import { AutoPath } from '@mikro-orm/core/typings';
 import { SqlEntityManager, SqliteDriver } from '@mikro-orm/sqlite';
 import path from 'path';
+import { safeParse } from 'secure-json-parse';
+import { z } from 'zod';
 
 import { PaginatedResourceList, Resource } from '../../common/resource';
 
@@ -77,30 +79,44 @@ export class ArchivePackage {
     query?: FilterQuery<T>,
     opts: string | ListOpts<T, P> = {}
   ) {
-    const { paginationToken, populate } =
-      typeof opts === 'string'
-        ? ({ paginationToken: opts } as ListOpts<T>)
-        : opts;
+    const {
+      paginationToken,
+      populate,
+      pageSize: defaultPageSize = 100
+    } = typeof opts === 'string'
+      ? ({ paginationToken: opts } as ListOpts<T>)
+      : opts;
 
     return this.useDb(async (db): Promise<PaginatedResourceList<T>> => {
-      const PAGE_SIZE = 100;
-      const pageNumber = opts ? Number(paginationToken) : 0;
+      const { pageNumber, pageSize } = paginationToken
+        ? decodePaginationToken(paginationToken)
+        : { pageNumber: 0, pageSize: defaultPageSize };
 
       const [items, count] = await db.findAndCount(type, query, {
-        offset: pageNumber * PAGE_SIZE,
-        limit: PAGE_SIZE,
+        offset: pageNumber * pageSize,
+        limit: pageSize,
         populate: populate
       });
 
-      const lastPage = Math.floor(count / PAGE_SIZE);
+      const lastPage = Math.floor(count / pageSize);
+
+      const currentPageToken = encodePaginationToken({ pageNumber, pageSize });
+      const nextPageToken =
+        pageNumber >= lastPage
+          ? undefined
+          : encodePaginationToken({ pageNumber: pageNumber + 1, pageSize });
+      const prevPageToken =
+        pageNumber === 0
+          ? undefined
+          : encodePaginationToken({ pageNumber: pageNumber - 1, pageSize });
 
       return new PaginatedResourceList(
         (paginationToken) => this.list(type, query, paginationToken),
         count,
         items,
-        String(pageNumber),
-        pageNumber >= lastPage ? undefined : String(pageNumber + 1),
-        pageNumber === 0 ? undefined : '0'
+        currentPageToken,
+        nextPageToken,
+        prevPageToken
       );
     });
   }
@@ -112,6 +128,29 @@ export class ArchivePackage {
 }
 
 interface ListOpts<T extends AnyEntity<T>, P extends string = never> {
+  /** Token for paginating over multiple pages */
   paginationToken?: string;
+
+  /** Page size. Ignored if paginationToken is provided. */
+  pageSize?: number;
+
+  /** Populate option for eagerly fetching relationships */
   populate?: Array<AutoPath<T, P>>;
 }
+
+/**
+ * State for paginating over multiple pages
+ */
+const PaginationToken = z.object({
+  pageNumber: z.number(),
+  pageSize: z.number()
+});
+type PaginationToken = z.TypeOf<typeof PaginationToken>;
+
+const encodePaginationToken = (token: PaginationToken) => {
+  return Buffer.from(JSON.stringify(token), 'utf8').toString('base64url');
+};
+
+const decodePaginationToken = (token: string): PaginationToken => {
+  return PaginationToken.parse(safeParse(Buffer.from(token, 'base64url')));
+};

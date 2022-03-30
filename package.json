@@ -54,6 +54,7 @@
     "react-window": "^1.8.6",
     "react-window-infinite-loader": "^1.0.7",
     "secure-json-parse": "^2.4.0",
+    "streaming-iterables": "^6.2.0",
     "theme-ui": "^0.12.1",
     "tslog": "^3.3.3",
     "unstated-next": "^1.1.0",
