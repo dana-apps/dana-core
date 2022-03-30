@@ -3,7 +3,7 @@ import { Asset } from '../../common/asset.interfaces';
 import { ResourceList } from '../../common/resource';
 import { MediaFile } from '../media/media-file.entity';
 import { ArchivePackage } from '../package/archive-package';
-import { AssetEntity, AssetStringProperty } from './asset.entity';
+import { AssetEntity } from './asset.entity';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -33,17 +33,6 @@ export class AssetService extends EventEmitter<AssetEvents> {
       const asset = db.create(AssetEntity, {
         mediaFiles: media
       });
-
-      for (const [key, value] of Object.entries(metadata)) {
-        if (typeof value === 'string') {
-          const property = db.create(AssetStringProperty, {
-            asset,
-            key,
-            value
-          });
-          db.persist(property);
-        }
-      }
 
       db.persist(asset);
 
@@ -79,7 +68,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
         AssetEntity,
         {},
         {
-          populate: AssetEntity.MEDIA_AND_METADATA_RELATIONS,
+          populate: ['mediaFiles'],
           paginationToken
         }
       );
@@ -94,7 +83,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
               type: 'image',
               mimeType: file.mimeType
             })),
-            metadata: entity.metadataValues()
+            metadata: {}
           }))
         )
       };

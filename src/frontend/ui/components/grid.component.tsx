@@ -60,7 +60,7 @@ export function DataGrid<T extends Resource>({
   });
 
   return (
-    <Box sx={{ fontSize: 0 }} {...props}>
+    <Box sx={{ fontSize: 0, position: 'relative', minHeight: 0 }} {...props}>
       <AutoSizer>
         {({ height, width }) => {
           const availableWidth = width - sumBy(columns, (c) => c.width ?? 0);

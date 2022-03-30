@@ -96,6 +96,6 @@ export class MediaFileService {
    */
   private getMediaPath(archive: ArchivePackage, mediaFile: MediaFile) {
     const ext = mime.getExtension(mediaFile.mimeType);
-    return path.join(archive.blobPath, mediaFile.id + ext);
+    return path.join(archive.blobPath, mediaFile.id + '.' + ext);
   }
 }

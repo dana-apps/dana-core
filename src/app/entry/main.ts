@@ -19,7 +19,7 @@ async function main() {
 
   /** Setup the business logic of the app */
   const app = await initApp();
-  const assets = initAssets();
+  const assets = initAssets(app.router);
   const media = initMedia();
   await initIngest(
     app.router,

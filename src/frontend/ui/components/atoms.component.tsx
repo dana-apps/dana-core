@@ -86,14 +86,14 @@ export const ToolbarButton: FC<ToolbarButtonProps> = ({
 }) => (
   <Button
     sx={{
+      variant: 'icon',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       bg: 'transparent',
-      color: 'inherit',
+      color: 'black',
       outline: 'none'
     }}
-    variant="icon"
     {...props}
   >
     <Icon size={32} sx={{ pb: 1 }} />

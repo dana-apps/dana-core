@@ -38,7 +38,8 @@ export const theme: Theme = {
     highlightContrast: 'white',
     background: colors.gray2,
     foreground: 'white',
-    primary: '#28108A',
+    primary: colors.blue,
+    primaryContrast: 'white',
     secondary: '#81683E',
     accent: '#008FFF',
     muted: '#818B88'
@@ -48,7 +49,7 @@ export const theme: Theme = {
     selected: '2px solid var(--theme-ui-colors-accent)'
   },
   radii: {
-    control: 0
+    control: 5
   },
   shadows: {
     vertical: '0px 2px 10px 2px rgba(0,0,0,0.1)',
@@ -102,7 +103,10 @@ export const theme: Theme = {
   buttons: {
     primary: {
       ...controlHover,
-      color: 'text',
+      fontSize: 1,
+      p: 3,
+      px: 4,
+      color: 'primaryContrast',
       backgroundColor: 'primary',
       borderRadius: 'control'
     },

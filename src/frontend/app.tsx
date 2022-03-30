@@ -8,6 +8,7 @@ import { OpenArchive } from '../common/interfaces/archive.interfaces';
 
 import { useRPC } from './ipc/ipc.hooks';
 import { ArchiveScreen } from './screens/archive.screen';
+import { CollectionScreen } from './screens/collection.screen';
 import { ArchiveIngestScreen } from './screens/ingest.screen';
 import { WindowInset } from './ui/window';
 
@@ -19,6 +20,7 @@ export const ArchiveWindow: FC<{ title?: string }> = ({ title }) => (
     <Route path="/" element={<ArchiveScreen title={title} />}>
       <Route index element={<></>} />
       <Route path="ingest/:sessionId" element={<ArchiveIngestScreen />} />
+      <Route path="collection" element={<CollectionScreen />} />
     </Route>
   </Routes>
 );

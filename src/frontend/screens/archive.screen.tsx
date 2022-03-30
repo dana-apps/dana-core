@@ -43,11 +43,15 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
                 ))}
               </NavListSection>
             ))}
+
+            <NavListSection title="Collections">
+              <NavListItem title="Main Collection" path="/collection" />
+            </NavListSection>
           </Box>
         </>
       }
       main={
-        <>
+        <Flex sx={{ height: '100%', flexDirection: 'column' }}>
           <WindowDragArea
             sx={{
               bg: 'gray1',
@@ -71,7 +75,6 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
               }}
             >
               <ToolbarButton
-                sx={{ color: 'primaryContrast' }}
                 icon={FolderPlus}
                 label="Import Assets"
                 onClick={acceptImport}
@@ -80,7 +83,7 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
           </WindowDragArea>
 
           <Outlet />
-        </>
+        </Flex>
       }
     />
   );
