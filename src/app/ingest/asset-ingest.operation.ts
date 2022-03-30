@@ -4,6 +4,7 @@ import path from 'path';
 import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
+import { Logger } from 'tslog';
 
 import {
   IngestError,
@@ -42,6 +43,7 @@ export class AssetIngestOperation implements IngestSession {
   private _totalFiles?: number;
   private _filesRead?: number;
   private _active = false;
+  private log = new Logger({ name: 'AssetIngestOperation' });
 
   /** Supported file extensions for metadata sheets */
   private static SPREADSHEET_TYPES = ['.xlsx', '.csv', '.xls', '.ods'];
@@ -170,6 +172,8 @@ export class AssetIngestOperation implements IngestSession {
    * @param currentPath Directory to traverse for files to ignest
    */
   async readDirectoryMetadata(currentPath: string) {
+    this.log.info('Reading metadata directory', currentPath);
+
     for (const item of await readdir(currentPath, { withFileTypes: true })) {
       if (!this._active) {
         return;
@@ -198,6 +202,8 @@ export class AssetIngestOperation implements IngestSession {
    * @param jsonPath Absolute path to a json file of metadata
    **/
   async readJsonMetadata(jsonPath: string) {
+    this.log.info('Reading metadata file', jsonPath);
+
     const contents = MetadataFileSchema.safeParse(
       SecureJSON.parse(await readFile(jsonPath, 'utf8'))
     );
@@ -223,6 +229,8 @@ export class AssetIngestOperation implements IngestSession {
    * @param sheetPath Absolute path to a spreadsheet of metadata
    **/
   async readMetadataSheet(sheetPath: string) {
+    this.log.info('Reading metadata sheet', sheetPath);
+
     const workbook = xlsx.readFile(sheetPath);
     const relativePath = path.relative(this.metadataPath, sheetPath);
 
@@ -277,6 +285,9 @@ export class AssetIngestOperation implements IngestSession {
           })
         )
       );
+
+      this.log.info('Staged media files for import', files);
+      this.log.info('Staged asset from source', locator);
     });
 
     this.emitStatus();
@@ -323,6 +334,8 @@ export class AssetIngestOperation implements IngestSession {
       this.session.phase = IngestPhase.COMPLETED;
       await db.persistAndFlush(this.session);
       this.emitStatus();
+
+      this.log.info('Finished reading media files');
     });
   }
 
@@ -351,6 +364,8 @@ export class AssetIngestOperation implements IngestSession {
           this.emitStatus([asset.id]);
 
           if (res.status === 'error') {
+            this.log.error('Failed to import file', file.path, res.error);
+
             file.error = res.error;
             db.persist(file);
             continue;
@@ -358,8 +373,13 @@ export class AssetIngestOperation implements IngestSession {
 
           file.media = res.value;
           db.persist(file);
-        } catch {
+
+          this.log.info('Read media file', file.path);
+        } catch (error) {
+          this.log.error('Failed to import file', file.path, error);
+
           file.error = IngestError.UNEXPECTED_ERROR;
+
           db.persist(file);
           continue;
         }
