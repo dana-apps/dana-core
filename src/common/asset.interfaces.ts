@@ -19,6 +19,40 @@ export const Asset = z.object({
 });
 export type Asset = z.TypeOf<typeof Asset>;
 
+export enum SchemaPropertyType {
+  FREE_TEXT = 'FREE_TEXT'
+}
+
+/**
+ * Common properties shared by all schema properties
+ */
+const BaseSchemaProperty = z.object({
+  /** Unique id of the property */
+  id: z.string(),
+
+  /** Human-readable name for the property */
+  label: z.string(),
+
+  /** Is the property required? */
+  required: z.boolean(),
+
+  /** Underlying type of the property? */
+  type: z.nativeEnum(SchemaPropertyType)
+});
+
+/**
+ * Represent a simple scalar
+ */
+export const ScalarSchemaProperty = z.object({
+  ...BaseSchemaProperty.shape,
+
+  type: z.enum([SchemaPropertyType.FREE_TEXT])
+});
+export type ScalarSchemaProperty = z.TypeOf<typeof ScalarSchemaProperty>;
+
+export const SchemaProperty = ScalarSchemaProperty;
+export type SchemaProperty = z.TypeOf<typeof SchemaProperty>;
+
 /**
  * List all assets in the collection.
  */

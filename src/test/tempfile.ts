@@ -11,8 +11,9 @@ import { onCleanup } from './teardown';
  *
  * Tries to be nice and remove the directory when the test ends.
  */
-export const getTempfiles = async () => {
-  const dir = await fs.mkdtemp((await fs.realpath(os.tmpdir())) + path.sep);
+export const getTempfiles = async (root?: string) => {
+  const dir =
+    root ?? (await fs.mkdtemp((await fs.realpath(os.tmpdir())) + path.sep));
   onCleanup(() => fs.rm(dir, { recursive: true }));
 
   return () => path.join(dir, randomUUID());

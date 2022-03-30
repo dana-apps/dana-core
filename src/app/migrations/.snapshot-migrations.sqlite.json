@@ -154,9 +154,18 @@
           "primary": false,
           "nullable": false,
           "mappedType": "text"
+        },
+        "schema": {
+          "name": "schema",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
         }
       },
-      "name": "asset",
+      "name": "asset_collection",
       "indexes": [
         {
           "keyName": "primary",
@@ -170,6 +179,64 @@
       ],
       "checks": [],
       "foreignKeys": {}
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "collection_id": {
+          "name": "collection_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        }
+      },
+      "name": "asset",
+      "indexes": [
+        {
+          "columnNames": [
+            "collection_id"
+          ],
+          "composite": false,
+          "keyName": "asset_collection_id_index",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "primary",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "asset_collection_id_foreign": {
+          "constraintName": "asset_collection_id_foreign",
+          "columnNames": [
+            "collection_id"
+          ],
+          "localTableName": "asset",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "asset_collection",
+          "updateRule": "cascade"
+        }
+      }
     },
     {
       "columns": {

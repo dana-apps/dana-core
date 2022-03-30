@@ -1,4 +1,4 @@
-import { EntityManager } from '@mikro-orm/sqlite';
+import { EntityManager } from '@mikro-orm/core';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
@@ -23,6 +23,7 @@ import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { compact } from 'lodash';
 import { ObjectQuery } from '@mikro-orm/core';
+import { SqlEntityManager } from '@mikro-orm/sqlite';
 
 /**
  * Encapsulates an import operation.
@@ -44,7 +45,10 @@ export class AssetIngestOperation implements IngestSession {
   private _totalFiles?: number;
   private _filesRead?: number;
   private _active = false;
-  private log = new Logger({ name: 'AssetIngestOperation: ' + this.id });
+  private log = new Logger({
+    name: 'AssetIngestOperation',
+    instanceName: this.id
+  });
 
   /** Supported file extensions for metadata sheets */
   private static SPREADSHEET_TYPES = ['.xlsx', '.csv', '.xls', '.ods'];
@@ -280,9 +284,9 @@ export class AssetIngestOperation implements IngestSession {
         session: this.session,
         phase: IngestPhase.READ_FILES
       });
-      assetsRepository.persist(asset);
+      db.persist(asset);
 
-      assetsRepository.persist(
+      db.persist(
         files.map((file) =>
           fileRepository.create({
             asset,
@@ -398,7 +402,10 @@ export class AssetIngestOperation implements IngestSession {
    * @param db Database entity manager to use for running the query
    * @returns QueryBuilder of `FileImport` entities representing all files imported by this session
    */
-  queryImportedFiles(db: EntityManager, where: ObjectQuery<FileImport> = {}) {
+  queryImportedFiles(
+    db: SqlEntityManager,
+    where: ObjectQuery<FileImport> = {}
+  ) {
     return db
       .createQueryBuilder(FileImport)
       .join('asset', 'asset')

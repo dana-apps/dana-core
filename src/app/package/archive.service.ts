@@ -5,6 +5,7 @@ import { EventEmitter } from 'eventemitter3';
 import { mkdir } from 'fs/promises';
 import { sortBy } from 'lodash';
 import path from 'path';
+import { Logger } from 'tslog';
 import { ArchiveOpeningError } from '../../common/interfaces/archive.interfaces';
 
 import { required } from '../../common/util/assert';
@@ -17,6 +18,7 @@ import { ArchivePackage } from './archive-package';
  */
 export class ArchiveService extends EventEmitter<ArchiveEvents> {
   private _archives = new Map<string, ArchivePackage>();
+  private log = new Logger({ name: 'ArchiveService' });
 
   /**
    * Open an archive, start any processes associated with it and add it to the list of open archives.
@@ -44,13 +46,16 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
 
     try {
       await db.getMigrator().up();
-    } catch {
+    } catch (err) {
+      this.log.error(err);
       return error(ArchiveOpeningError.DATABASE_INCONSISTENCY);
     }
 
     try {
       await mkdir(path.join(location, 'blob'), { recursive: true });
-    } catch {
+    } catch (err) {
+      this.log.error(err);
+
       return error(ArchiveOpeningError.IO_ERROR);
     }
 

@@ -154,13 +154,14 @@ export class AssetIngestService extends EventEmitter<Events> {
           populate: ['media']
         });
 
-        this.assetService.createAsset(archive, {
+        await this.assetService.createAsset(archive, {
           metadata: assetImport.metadata,
           media: compact(assetImport.files.getItems().map((item) => item.media))
         });
       }
 
       db.remove(db.getReference(ImportSessionEntity, sessionId));
+      await db.flush();
     });
 
     await this.closeSession(archive, sessionId);

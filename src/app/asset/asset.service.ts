@@ -4,6 +4,7 @@ import { ResourceList } from '../../common/resource';
 import { MediaFile } from '../media/media-file.entity';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetEntity } from './asset.entity';
+import { CollectionService } from './collection.service';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -14,6 +15,10 @@ interface CreateAssetOpts {
 }
 
 export class AssetService extends EventEmitter<AssetEvents> {
+  constructor(private collectionService: CollectionService) {
+    super();
+  }
+
   /**
    * Persist an asset to the database, associate it with zero or more media files and index its metadata.
    *
@@ -31,7 +36,8 @@ export class AssetService extends EventEmitter<AssetEvents> {
   ) {
     const res = await archive.useDb(async (db): Promise<Asset> => {
       const asset = db.create(AssetEntity, {
-        mediaFiles: media
+        mediaFiles: media,
+        collection: await this.collectionService.getRootCollection(archive)
       });
 
       db.persist(asset);

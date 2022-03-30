@@ -6,6 +6,7 @@ module.exports = {
   migrations: {
     path: 'src/app/migrations'
   },
+  discovery: {},
   dbName: 'tmp/migrations.sqlite',
   driverOptions: {
     dbName: ':memory:'

@@ -5,6 +5,7 @@ import { IngestPhase } from '../../../common/ingest.interfaces';
 import { collectEvents, waitUntilEvent } from '../../../test/event';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { AssetsChangedEvent, AssetService } from '../../asset/asset.service';
+import { CollectionService } from '../../asset/collection.service';
 import { MediaFile } from '../../media/media-file.entity';
 import { MediaFileService } from '../../media/media-file.service';
 import {
@@ -203,7 +204,7 @@ const setup = async () => {
   const temp = await getTempfiles();
   const archive = await getTempPackage(temp());
   const mediaService = new MediaFileService();
-  const assetService = new AssetService();
+  const assetService = new AssetService(new CollectionService());
   const importService = new AssetIngestService(mediaService, assetService);
 
   return {

@@ -55,6 +55,9 @@ please pay attention to its concept of a '[unit of work](https://mikro-orm.io/do
 Migrations can be auto-generated from entities (assuming the entity files follow the file naming convention of
 `*entity.ts`). To do this, run `yarn make-migrations`.
 
+The state of the current database schema is tracked in a json file in the migrations directory. If you need to revert
+to a previous version of the schema for generating new migrations, you can take advantage of the fact that this is version controlled to do that.
+
 Please do make sure that you squash any new migrations in your branch before opening a PR in order to keep them
 managable.
 
@@ -67,3 +70,13 @@ To cut a new release:
 - For example, if package.json version is 1.0, your draft’s “Tag version” and “Release title” would be v1.0.
 - Push some commits. Every CI build will update the artifacts attached to this draft.
 - Once you are done, publish the release. GitHub will tag the latest commit for you.
+
+## Q&As
+
+### Jest tests are not finding migrations / entities
+
+Clearing the cache should fix this
+
+```bash
+yarn jest --clearCache
+```
