@@ -10,6 +10,7 @@ import { useRPC } from './ipc/ipc.hooks';
 import { ArchiveScreen } from './screens/archive.screen';
 import { CollectionScreen } from './screens/collection.screen';
 import { ArchiveIngestScreen } from './screens/ingest.screen';
+import { SchemaScreen } from './screens/schema.screen';
 import { WindowInset } from './ui/window';
 
 /**
@@ -21,6 +22,7 @@ export const ArchiveWindow: FC<{ title?: string }> = ({ title }) => (
       <Route index element={<></>} />
       <Route path="ingest/:sessionId" element={<ArchiveIngestScreen />} />
       <Route path="collection" element={<CollectionScreen />} />
+      <Route path="schema" element={<SchemaScreen />} />
     </Route>
   </Routes>
 );

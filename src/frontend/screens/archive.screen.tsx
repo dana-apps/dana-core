@@ -1,8 +1,8 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useCallback } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { FolderPlus } from 'react-bootstrap-icons';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { FolderPlus, ListColumns } from 'react-bootstrap-icons';
 import { Box, Flex, Text } from 'theme-ui';
 
 import { ListIngestSession, StartIngest } from '../../common/ingest.interfaces';
@@ -71,9 +71,15 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
                 alignItems: 'flex-end',
                 justifyContent: 'flex-end',
                 p: 2,
-                flex: 1
+                flex: 1,
+                '> *': {
+                  pr: 4
+                }
               }}
             >
+              <Link to="/schema" sx={{ textDecoration: 'none' }}>
+                <ToolbarButton icon={ListColumns} label="Metadata" />
+              </Link>
               <ToolbarButton
                 icon={FolderPlus}
                 label="Import Assets"

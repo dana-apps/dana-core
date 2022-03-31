@@ -1,4 +1,8 @@
-import { ListAssets } from '../../common/asset.interfaces';
+import {
+  GetRootCollection,
+  ListAssets,
+  UpdateCollectionSchema
+} from '../../common/asset.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { ok } from '../../common/util/error';
 import { ElectronRouter } from '../electron/router';
@@ -21,11 +25,24 @@ export function initAssets(router: ElectronRouter) {
     }
   );
 
+  router.bindArchiveRpc(GetRootCollection, async (archive) =>
+    ok(await collectionService.getRootCollection(archive))
+  );
+
+  router.bindArchiveRpc(UpdateCollectionSchema, async (archive, req) => {
+    return collectionService.updateCollectionSchema(
+      archive,
+      req.schemaId,
+      req.value
+    );
+  });
+
   assetService.on('change', ({ created }) => {
     router.emit(ChangeEvent, { type: ListAssets.id, ids: [...created] });
   });
 
   return {
-    assetService
+    assetService,
+    collectionService
   };
 }

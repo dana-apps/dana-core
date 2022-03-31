@@ -24,7 +24,8 @@ async function main() {
     app.router,
     app.archiveService,
     media.fileService,
-    assets.assetService
+    assets.assetService,
+    assets.collectionService
   );
 
   ipcMain.on('restart', () => {

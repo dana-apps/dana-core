@@ -74,6 +74,9 @@ interface ToolbarButtonProps extends IconButtonProps {
 
   /** Toolbar label */
   label: string;
+
+  /** Link to route */
+  path?: string;
 }
 
 /**
@@ -83,20 +86,22 @@ export const ToolbarButton: FC<ToolbarButtonProps> = ({
   icon: Icon,
   label,
   ...props
-}) => (
-  <Button
-    sx={{
-      variant: 'icon',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      bg: 'transparent',
-      color: 'black',
-      outline: 'none'
-    }}
-    {...props}
-  >
-    <Icon size={32} sx={{ pb: 1 }} />
-    <span sx={{ fontSize: 0, fontWeight: 500 }}>{label}</span>
-  </Button>
-);
+}) => {
+  return (
+    <Button
+      sx={{
+        variant: 'icon',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        bg: 'transparent',
+        color: 'black',
+        outline: 'none'
+      }}
+      {...props}
+    >
+      <Icon size={32} sx={{ pb: 1 }} />
+      <span sx={{ fontSize: 0, fontWeight: 500 }}>{label}</span>
+    </Button>
+  );
+};

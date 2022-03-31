@@ -1,3 +1,4 @@
+import { v4 } from 'uuid';
 import { z } from 'zod';
 import { RpcInterface } from './ipc.interfaces';
 import { Media } from './media.interfaces';
@@ -52,6 +53,34 @@ export type ScalarSchemaProperty = z.TypeOf<typeof ScalarSchemaProperty>;
 
 export const SchemaProperty = ScalarSchemaProperty;
 export type SchemaProperty = z.TypeOf<typeof SchemaProperty>;
+
+export const defaultSchemaProperty = (i: number): SchemaProperty => ({
+  id: v4(),
+  label: `Property ${i}`,
+  required: false,
+  type: SchemaPropertyType.FREE_TEXT
+});
+
+export const Collection = z.object({
+  id: z.string(),
+  schema: z.array(SchemaProperty)
+});
+export type Collection = z.TypeOf<typeof Collection>;
+
+export const GetRootCollection = RpcInterface({
+  id: 'collection/get',
+  request: z.undefined(),
+  response: Collection
+});
+
+export const UpdateCollectionSchema = RpcInterface({
+  id: 'collection/schema/update',
+  request: z.object({
+    schemaId: z.string(),
+    value: z.array(SchemaProperty)
+  }),
+  response: z.object({})
+});
 
 /**
  * List all assets in the collection.

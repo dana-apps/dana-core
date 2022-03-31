@@ -1,5 +1,9 @@
 import { compact } from 'lodash';
 import path from 'path';
+import {
+  SchemaProperty,
+  SchemaPropertyType
+} from '../../../common/asset.interfaces';
 
 import { IngestPhase } from '../../../common/ingest.interfaces';
 import { collectEvents, waitUntilEvent } from '../../../test/event';
@@ -181,6 +185,15 @@ describe('AssetImportOperation', () => {
 
   test('comitting a session creates assets and notifies the changes to assets', async () => {
     const fixture = await setup();
+    await fixture.givenACollectionMetadataSchema([
+      {
+        label: 'property',
+        id: 'p',
+        type: SchemaPropertyType.FREE_TEXT,
+        required: true
+      }
+    ]);
+
     const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
 
     const assetEvents = collectEvents<AssetsChangedEvent>(
@@ -194,6 +207,12 @@ describe('AssetImportOperation', () => {
     // Creates the asssets and associates them with files
     expect(assets.total).toBe(2);
     expect(assets.items.map((item) => item.media)).toHaveLength(2);
+    expect(assets.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ metadata: { p: 'value1' } }),
+        expect.objectContaining({ metadata: { p: 'value2' } })
+      ])
+    );
 
     // Emits change events for each created assets
     expect(assetEvents.flatMap((event) => event.created)).toHaveLength(2);
@@ -204,14 +223,28 @@ const setup = async () => {
   const temp = await getTempfiles();
   const archive = await getTempPackage(temp());
   const mediaService = new MediaFileService();
-  const assetService = new AssetService(new CollectionService());
-  const importService = new AssetIngestService(mediaService, assetService);
+  const collectionService = new CollectionService();
+  const assetService = new AssetService(collectionService);
+  const importService = new AssetIngestService(
+    mediaService,
+    assetService,
+    collectionService
+  );
 
   return {
     archive,
     mediaService,
     importService,
     assetService,
+    collectionService,
+    givenACollectionMetadataSchema: async (schema: SchemaProperty[]) => {
+      const collection = await collectionService.getRootCollection(archive);
+      await collectionService.updateCollectionSchema(
+        archive,
+        collection.id,
+        schema
+      );
+    },
     statusEvents: <T>(fn: (event: ImportStateChanged) => T) => {
       return collectEvents(importService, 'status', fn);
     },

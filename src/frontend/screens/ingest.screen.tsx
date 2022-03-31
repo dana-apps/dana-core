@@ -14,6 +14,7 @@ import { useList, useRPC } from '../ipc/ipc.hooks';
 import { ProgressValue } from '../ui/components/atoms.component';
 import { ProgressCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
+import { StatusBar } from '../ui/components/page-layouts.component';
 
 /**
  * Screen for managing, editing and accepting a bulk import.
@@ -35,18 +36,13 @@ export const ArchiveIngestScreen: FC = () => {
         data={data}
       />
 
-      <Flex
-        sx={{
-          padding: 4,
-          bg: 'gray1',
-          borderTop: 'primary',
-          flexDirection: 'row',
-          justifyContent: 'flex-end',
-          alignItems: 'baseline'
-        }}
-      >
-        <Button onClick={completeImport}>Complete Import</Button>
-      </Flex>
+      <StatusBar
+        actions={
+          <>
+            <Button onClick={completeImport}>Complete Import</Button>
+          </>
+        }
+      />
     </>
   );
 };

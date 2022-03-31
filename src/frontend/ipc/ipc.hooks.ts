@@ -94,6 +94,19 @@ export function useRPC() {
 export function useGet<T extends Resource, Err>(
   resource: RpcInterface<Resource, T, Err>,
   id: string
+): Result<T, Err> | undefined;
+/**
+ * Fetch a singleton object by type and re-fetch whenever a change event affecting it is received.
+ *
+ * @param resource RPC method to fetch the resource from – the returned value must be an object with an id.
+ * @returns Result object containing the latest value of the resource, or undefined if it the call has not yet resolved.
+ */
+export function useGet<T extends Resource, Err>(
+  resource: RpcInterface<undefined, T, Err>
+): Result<T, Err> | undefined;
+export function useGet<T extends Resource, Err>(
+  resource: RpcInterface<Resource | undefined, T, Err>,
+  id?: string
 ): Result<T, Err> | undefined {
   const rpc = useRPC();
 
@@ -102,15 +115,15 @@ export function useGet<T extends Resource, Err>(
 
   // Fetch the initial resource value
   useEffect(() => {
-    rpc(resource, { id }).then((res) => {
+    rpc(resource, id ? { id } : undefined).then((res) => {
       setCurrent(res);
     });
   }, [id, resource, rpc]);
 
   // Listen for change events and re-fetch on change
   useEvent(ChangeEvent, ({ type, ids }) => {
-    if (type === resource.id && ids.includes(id)) {
-      rpc(resource, { id }).then((res) => {
+    if (type === resource.id && (!id || ids.includes(id))) {
+      rpc(resource, id ? { id } : undefined).then((res) => {
         setCurrent(res);
       });
     }

@@ -2,7 +2,7 @@ import { Theme } from 'theme-ui';
 import * as polished from 'polished';
 
 const controlHover = {
-  '&:hover': {
+  '&:hover:not(:disabled)': {
     opacity: 0.5
   }
 };
@@ -73,6 +73,12 @@ export const theme: Theme = {
     body: 1.5,
     heading: 1.25
   },
+  forms: {
+    label: {
+      fontSize: 1,
+      fontWeight: 600
+    }
+  },
   text: {
     heading: {
       fontFamily: 'heading',
@@ -108,7 +114,10 @@ export const theme: Theme = {
       px: 4,
       color: 'primaryContrast',
       backgroundColor: 'primary',
-      borderRadius: 'control'
+      borderRadius: 'control',
+      '&:disabled': {
+        bg: 'muted'
+      }
     },
     icon: {
       ...controlHover

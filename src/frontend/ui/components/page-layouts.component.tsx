@@ -2,8 +2,8 @@
 
 import 'react-reflex/styles.css';
 
-import { FC, ReactElement } from 'react';
-import { Box, Heading } from 'theme-ui';
+import { FC, ReactElement, ReactNode } from 'react';
+import { Box, BoxProps, Flex, Heading } from 'theme-ui';
 import { ReflexContainer, ReflexElement, ReflexSplitter } from 'react-reflex';
 import { NavLink } from 'react-router-dom';
 
@@ -136,3 +136,30 @@ export const ArchiveWindowLayout: FC<ArchiveWindowLayoutProps> = ({
     </ReflexContainer>
   );
 };
+
+interface StatusBarProps extends BoxProps {
+  actions?: ReactNode;
+}
+
+export const StatusBar: FC<StatusBarProps> = ({
+  actions,
+  children,
+  ...props
+}) => (
+  <Flex
+    sx={{
+      padding: 4,
+      bg: 'gray1',
+      borderTop: 'primary',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'baseline',
+      '> *:not(:last-of-type)': {
+        mr: 6
+      }
+    }}
+    {...props}
+  >
+    {actions}
+  </Flex>
+);

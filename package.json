@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node scripts/watch",
     "prepare": "husky install",
-    "make-migrations": "mikro-orm migration:create",
+    "make-migrations": "mikro-orm migration:create && jest --clearCache",
     "format": "prettier --write . && eslint --fix .",
     "build-config": "yarn vite build --config",
     "build": "yarn build-config vite.renderer.js && yarn build-config vite.electron.js",

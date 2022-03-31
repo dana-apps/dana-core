@@ -1,10 +1,14 @@
 import { EventEmitter } from 'eventemitter3';
-import { compact } from 'lodash';
+import { compact, keyBy, mapKeys } from 'lodash';
+import { SchemaProperty } from '../../common/asset.interfaces';
 
 import { IngestPhase, IngestedAsset } from '../../common/ingest.interfaces';
 import { ResourceList } from '../../common/resource';
 import { DefaultMap } from '../../common/util/collection';
+import { ok } from '../../common/util/error';
+import { Dict } from '../../common/util/types';
 import { AssetService } from '../asset/asset.service';
+import { CollectionService } from '../asset/collection.service';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetImportEntity, ImportSessionEntity } from './asset-import.entity';
@@ -13,7 +17,8 @@ import { AssetIngestOperation } from './asset-ingest.operation';
 export class AssetIngestService extends EventEmitter<Events> {
   constructor(
     private mediaService: MediaFileService,
-    private assetService: AssetService
+    private assetService: AssetService,
+    private collectionService: CollectionService
   ) {
     super();
   }
@@ -146,7 +151,10 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param sessionId Id of the session to return.
    */
   async commitSession(archive: ArchivePackage, sessionId: string) {
-    await archive.useDbTransaction(async (db) => {
+    const collection = await this.collectionService.getRootCollection(archive);
+    const convertToSchema = this.getMetadataConverter(collection.schema);
+
+    const res = await archive.useDbTransaction(async (db) => {
       const assets = await db.find(AssetImportEntity, { session: sessionId });
 
       for (const assetImport of assets) {
@@ -154,17 +162,44 @@ export class AssetIngestService extends EventEmitter<Events> {
           populate: ['media']
         });
 
-        await this.assetService.createAsset(archive, {
-          metadata: assetImport.metadata,
-          media: compact(assetImport.files.getItems().map((item) => item.media))
-        });
+        const metadata = convertToSchema(assetImport.metadata);
+
+        const createResult = await this.assetService.createAsset(
+          archive,
+          collection.id,
+          {
+            metadata: metadata,
+            media: compact(
+              assetImport.files.getItems().map((item) => item.media)
+            )
+          }
+        );
+
+        if (createResult.status !== 'ok') {
+          return createResult;
+        }
       }
 
       db.remove(db.getReference(ImportSessionEntity, sessionId));
-      await db.flush();
+      return ok();
     });
 
     await this.closeSession(archive, sessionId);
+    return res;
+  }
+
+  getMetadataConverter(schema: SchemaProperty[]) {
+    const byLabel = Object.fromEntries(
+      schema.map((item) => [item.label, item.id])
+    );
+
+    return (metadata: Dict) => {
+      const entries = Object.entries(metadata).flatMap(([label, val]) => {
+        const id = byLabel[label];
+        return id ? [[id, val]] : [];
+      });
+      return Object.fromEntries(entries);
+    };
   }
 
   /**

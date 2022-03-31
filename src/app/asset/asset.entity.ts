@@ -4,9 +4,11 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
-  PrimaryKey
+  PrimaryKey,
+  Property
 } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
+import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 import { SchemaPropertyValue } from './metadata.entity';
 
@@ -25,6 +27,9 @@ export class AssetEntity {
 
   @ManyToOne(() => AssetCollectionEntity, { nullable: false })
   collection!: AssetCollectionEntity;
+
+  @Property({ type: 'json', nullable: false })
+  metadata: Dict = {};
 }
 
 /**

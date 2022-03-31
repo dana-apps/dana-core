@@ -1,10 +1,12 @@
 import { EventEmitter } from 'eventemitter3';
-import { Asset } from '../../common/asset.interfaces';
+import { Asset, Collection } from '../../common/asset.interfaces';
 import { ResourceList } from '../../common/resource';
+import { error, ok } from '../../common/util/error';
 import { MediaFile } from '../media/media-file.entity';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
+import { SchemaPropertyValue } from './metadata.entity';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -32,17 +34,29 @@ export class AssetService extends EventEmitter<AssetEvents> {
    */
   async createAsset(
     archive: ArchivePackage,
+    collectionId: string,
     { metadata, media = [] }: CreateAssetOpts
   ) {
-    const res = await archive.useDb(async (db): Promise<Asset> => {
+    const [valid] = await this.collectionService.validateItemsForCollection(
+      archive,
+      collectionId,
+      [{ id: 'asset', metadata }]
+    );
+
+    if (!valid.success) {
+      return error(valid.errors);
+    }
+
+    const res = await archive.useDb(async (db) => {
       const asset = db.create(AssetEntity, {
         mediaFiles: media,
-        collection: await this.collectionService.getRootCollection(archive)
+        collection: await this.collectionService.getRootCollection(archive),
+        metadata
       });
 
       db.persist(asset);
 
-      return {
+      return ok<Asset>({
         id: asset.id,
         metadata: metadata,
         media: media.map((m) => ({
@@ -50,12 +64,14 @@ export class AssetService extends EventEmitter<AssetEvents> {
           mimeType: m.mimeType,
           type: 'image'
         }))
-      };
+      });
     });
 
-    this.emit('change', {
-      created: [res.id]
-    });
+    if (res.status === 'ok') {
+      this.emit('change', {
+        created: [res.value.id]
+      });
+    }
 
     return res;
   }
@@ -89,7 +105,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
               type: 'image',
               mimeType: file.mimeType
             })),
-            metadata: {}
+            metadata: entity.metadata
           }))
         )
       };

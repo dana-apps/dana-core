@@ -199,6 +199,15 @@
           "primary": false,
           "nullable": false,
           "mappedType": "text"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
         }
       },
       "name": "asset",
