@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { RequestType, ResponseType, RpcInterface } from './ipc.interfaces';
-import { Asset } from './asset.interfaces';
+import { Asset, ValidationError } from './asset.interfaces';
 import { FetchError, Result } from './util/error';
 import { ResourceList } from './resource';
 
@@ -44,7 +44,10 @@ export const IngestedAsset = z.object({
   ...Asset.shape,
 
   /** The current ingest phase of the assset */
-  phase: z.nativeEnum(IngestPhase)
+  phase: z.nativeEnum(IngestPhase),
+
+  /** Validation errors */
+  validationErrors: ValidationError.optional().nullable()
 });
 export type IngestedAsset = z.TypeOf<typeof IngestedAsset>;
 
@@ -68,7 +71,10 @@ export const IngestSession = z.object({
   filesRead: z.number(),
 
   /** The total number of files are referenced by metadata entries. Undefined if this is not yet known. */
-  totalFiles: z.optional(z.number())
+  totalFiles: z.optional(z.number()),
+
+  /** False if there are validation errors, otherwise true */
+  valid: z.boolean()
 });
 export type IngestSession = z.TypeOf<typeof IngestSession>;
 
@@ -96,7 +102,7 @@ export type GetIngestSessionResponse = ResponseType<typeof GetIngestSession>;
 export const GetIngestSession = RpcInterface({
   id: 'ingest/get',
   request: z.object({
-    sessionId: z.string()
+    id: z.string()
   }),
   response: IngestSession
 });

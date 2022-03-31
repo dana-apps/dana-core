@@ -24,6 +24,8 @@ import { Dict } from '../../common/util/types';
 import { compact } from 'lodash';
 import { ObjectQuery } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
+import { CollectionService } from '../asset/collection.service';
+import { SchemaProperty } from '../../common/asset.interfaces';
 
 /**
  * Encapsulates an import operation.
@@ -57,7 +59,8 @@ export class AssetIngestOperation implements IngestSession {
     readonly archive: ArchivePackage,
     readonly session: ImportSessionEntity,
     private ingestService: AssetIngestService,
-    private mediaService: MediaFileService
+    private mediaService: MediaFileService,
+    private collectionService: CollectionService
   ) {}
 
   /**
@@ -72,6 +75,13 @@ export class AssetIngestOperation implements IngestSession {
    **/
   get title() {
     return path.basename(this.session.basePath);
+  }
+
+  /**
+   * False if there are validation errors, otherwise true
+   **/
+  get valid() {
+    return this.session.valid;
   }
 
   /**
@@ -266,9 +276,18 @@ export class AssetIngestOperation implements IngestSession {
    * @param locator Unique string representing the location (path, path + line number, etc) this item was imported from
    */
   async readMetadataObject(metadata: Dict, files: string[], locator: string) {
+    const collection = await this.collectionService.getRootCollection(
+      this.archive
+    );
+    const convertToSchema = this.getMetadataConverter(collection.schema);
+    metadata = convertToSchema(metadata);
+
     await this.archive.useDbTransaction(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
       const fileRepository = db.getRepository(FileImport);
+      const collection = await this.collectionService.getRootCollection(
+        this.archive
+      );
 
       const exists = !!(await assetsRepository.count({
         path: locator,
@@ -278,11 +297,24 @@ export class AssetIngestOperation implements IngestSession {
         return;
       }
 
+      const [validationErrors] =
+        await this.collectionService.validateItemsForCollection(
+          this.archive,
+          collection.id,
+          [{ id: locator, metadata }]
+        );
+
+      if (!validationErrors.success) {
+        this.session.valid = false;
+        db.persist(this.session);
+      }
+
       const asset = assetsRepository.create({
         metadata,
         path: locator,
         session: this.session,
-        phase: IngestPhase.READ_FILES
+        phase: IngestPhase.READ_FILES,
+        validationErrors: validationErrors.errors
       });
       db.persist(asset);
 
@@ -300,6 +332,20 @@ export class AssetIngestOperation implements IngestSession {
     });
 
     this.emitStatus();
+  }
+
+  getMetadataConverter(schema: SchemaProperty[]) {
+    const byLabel = Object.fromEntries(
+      schema.map((item) => [item.label, item.id])
+    );
+
+    return (metadata: Dict) => {
+      const entries = Object.entries(metadata).flatMap(([label, val]) => {
+        const id = byLabel[label];
+        return id ? [[id, val]] : [];
+      });
+      return Object.fromEntries(entries);
+    };
   }
 
   /**

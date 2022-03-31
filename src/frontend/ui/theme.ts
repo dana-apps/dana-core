@@ -32,6 +32,7 @@ export const theme: Theme = {
     text: 'black',
     success: colors.green,
     error: polished.setHue(0, colors.green),
+    warn: polished.setHue(26, colors.green),
     border: colors.gray,
     highlight: colors.charcoal,
     highlightHint: polished.transparentize(0.8, colors.charcoal),

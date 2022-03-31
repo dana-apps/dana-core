@@ -30,14 +30,19 @@ describe(CollectionService, () => {
       [
         {
           id: 'myLab',
-          dogtype: 'Labrador'
+          metadata: {
+            dogtype: 'Labrador'
+          }
         },
         {
           id: 'myPoodle',
-          dogtype: 'Poodle'
+          metadata: {
+            dogtype: 'Poodle'
+          }
         },
         {
-          id: 'notADog'
+          id: 'notADog',
+          metadata: {}
         }
       ]
     );
@@ -80,14 +85,15 @@ describe(CollectionService, () => {
       [
         {
           id: 'myLab',
-          dogtype: 'Labrador'
+          metadata: { dogtype: 'Labrador' }
         },
         {
           id: 'myPoodle',
-          dogtype: 'Poodle'
+          metadata: { dogtype: 'Poodle' }
         },
         {
-          id: 'notADog'
+          id: 'notADog',
+          metadata: {}
         }
       ]
     );

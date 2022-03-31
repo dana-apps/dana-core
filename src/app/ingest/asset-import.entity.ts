@@ -8,7 +8,9 @@ import {
   Entity
 } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
+
 import { IngestError, IngestPhase } from '../../common/ingest.interfaces';
+import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 
 /**
@@ -29,6 +31,9 @@ export class ImportSessionEntity {
 
   @Enum({ type: () => IngestPhase, nullable: false, items: () => IngestPhase })
   phase!: IngestPhase;
+
+  @Property({ type: 'boolean', nullable: false })
+  valid = true;
 }
 
 /**
@@ -53,6 +58,10 @@ export class AssetImportEntity {
   /** Raw metadata discovered for the asset */
   @Property({ type: 'json' })
   metadata!: Record<string, unknown>;
+
+  /** Any validation errors */
+  @Property({ type: 'json', nullable: true })
+  validationErrors?: Dict<string[]>;
 
   /** Imported media files associated with this asset */
   @OneToMany(() => FileImport, (file) => file.asset)

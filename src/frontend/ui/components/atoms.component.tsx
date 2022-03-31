@@ -18,7 +18,7 @@ interface LoadingCellProps {
  * - Value between 0-1 for percent progress
  * - Value >= 1 for completion
  */
-export type ProgressValue = number | 'error' | undefined;
+export type ProgressValue = number | 'error' | 'warning' | undefined;
 
 /**
  * Represents the loading progress of an indivudal item.
@@ -35,6 +35,15 @@ export const ProgressIndicator: FC<LoadingCellProps> = ({
     return (
       <ExclamationTriangleFill
         color="var(--theme-ui-colors-error)"
+        size={size}
+      />
+    );
+  }
+
+  if (value === 'warning') {
+    return (
+      <ExclamationTriangleFill
+        color="var(--theme-ui-colors-warn)"
         size={size}
       />
     );

@@ -25,6 +25,15 @@ import {
 describe('AssetImportOperation', () => {
   test('imports assets', async () => {
     const fixture = await setup();
+    await fixture.givenACollectionMetadataSchema([
+      {
+        type: SchemaPropertyType.FREE_TEXT,
+        id: 'internalPropertyId',
+        label: 'property',
+        required: true
+      }
+    ]);
+
     const sessionRun =
       await fixture.givenThatAnImportSessionHasRunSuccessfuly();
 
@@ -37,10 +46,35 @@ describe('AssetImportOperation', () => {
       items.map((x) => x.files.loadItems({ populate: ['media'] }))
     ).then((x) => x.flat());
 
+    expect(session.valid).toBeTruthy();
     expect(session.phase).toBe(IngestPhase.COMPLETED);
     expect(items).toHaveLength(2);
     expect(items.every((x) => x.phase === IngestPhase.COMPLETED)).toBeTruthy();
+    expect(items.every((x) => !x.validationErrors)).toBeTruthy();
     expect(compact(files.map((file) => file.media))).toHaveLength(2);
+  });
+
+  test('validates assets while importing', async () => {
+    const fixture = await setup();
+    await fixture.givenACollectionMetadataSchema([
+      {
+        type: SchemaPropertyType.FREE_TEXT,
+        id: 'missingProperty',
+        label: 'not there',
+        required: true
+      }
+    ]);
+
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
+
+    const { items } = await fixture.importService.listSessionAssets(
+      fixture.archive,
+      session.id
+    );
+
+    expect(session.valid).toBeFalsy();
+    expect(items).toHaveLength(2);
+    expect(items.every((x) => !!x.validationErrors)).toBeTruthy();
   });
 
   test('dispatches status events while importing', async () => {

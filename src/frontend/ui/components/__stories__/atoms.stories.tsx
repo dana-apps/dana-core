@@ -36,3 +36,4 @@ export const Progress: FC = () => {
 
 export const Success = () => <ProgressIndicator value={1} />;
 export const Error = () => <ProgressIndicator value="error" />;
+export const Warning = () => <ProgressIndicator value="warning" />;

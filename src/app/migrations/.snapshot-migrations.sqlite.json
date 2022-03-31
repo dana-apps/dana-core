@@ -35,6 +35,15 @@
             "ERROR"
           ],
           "mappedType": "enum"
+        },
+        "valid": {
+          "name": "valid",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "integer"
         }
       },
       "name": "import_session",
@@ -83,6 +92,15 @@
         },
         "metadata": {
           "name": "metadata",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        },
+        "validation_errors": {
+          "name": "validation_errors",
           "type": "json",
           "unsigned": false,
           "autoincrement": false,

@@ -93,8 +93,8 @@ export async function initIngest(
     return ok(sessions);
   });
 
-  router.bindArchiveRpc(GetIngestSession, async (archive, { sessionId }) => {
-    const session = assetIngest.getSession(archive, sessionId);
+  router.bindArchiveRpc(GetIngestSession, async (archive, { id }) => {
+    const session = assetIngest.getSession(archive, id);
     return okIfExists(session);
   });
 

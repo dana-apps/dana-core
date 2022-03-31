@@ -70,7 +70,8 @@ export class AssetIngestService extends EventEmitter<Events> {
       await archive.useDb((em) => {
         const session = em.create(ImportSessionEntity, {
           basePath,
-          phase: IngestPhase.READ_METADATA
+          phase: IngestPhase.READ_METADATA,
+          valid: true
         });
         em.persist(session);
         return session;
@@ -131,6 +132,7 @@ export class AssetIngestService extends EventEmitter<Events> {
       id: entity.id,
       metadata: entity.metadata,
       phase: entity.phase,
+      validationErrors: entity.validationErrors,
       media: compact(
         entity.files.getItems().map(
           ({ media }) =>
@@ -152,7 +154,6 @@ export class AssetIngestService extends EventEmitter<Events> {
    */
   async commitSession(archive: ArchivePackage, sessionId: string) {
     const collection = await this.collectionService.getRootCollection(archive);
-    const convertToSchema = this.getMetadataConverter(collection.schema);
 
     const res = await archive.useDbTransaction(async (db) => {
       const assets = await db.find(AssetImportEntity, { session: sessionId });
@@ -162,13 +163,11 @@ export class AssetIngestService extends EventEmitter<Events> {
           populate: ['media']
         });
 
-        const metadata = convertToSchema(assetImport.metadata);
-
         const createResult = await this.assetService.createAsset(
           archive,
           collection.id,
           {
-            metadata: metadata,
+            metadata: assetImport.metadata,
             media: compact(
               assetImport.files.getItems().map((item) => item.media)
             )
@@ -186,20 +185,6 @@ export class AssetIngestService extends EventEmitter<Events> {
 
     await this.closeSession(archive, sessionId);
     return res;
-  }
-
-  getMetadataConverter(schema: SchemaProperty[]) {
-    const byLabel = Object.fromEntries(
-      schema.map((item) => [item.label, item.id])
-    );
-
-    return (metadata: Dict) => {
-      const entries = Object.entries(metadata).flatMap(([label, val]) => {
-        const id = byLabel[label];
-        return id ? [[id, val]] : [];
-      });
-      return Object.fromEntries(entries);
-    };
   }
 
   /**
@@ -267,7 +252,13 @@ export class AssetIngestService extends EventEmitter<Events> {
       return session;
     }
 
-    session = new AssetIngestOperation(archive, state, this, this.mediaService);
+    session = new AssetIngestOperation(
+      archive,
+      state,
+      this,
+      this.mediaService,
+      this.collectionService
+    );
 
     activeSessions.sessions.set(session.id, session);
 

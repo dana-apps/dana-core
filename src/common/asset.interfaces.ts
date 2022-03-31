@@ -41,6 +41,8 @@ const BaseSchemaProperty = z.object({
   type: z.nativeEnum(SchemaPropertyType)
 });
 
+export const ValidationError = z.record(z.array(z.string()));
+
 /**
  * Represent a simple scalar
  */

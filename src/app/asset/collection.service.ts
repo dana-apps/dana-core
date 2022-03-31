@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { SchemaProperty } from '../../common/asset.interfaces';
 import { Resource } from '../../common/resource';
 import { error, FetchError, ok } from '../../common/util/error';
+import { Dict } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetCollectionEntity } from './asset.entity';
 import { SchemaPropertyValue } from './metadata.entity';
@@ -77,10 +78,10 @@ export class CollectionService {
     });
   }
 
-  async validateItemsForCollection<T extends Resource>(
+  async validateItemsForCollection(
     archive: ArchivePackage,
     collectionId: string,
-    items: T[]
+    items: { id: string; metadata: Dict }[]
   ) {
     const collection = await archive.get(AssetCollectionEntity, collectionId);
     if (!collection) {
@@ -89,17 +90,17 @@ export class CollectionService {
 
     const validator = this.getRecordValidator(collection?.schema);
 
-    return items.map((asset) => {
-      const result = validator.safeParse(asset);
+    return items.map(({ id, metadata }) => {
+      const result = validator.safeParse(metadata);
       if (result.success) {
         return {
-          id: asset.id,
+          id,
           success: true
         };
       }
 
       return {
-        id: asset.id,
+        id: id,
         success: false,
         errors: result.error.flatten().fieldErrors
       };
