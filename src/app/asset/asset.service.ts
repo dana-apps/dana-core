@@ -1,12 +1,12 @@
 import { EventEmitter } from 'eventemitter3';
-import { Asset, Collection } from '../../common/asset.interfaces';
+import { Asset } from '../../common/asset.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, ok } from '../../common/util/error';
 import { MediaFile } from '../media/media-file.entity';
+import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
-import { SchemaPropertyValue } from './metadata.entity';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -17,7 +17,10 @@ interface CreateAssetOpts {
 }
 
 export class AssetService extends EventEmitter<AssetEvents> {
-  constructor(private collectionService: CollectionService) {
+  constructor(
+    private collectionService: CollectionService,
+    private mediaService: MediaFileService
+  ) {
     super();
   }
 
@@ -62,6 +65,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
         media: media.map((m) => ({
           id: m.id,
           mimeType: m.mimeType,
+          rendition: this.mediaService.getRenditionUrl(archive, m),
           type: 'image'
         }))
       });
@@ -103,6 +107,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
             media: Array.from(entity.mediaFiles).map((file) => ({
               id: file.id,
               type: 'image',
+              rendition: this.mediaService.getRenditionUrl(archive, file),
               mimeType: file.mimeType
             })),
             metadata: entity.metadata

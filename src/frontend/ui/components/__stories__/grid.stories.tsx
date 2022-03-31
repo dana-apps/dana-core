@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 
 import { Resource } from '../../../../common/resource';
 import { ListCursor } from '../../../ipc/ipc.hooks';
+import { SelectionContext } from '../../hooks/selection.hooks';
 import { Window } from '../../window';
 import { TextCell } from '../grid-cell.component';
 import { DataGrid, GridColumn } from '../grid.component';
@@ -65,8 +66,10 @@ export const ExampleDataGrid = () => {
   );
 
   return (
-    <Window>
-      <DataGrid sx={{ height: '100%' }} data={data} columns={columns} />
-    </Window>
+    <SelectionContext.Provider>
+      <Window>
+        <DataGrid sx={{ height: '100%' }} data={data} columns={columns} />
+      </Window>
+    </SelectionContext.Provider>
   );
 };

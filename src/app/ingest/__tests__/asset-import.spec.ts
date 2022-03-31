@@ -258,7 +258,7 @@ const setup = async () => {
   const archive = await getTempPackage(temp());
   const mediaService = new MediaFileService();
   const collectionService = new CollectionService();
-  const assetService = new AssetService(collectionService);
+  const assetService = new AssetService(collectionService, mediaService);
   const importService = new AssetIngestService(
     mediaService,
     assetService,

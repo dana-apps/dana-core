@@ -6,6 +6,7 @@ import {
 import { ChangeEvent } from '../../common/resource';
 import { ok } from '../../common/util/error';
 import { ElectronRouter } from '../electron/router';
+import { MediaFileService } from '../media/media-file.service';
 import { AssetService } from './asset.service';
 import { CollectionService } from './collection.service';
 
@@ -14,9 +15,9 @@ import { CollectionService } from './collection.service';
  *
  * @returns Service instances for managing assets.
  */
-export function initAssets(router: ElectronRouter) {
+export function initAssets(router: ElectronRouter, media: MediaFileService) {
   const collectionService = new CollectionService();
-  const assetService = new AssetService(collectionService);
+  const assetService = new AssetService(collectionService, media);
 
   router.bindArchiveRpc(
     ListAssets,

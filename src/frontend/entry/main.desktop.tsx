@@ -15,6 +15,7 @@ import { IpcContext } from '../ipc/ipc.hooks';
 import { ElectronRendererIpc } from '../ipc/electron-ipc';
 import { ArchiveWindow, NewArchiveWindow } from '../app';
 import { StrictMode } from 'react';
+import { SelectionContext } from '../ui/hooks/selection.hooks';
 
 /** Exposed from main process via browser-preload.js */
 declare const bridge: {
@@ -27,21 +28,23 @@ const ipc = new ElectronRendererIpc(bridge.ipcRenderer);
 const app = (
   <StrictMode>
     <ThemeProvider theme={theme}>
-      <MemoryRouter>
-        <IpcContext.Provider
-          value={{ ipc, documentId: bridge.config.documentId }}
-        >
-          <FrontendConfigContext.Provider value={bridge.config}>
-            <Window>
-              {bridge.config.documentId ? (
-                <ArchiveWindow title={bridge.config.title} />
-              ) : (
-                <NewArchiveWindow />
-              )}
-            </Window>
-          </FrontendConfigContext.Provider>
-        </IpcContext.Provider>
-      </MemoryRouter>
+      <SelectionContext.Provider>
+        <MemoryRouter>
+          <IpcContext.Provider
+            value={{ ipc, documentId: bridge.config.documentId }}
+          >
+            <FrontendConfigContext.Provider value={bridge.config}>
+              <Window>
+                {bridge.config.documentId ? (
+                  <ArchiveWindow title={bridge.config.title} />
+                ) : (
+                  <NewArchiveWindow />
+                )}
+              </Window>
+            </FrontendConfigContext.Provider>
+          </IpcContext.Provider>
+        </MemoryRouter>
+      </SelectionContext.Provider>
     </ThemeProvider>
   </StrictMode>
 );

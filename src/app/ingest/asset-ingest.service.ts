@@ -139,6 +139,7 @@ export class AssetIngestService extends EventEmitter<Events> {
             media && {
               id: media.id,
               mimeType: media.mimeType,
+              rendition: this.mediaService.getRenditionUrl(archive, media),
               type: 'image'
             }
         )

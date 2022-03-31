@@ -163,3 +163,40 @@ export const StatusBar: FC<StatusBarProps> = ({
     {actions}
   </Flex>
 );
+
+export const MasterDetail: FC<Omit<BoxProps, 'ref'> & { detail?: ReactNode }> =
+  ({ detail, children, ...props }) => {
+    return (
+      <ReflexContainer
+        sx={{
+          '&.reflex-container.vertical > .reflex-splitter': {
+            borderRight: '1px solid var(--theme-ui-colors-border)',
+            borderLeft: 'none',
+            width: '1px'
+          },
+          '> .reflex-element': {
+            overflow: 'hidden'
+          }
+        }}
+        windowResizeAware
+        orientation="vertical"
+        {...props}
+      >
+        <ReflexElement minSize={320}>{children}</ReflexElement>
+
+        {detail && <ReflexSplitter propagate={true} />}
+
+        {detail && (
+          <ReflexElement
+            sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
+            flex={0.25}
+            minSize={100}
+          >
+            <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+              {detail}
+            </Box>
+          </ReflexElement>
+        )}
+      </ReflexContainer>
+    );
+  };

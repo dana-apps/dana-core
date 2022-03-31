@@ -12,13 +12,17 @@ import { never } from '../../common/util/assert';
 import { useGet, useList } from '../ipc/ipc.hooks';
 import { TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
+import { MediaDetail } from '../ui/components/media-detail.component';
+import { MasterDetail } from '../ui/components/page-layouts.component';
+import { SelectionContext } from '../ui/hooks/selection.hooks';
 
 /**
  * Screen for viewing assets.
  */
 export const CollectionScreen: FC = () => {
-  const data = useList(ListAssets, () => ({}), []);
+  const assets = useList(ListAssets, () => ({}), []);
   const collection = useGet(GetRootCollection);
+  const selection = SelectionContext.useContainer();
 
   const gridColumns = useMemo(() => {
     if (collection?.status === 'ok') {
@@ -28,16 +32,33 @@ export const CollectionScreen: FC = () => {
     return [];
   }, [collection]);
 
-  if (!data || !collection || collection.status !== 'ok') {
+  const selectedAsset = useMemo(() => {
+    if (selection.selection && assets?.items) {
+      return assets.items.find((x) => x.id === selection.selection);
+    }
+  }, [assets, selection.selection]);
+
+  if (!assets || !collection || collection.status !== 'ok') {
     return null;
   }
 
+  const detailView = selectedAsset ? (
+    <MediaDetail asset={selectedAsset} sx={{ width: '100%', height: '100%' }} />
+  ) : undefined;
+
   return (
-    <DataGrid
-      sx={{ flex: 1, width: '100%' }}
-      columns={gridColumns}
-      data={data}
-    />
+    <>
+      <MasterDetail
+        sx={{ flex: 1, width: '100%', position: 'relative' }}
+        detail={detailView}
+      >
+        <DataGrid
+          sx={{ flex: 1, width: '100%', height: '100%' }}
+          columns={gridColumns}
+          data={assets}
+        />
+      </MasterDetail>
+    </>
   );
 };
 

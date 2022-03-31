@@ -13,6 +13,7 @@ import { Resource } from '../../../common/resource';
 import { ListCursor } from '../../ipc/ipc.hooks';
 import { last, sumBy } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
+import { SelectionContext } from '../hooks/selection.hooks';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -88,7 +89,7 @@ export function DataGrid<T extends Resource>({
                   willChange: 'transform',
                   left: 0,
                   top: 0,
-                  width: '100%',
+                  width,
                   height: rowHeight,
                   borderBottom: '1px solid var(--theme-ui-colors-border)',
                   zIndex: 2,
@@ -190,10 +191,15 @@ function CellWrapper<T extends Resource>({
   columnIndex,
   rowIndex
 }: GridChildComponentProps<CellData<T>>) {
+  const { selection, setSelection } = SelectionContext.useContainer();
   const colData = rows[rowIndex];
   const column = columns[columnIndex];
+  const plainBg = rowIndex % 2 === 0 ? 'background' : 'foreground';
+  const selected = selection && selection === colData?.id;
+
   const sx = {
-    bg: rowIndex % 2 === 0 ? 'background' : 'foreground',
+    bg: selected ? 'primary' : plainBg,
+    color: selected ? 'primaryContrast' : undefined,
     py: 1,
     px: 2,
     height: '100%',
@@ -207,7 +213,7 @@ function CellWrapper<T extends Resource>({
   }
 
   return (
-    <div sx={sx} style={style}>
+    <div sx={sx} style={style} onClick={() => setSelection(colData.id)}>
       <column.cell value={column.getData(colData)} />
     </div>
   );

@@ -2,10 +2,12 @@ import { createReadStream } from 'fs';
 import { copyFile, unlink } from 'fs/promises';
 import mime from 'mime';
 import path from 'path';
+import sharp, { FormatEnum } from 'sharp';
 
 import { FileImportResult, IngestError } from '../../common/ingest.interfaces';
 import { error, ok } from '../../common/util/error';
 import { ArchivePackage } from '../package/archive-package';
+import { getFileUrl } from '../util/platform';
 import { hashStream } from '../util/stream-utils';
 import { MediaFile } from './media-file.entity';
 import { getMediaType } from './media-types';
@@ -37,6 +39,8 @@ export class MediaFileService {
       } catch {
         return error(IngestError.IO_ERROR);
       }
+
+      await this.createImageRendition(archive, mediaFile, 'png');
 
       await mediaRepository.persistAndFlush(mediaFile);
 
@@ -78,6 +82,10 @@ export class MediaFileService {
     return results;
   }
 
+  getRenditionUrl(archive: ArchivePackage, mediaFile: MediaFile) {
+    return getFileUrl(this.getRenditionPath(archive, mediaFile, 'png'));
+  }
+
   /**
    * List all media files in an archive
    *
@@ -86,6 +94,17 @@ export class MediaFileService {
    */
   listMedia(archive: ArchivePackage) {
     return archive.list(MediaFile);
+  }
+
+  private async createImageRendition(
+    archive: ArchivePackage,
+    mediaFile: MediaFile,
+    format: keyof FormatEnum
+  ) {
+    await sharp(this.getMediaPath(archive, mediaFile))
+      .resize(1280)
+      .toFormat(format)
+      .toFile(this.getRenditionPath(archive, mediaFile, format));
   }
 
   /**
@@ -97,5 +116,13 @@ export class MediaFileService {
   private getMediaPath(archive: ArchivePackage, mediaFile: MediaFile) {
     const ext = mime.getExtension(mediaFile.mimeType);
     return path.join(archive.blobPath, mediaFile.id + '.' + ext);
+  }
+
+  private getRenditionPath(
+    archive: ArchivePackage,
+    mediaFile: MediaFile,
+    ext: string
+  ) {
+    return path.join(archive.blobPath, mediaFile.id + '.rendition' + '.' + ext);
   }
 }

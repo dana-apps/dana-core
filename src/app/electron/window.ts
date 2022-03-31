@@ -51,7 +51,7 @@ export function createFrontendWindow({ title, config }: CreateFrontendWindow) {
         '--frontend-config=' + JSON.stringify(mergedConfig)
         // ...(isDev ? ['] : [])
       ],
-      webSecurity: true,
+      webSecurity: false,
       preload: getResourcePath('preload/browser-preload.js')
     }
   });

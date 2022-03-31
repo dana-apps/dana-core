@@ -18,8 +18,8 @@ async function main() {
 
   /** Setup the business logic of the app */
   const app = await initApp();
-  const assets = initAssets(app.router);
   const media = initMedia();
+  const assets = initAssets(app.router, media.fileService);
   await initIngest(
     app.router,
     app.archiveService,
