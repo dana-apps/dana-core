@@ -1,4 +1,3 @@
-import { EntityManager } from '@mikro-orm/core';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
@@ -334,6 +333,16 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
   }
 
+  /**
+   * Return a function that transforms imported metadata keys from their the human-readable label to the metadata
+   * property id.
+   *
+   * This is a distinct step from metadata validation – since metadata values are not stored by their human-readable id,
+   * we need to transform imported metadata into the schema format before we validate it.
+   *
+   * @param schema The collection schema we are importing into.
+   * @returns A function from import format metadata to storage format metadata.
+   */
   getMetadataConverter(schema: SchemaProperty[]) {
     const byLabel = Object.fromEntries(
       schema.map((item) => [item.label, item.id])

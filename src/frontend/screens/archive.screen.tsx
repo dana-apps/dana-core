@@ -78,7 +78,7 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
               }}
             >
               <Link to="/schema" sx={{ textDecoration: 'none' }}>
-                <ToolbarButton icon={ListColumns} label="Metadata" />
+                <ToolbarButton icon={ListColumns} label="Schema" />
               </Link>
               <ToolbarButton
                 icon={FolderPlus}

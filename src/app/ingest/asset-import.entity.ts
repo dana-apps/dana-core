@@ -29,9 +29,11 @@ export class ImportSessionEntity {
   @OneToMany(() => AssetImportEntity, (asset) => asset.session)
   assets = new Collection<AssetImportEntity>(this);
 
+  /** The current phase that the session is in */
   @Enum({ type: () => IngestPhase, nullable: false, items: () => IngestPhase })
   phase!: IngestPhase;
 
+  /** True if all imported assets are valid according to the target collection's schema. */
   @Property({ type: 'boolean', nullable: false })
   valid = true;
 }

@@ -35,10 +35,13 @@ export function required<T>(
 }
 
 /**
- * Utility for detecting missing if-else clauses. This will fail typecheck unless all possible values for `neverVal`
- * are exhausted in if-else clauses.
+ * Utility for ensuring that a switch-case on an enum handles all possible values.
+ * This will fail typecheck unless all possible values for `neverVal` are exhausted in if-else clauses.
  *
- * @param neverVal A value to check for failure.
+ * It will also throw at runtime, but will be caught at build-time unless something has goned quite badly wrong
+ * elsewhere.
+ *
+ * @param neverVal A value that should 'never happen'
  * @param args Additional context for error message
  */
 export function never(neverVal: never, ...args: string[]): never {

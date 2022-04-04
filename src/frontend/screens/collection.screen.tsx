@@ -17,7 +17,7 @@ import { MasterDetail } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 
 /**
- * Screen for viewing assets.
+ * Screen for viewing the assets in a collection.
  */
 export const CollectionScreen: FC = () => {
   const assets = useList(ListAssets, () => ({}), []);
@@ -62,6 +62,12 @@ export const CollectionScreen: FC = () => {
   );
 };
 
+/**
+ * Return grid cells for each property type defined in the schema.
+ *
+ * @param schema The schema for this collection.
+ * @returns An array of DataGrid columns for each property in the schma.
+ */
 const getGridColumns = (schema: SchemaProperty[]) =>
   schema.map((property): GridColumn<Asset> => {
     if (property.type === SchemaPropertyType.FREE_TEXT) {
