@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { SchemaProperty } from '../../common/asset.interfaces';
+import {
+  SchemaProperty,
+  SchemaValidationError
+} from '../../common/asset.interfaces';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
@@ -81,6 +84,27 @@ export class CollectionService {
         return error(FetchError.DOES_NOT_EXIST);
       }
 
+      let isValid = true;
+
+      for await (const assets of this.iterateAssetsWithCollectionSchema(
+        archive,
+        collection
+      )) {
+        const validationResults = await this.validateItemsForSchema(
+          archive,
+          schema.map(SchemaPropertyValue.fromJson),
+          assets
+        );
+
+        if (validationResults.some((res) => !res.success)) {
+          isValid = false;
+        }
+      }
+
+      if (!isValid) {
+        return error(SchemaValidationError);
+      }
+
       collection.schema = schema.map(SchemaPropertyValue.fromJson);
       await db.persistAndFlush(collection);
 
@@ -98,14 +122,23 @@ export class CollectionService {
       throw Error('Collection does not exist: ' + collectionId);
     }
 
-    const validator = this.getRecordValidator(collection?.schema);
+    return this.validateItemsForSchema(archive, collection.schema, items);
+  }
+
+  private async validateItemsForSchema(
+    archive: ArchivePackage,
+    schema: SchemaPropertyValue[],
+    items: { id: string; metadata: Dict }[]
+  ) {
+    const validator = this.getRecordValidator(schema);
 
     return items.map(({ id, metadata }) => {
       const result = validator.safeParse(metadata);
       if (result.success) {
         return {
           id,
-          success: true
+          success: true,
+          metadata: result.data
         };
       }
 
@@ -115,6 +148,13 @@ export class CollectionService {
         errors: result.error.flatten().fieldErrors
       };
     });
+  }
+
+  private async *iterateAssetsWithCollectionSchema(
+    archive: ArchivePackage,
+    collection: AssetCollectionEntity
+  ) {
+    yield await collection.assets.loadItems();
   }
 
   private getRecordValidator(schema: SchemaPropertyValue[]) {

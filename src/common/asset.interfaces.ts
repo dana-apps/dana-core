@@ -20,8 +20,18 @@ export const Asset = z.object({
 });
 export type Asset = z.TypeOf<typeof Asset>;
 
+/**
+ * Enum vale for possible schema property types.
+ */
 export enum SchemaPropertyType {
   FREE_TEXT = 'FREE_TEXT'
+}
+
+/**
+ * Error code when a request fails due to a schema validation error.
+ */
+export enum SchemaValidationError {
+  VALIDATION_ERROR = 'VALIDATION_ERROR'
 }
 
 /**

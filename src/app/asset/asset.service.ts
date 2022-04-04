@@ -1,7 +1,8 @@
 import { EventEmitter } from 'eventemitter3';
 import { Asset } from '../../common/asset.interfaces';
 import { ResourceList } from '../../common/resource';
-import { error, ok } from '../../common/util/error';
+import { error, FetchError, ok } from '../../common/util/error';
+import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetEntity } from './asset.entity';
@@ -36,28 +37,30 @@ export class AssetService extends EventEmitter<AssetEvents> {
     collectionId: string,
     { metadata, media = [] }: CreateAssetOpts
   ) {
-    const [valid] = await this.collectionService.validateItemsForCollection(
-      archive,
-      collectionId,
-      [{ id: 'asset', metadata }]
-    );
-
-    if (!valid.success) {
-      return error(valid.errors);
-    }
-
     const res = await archive.useDb(async (db) => {
       const asset = db.create(AssetEntity, {
-        mediaFiles: media,
+        mediaFiles: [],
         collection: await this.collectionService.getRootCollection(archive),
-        metadata
+        metadata: {}
       });
+
+      const validationResult = await this.setMetadataAndMedia(
+        archive,
+        collectionId,
+        asset,
+        metadata,
+        media
+      );
+
+      if (validationResult.status === 'error') {
+        return validationResult;
+      }
 
       db.persist(asset);
 
       return ok<Asset>({
         id: asset.id,
-        metadata: metadata,
+        metadata: asset.metadata,
         media: media.map((m) => ({
           id: m.id,
           mimeType: m.mimeType,
@@ -73,6 +76,69 @@ export class AssetService extends EventEmitter<AssetEvents> {
     }
 
     return res;
+  }
+
+  /** Set metadata and media */
+  async updateAsset(
+    archive: ArchivePackage,
+    assetId: string,
+    { metadata, media }: Partial<CreateAssetOpts>
+  ) {
+    return await archive.useDb(async (db) => {
+      const asset = await db.findOne(
+        AssetEntity,
+        { id: assetId },
+        { populate: ['collection'] }
+      );
+      if (!asset) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      const validationResult = await this.setMetadataAndMedia(
+        archive,
+        asset.collection.id,
+        asset,
+        metadata,
+        media
+      );
+
+      if (validationResult.status === 'error') {
+        return validationResult;
+      }
+
+      db.persist(asset);
+      return ok(asset);
+    });
+  }
+
+  async setMetadataAndMedia(
+    archive: ArchivePackage,
+    collectionId: string,
+    asset: AssetEntity,
+    metadata?: Dict,
+    media?: MediaFile[]
+  ) {
+    if (metadata) {
+      const [valid] = await this.collectionService.validateItemsForCollection(
+        archive,
+        collectionId,
+        [{ id: 'asset', metadata }]
+      );
+
+      if (!valid.success) {
+        return error(valid.errors);
+      }
+
+      if (valid.metadata) {
+        asset.metadata = valid.metadata;
+      }
+    }
+
+    if (media) {
+      asset.mediaFiles.set(media);
+    }
+
+    return ok();
   }
 
   /**
