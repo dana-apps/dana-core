@@ -2,7 +2,7 @@
 
 import { FC, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Flex } from 'theme-ui';
+import { Button } from 'theme-ui';
 import {
   GetRootCollection,
   SchemaProperty,

@@ -1,12 +1,22 @@
 import { z } from 'zod';
 import { SchemaProperty } from '../../common/asset.interfaces';
-import { Resource } from '../../common/resource';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetCollectionEntity } from './asset.entity';
 import { SchemaPropertyValue } from './metadata.entity';
 
+/**
+ * Manages collections of assets and associates them with a schema.
+ *
+ * Collections are intended to be structured hierarchically, with a collection potentially having multiple
+ * sub-collections.
+ *
+ * Assets in a collection may only have metadata that is defined by the schema.
+ * Child collections inherit the parent collection's schema, or can override it with their own.
+ * The archive has a root collection, which may define a default schema.
+ * All other collections must be descendents of this.
+ */
 export class CollectionService {
   /**
    * Return the root collection of the archive. Created if it does not yet exist.
@@ -40,7 +50,7 @@ export class CollectionService {
    *
    * @param archive Achive containing the schema
    * @param collectionId Id of the collection we want a schema for.
-   * @returns
+   * @returns An object representing the collection schema.
    */
   async getCollectionSchema(archive: ArchivePackage, collectionId: string) {
     const collection = await archive.get(AssetCollectionEntity, collectionId);

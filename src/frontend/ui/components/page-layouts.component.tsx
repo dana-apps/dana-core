@@ -143,6 +143,7 @@ interface StatusBarProps extends BoxProps {
 
 export const StatusBar: FC<StatusBarProps> = ({
   actions,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   children,
   ...props
 }) => (

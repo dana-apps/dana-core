@@ -1,13 +1,12 @@
 import {
   AnyEntity,
   Constructor,
-  EntityManager,
   FilterQuery,
   MikroORM,
   RequestContext
 } from '@mikro-orm/core';
 import { AutoPath } from '@mikro-orm/core/typings';
-import { SqlEntityManager, SqliteDriver } from '@mikro-orm/sqlite';
+import { SqlEntityManager } from '@mikro-orm/sqlite';
 import path from 'path';
 import { safeParse } from 'secure-json-parse';
 import { z } from 'zod';

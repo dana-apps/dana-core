@@ -1,12 +1,10 @@
 import { EventEmitter } from 'eventemitter3';
-import { compact, keyBy, mapKeys } from 'lodash';
-import { SchemaProperty } from '../../common/asset.interfaces';
+import { compact } from 'lodash';
 
 import { IngestPhase, IngestedAsset } from '../../common/ingest.interfaces';
 import { ResourceList } from '../../common/resource';
 import { DefaultMap } from '../../common/util/collection';
 import { ok } from '../../common/util/error';
-import { Dict } from '../../common/util/types';
 import { AssetService } from '../asset/asset.service';
 import { CollectionService } from '../asset/collection.service';
 import { MediaFileService } from '../media/media-file.service';

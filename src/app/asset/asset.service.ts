@@ -1,12 +1,11 @@
 import { EventEmitter } from 'eventemitter3';
-import { Asset, Collection } from '../../common/asset.interfaces';
+import { Asset } from '../../common/asset.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, ok } from '../../common/util/error';
 import { MediaFile } from '../media/media-file.entity';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
-import { SchemaPropertyValue } from './metadata.entity';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */

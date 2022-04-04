@@ -1,4 +1,3 @@
-import { EntityManager } from '@mikro-orm/core';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
