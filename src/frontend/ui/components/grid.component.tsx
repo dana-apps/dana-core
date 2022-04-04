@@ -200,6 +200,7 @@ function CellWrapper<T extends Resource>({
   const sx = {
     bg: selected ? 'primary' : plainBg,
     color: selected ? 'primaryContrast' : undefined,
+    overflow: 'hidden',
     py: 1,
     px: 2,
     height: '100%',

@@ -7,6 +7,7 @@ const ACCEPTED_TYPES = new Set([
   'application/pdf',
   'image/png',
   'image/jpeg',
+  'image/tiff',
   'application/msword',
   'application/pdf',
   'application/pdf',
