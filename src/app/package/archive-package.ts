@@ -51,7 +51,11 @@ export class ArchivePackage {
         'Expected requestContext'
       );
       const res = await cb(em);
+
+      // Ensure that any uncommitted changes from the unit of work are written to the db before we end.
+      // We could potentially optimize this by only flushing the outermost unit of work.
       await em.flush();
+
       return res;
     });
   }

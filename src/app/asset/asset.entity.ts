@@ -22,12 +22,21 @@ export class AssetEntity {
   @PrimaryKey({ type: 'string' })
   id = randomUUID();
 
+  /**
+   * Media files associated with the asset
+   */
   @OneToMany(() => MediaFile, (media) => media.asset)
   mediaFiles = new Collection<MediaFile>(this);
 
+  /**
+   * Collection that the asset belongs to
+   */
   @ManyToOne(() => AssetCollectionEntity, { nullable: false })
   collection!: AssetCollectionEntity;
 
+  /**
+   * Key-value metadata properties. Keys are the id of schema property
+   */
   @Property({ type: 'json', nullable: false })
   metadata: Dict = {};
 }
@@ -42,9 +51,15 @@ export class AssetCollectionEntity {
   @PrimaryKey({ type: 'string' })
   id = randomUUID();
 
+  /**
+   * Assets in this collection
+   */
   @OneToMany(() => AssetEntity, (media) => media.collection)
   assets = new Collection<AssetEntity>(this);
 
+  /**
+   * Schema associated with this collection
+   */
   @Embedded(() => SchemaPropertyValue, { array: true })
   schema: SchemaPropertyValue[] = [];
 }

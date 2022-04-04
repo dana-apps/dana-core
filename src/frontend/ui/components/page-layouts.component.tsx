@@ -137,11 +137,15 @@ export const ArchiveWindowLayout: FC<ArchiveWindowLayoutProps> = ({
   );
 };
 
-interface StatusBarProps extends BoxProps {
+interface BottomBarProps extends BoxProps {
+  /** 'Action buttons' for top-level screen actions ("Save changes", "Cancel", etc) */
   actions?: ReactNode;
 }
 
-export const StatusBar: FC<StatusBarProps> = ({
+/**
+ *  Status/action bar displayed at the bottom of a screen.
+ */
+export const BottomBar: FC<BottomBarProps> = ({
   actions,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   children,

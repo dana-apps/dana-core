@@ -32,7 +32,7 @@ export function initAssets(router: ElectronRouter) {
   router.bindArchiveRpc(UpdateCollectionSchema, async (archive, req) => {
     return collectionService.updateCollectionSchema(
       archive,
-      req.schemaId,
+      req.collectionId,
       req.value
     );
   });

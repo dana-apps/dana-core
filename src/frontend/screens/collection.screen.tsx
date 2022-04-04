@@ -14,7 +14,7 @@ import { TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 
 /**
- * Screen for viewing assets.
+ * Screen for viewing the assets in a collection.
  */
 export const CollectionScreen: FC = () => {
   const data = useList(ListAssets, () => ({}), []);
@@ -41,6 +41,12 @@ export const CollectionScreen: FC = () => {
   );
 };
 
+/**
+ * Return grid cells for each property type defined in the schema.
+ *
+ * @param schema The schema for this collection.
+ * @returns An array of DataGrid columns for each property in the schma.
+ */
 const getGridColumns = (schema: SchemaProperty[]) =>
   schema.map((property): GridColumn<Asset> => {
     if (property.type === SchemaPropertyType.FREE_TEXT) {

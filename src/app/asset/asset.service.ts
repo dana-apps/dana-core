@@ -78,7 +78,16 @@ export class AssetService extends EventEmitter<AssetEvents> {
     return res;
   }
 
-  /** Set metadata and media */
+  /**
+   * Given an existing asset in the archive, update its metadata and/or media files.
+   *
+   * Changes are validated against the collection schema and rejected if validation doesn't pass.
+   *
+   * @param archive The archive the asset is stored in.
+   * @param assetId Id of the asset to update
+   * @param param2 Media and metadata to update. Undefined values are left as-is.
+   * @returns A Result indicating the success of the operation.
+   */
   async updateAsset(
     archive: ArchivePackage,
     assetId: string,

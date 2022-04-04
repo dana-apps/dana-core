@@ -20,10 +20,16 @@ import {
 
 export interface SchemaEditorProps
   extends Omit<BoxProps, 'value' | 'onChange'> {
+  /** Current value of the schema */
   value: SchemaProperty[];
+
+  /** Called whenever a property is edited. State management is the responsibility of the parent. */
   onChange: (schema: SchemaProperty[]) => void;
 }
 
+/**
+ * Editor component for the properties of a schema.
+ */
 export const SchemaEditor: FC<SchemaEditorProps> = ({
   value,
   onChange,

@@ -9,9 +9,14 @@ import {
   UpdateCollectionSchema
 } from '../../common/asset.interfaces';
 import { useGet, useRPC } from '../ipc/ipc.hooks';
-import { StatusBar } from '../ui/components/page-layouts.component';
+import { BottomBar } from '../ui/components/page-layouts.component';
 import { SchemaEditor } from '../ui/components/schema-editor.component';
 
+/**
+ * Screen for editing the schema for a collection.
+ *
+ * Currently we only support editing the root collection, but could be easily made more generic.
+ */
 export const SchemaScreen = () => {
   const collection = useGet(GetRootCollection);
   const [state, setState] = useState<SchemaProperty[]>();
@@ -21,7 +26,7 @@ export const SchemaScreen = () => {
   const save = useCallback(async () => {
     if (collection && collection.status === 'ok') {
       await rpc(UpdateCollectionSchema, {
-        schemaId: collection.value.id,
+        collectionId: collection.value.id,
         value: state
       });
       setHasEdits(false);
@@ -48,7 +53,7 @@ export const SchemaScreen = () => {
           setState(change);
         }}
       />
-      <StatusBar
+      <BottomBar
         actions={
           <>
             <Button

@@ -21,7 +21,7 @@ import { useGet, useList, useRPC } from '../ipc/ipc.hooks';
 import { ProgressValue } from '../ui/components/atoms.component';
 import { ProgressCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
-import { StatusBar } from '../ui/components/page-layouts.component';
+import { BottomBar } from '../ui/components/page-layouts.component';
 
 /**
  * Screen for managing, editing and accepting a bulk import.
@@ -59,7 +59,7 @@ export const ArchiveIngestScreen: FC = () => {
         data={assets}
       />
 
-      <StatusBar
+      <BottomBar
         actions={
           <>
             <Button variant="primaryTransparent" onClick={cancelImport}>
@@ -77,6 +77,9 @@ export const ArchiveIngestScreen: FC = () => {
 
 /**
  * Commit the import and navigate to the main collection.
+ *
+ * @param sessionId The import session to commit
+ * @returns An event handler that commits the import.
  */
 function useCompleteImport(sessionId: string) {
   const rpc = useRPC();
@@ -95,6 +98,12 @@ function useCompleteImport(sessionId: string) {
   }, [navigate, rpc, sessionId]);
 }
 
+/**
+ * Cancel the import and navigate to another screen.
+ *
+ * @param sessionId The import session to cancel.
+ * @returns An event handler that cancels the import.
+ */
 function useCancelImport(sessionId: string) {
   const rpc = useRPC();
   const navigate = useNavigate();
@@ -112,6 +121,12 @@ function useCancelImport(sessionId: string) {
   }, [navigate, rpc, sessionId]);
 }
 
+/**
+ * Return grid cells for each property type defined in the schema, along with import-specific columns.
+ *
+ * @param schema The schema for this collection.
+ * @returns An array of DataGrid columns for each property in the schma.
+ */
 const getGridColumns = (schema: SchemaProperty[]) => {
   const metadataColumns = schema.map((property): GridColumn<IngestedAsset> => {
     if (property.type === SchemaPropertyType.FREE_TEXT) {

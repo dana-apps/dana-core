@@ -27,7 +27,7 @@ export class CollectionService {
    * Currently this is the only way of accessing a collection, but we anticipate in future to support hierarchically
    * aranged collections.
    *
-   * @param archive Achive containing the collection.
+   * @param archive Archive containing the collection.
    * @returns The root collection for `archive`
    */
   async getRootCollection(archive: ArchivePackage) {
@@ -51,7 +51,7 @@ export class CollectionService {
    *
    * When we support multiple / nested collections, this should be able to inherit from parent collections.
    *
-   * @param archive Achive containing the schema
+   * @param archive Archive containing the schema
    * @param collectionId Id of the collection we want a schema for.
    * @returns An object representing the collection schema.
    */
@@ -66,7 +66,7 @@ export class CollectionService {
    *
    * This validates the collection against the schema and fails if it does not pass.
    *
-   * @param archive Achive containing the schema.
+   * @param archive Archive containing the schema.
    * @param collectionId Id of the collection we to update the schema schema for.
    * @param schema New schema value.
    * @returns A result indicating success or failure and the reason
@@ -86,7 +86,7 @@ export class CollectionService {
 
       let isValid = true;
 
-      for await (const assets of this.iterateAssetsWithCollectionSchema(
+      for await (const assets of this.recurseiveIterateAssetsWithinCollection(
         archive,
         collection
       )) {
@@ -112,6 +112,14 @@ export class CollectionService {
     });
   }
 
+  /**
+   * Validate a that a proposed addition into the collection is accepted by its metadata schema.
+   *
+   * @param archive Archive containing the schema.
+   * @param collectionId Collection into which addition is proposed.
+   * @param items Items to insert.
+   * @returns Result indicating success or failure for each proposed addition.
+   */
   async validateItemsForCollection(
     archive: ArchivePackage,
     collectionId: string,
@@ -125,6 +133,14 @@ export class CollectionService {
     return this.validateItemsForSchema(archive, collection.schema, items);
   }
 
+  /**
+   * Validate a that a proposed addition into the archive is valid according to a schema.
+   *
+   * @param archive Archive containing the schema.
+   * @param schema Schema to validate against.
+   * @param items Items to validate against the schema.
+   * @returns Result indicating success or failure for each proposed addition.
+   */
   private async validateItemsForSchema(
     archive: ArchivePackage,
     schema: SchemaPropertyValue[],
@@ -150,13 +166,26 @@ export class CollectionService {
     });
   }
 
-  private async *iterateAssetsWithCollectionSchema(
+  /**
+   * Iterate asynchronously over the assets in a collection collection and each of its sub-collections.
+   * Yields assets in chunks.
+   *
+   * @param archive Archive containing the collection.
+   * @param collection Collection to iterate over.
+   */
+  private async *recurseiveIterateAssetsWithinCollection(
     archive: ArchivePackage,
     collection: AssetCollectionEntity
   ) {
     yield await collection.assets.loadItems();
   }
 
+  /**
+   * Given a schema definition, return a zod validator to validate entries against.
+   *
+   * @param schema Schema definition.
+   * @returns a zod validator object generated from the schema.
+   */
   private getRecordValidator(schema: SchemaPropertyValue[]) {
     return z.object(
       Object.fromEntries(schema.map(({ id, validator }) => [id, validator]))
