@@ -2,6 +2,7 @@ import { EventEmitter } from 'eventemitter3';
 import { compact } from 'lodash';
 
 import { IngestPhase, IngestedAsset } from '../../common/ingest.interfaces';
+import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { DefaultMap } from '../../common/util/collection';
 import { ok } from '../../common/util/error';
@@ -33,9 +34,11 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param archive Archive to start managing ingests for.
    */
   async addArchive(archive: ArchivePackage) {
-    const savedState = await archive.list(ImportSessionEntity);
+    const savedState = await archive.useDb((db) =>
+      db.find(ImportSessionEntity, {})
+    );
 
-    for await (const sessionState of savedState) {
+    for (const sessionState of savedState) {
       const session = this.openSession(archive, sessionState);
       session.run();
     }
@@ -94,7 +97,10 @@ export class AssetIngestService extends EventEmitter<Events> {
     return {
       total: sessions.length,
       items: sessions,
-      page: 'all'
+      range: {
+        offset: 0,
+        limit: sessions.length
+      }
     };
   }
 
@@ -118,31 +124,34 @@ export class AssetIngestService extends EventEmitter<Events> {
   async listSessionAssets(
     archive: ArchivePackage,
     sessionId: string,
-    paginationToken?: string
-  ) {
+    range?: PageRange
+  ): Promise<ResourceList<IngestedAsset>> {
     const res = await archive.list(
       AssetImportEntity,
       { session: sessionId },
-      { populate: ['files.media'], paginationToken }
+      { populate: ['files.media'], range }
     );
 
-    return res.map<IngestedAsset>((entity) => ({
-      id: entity.id,
-      metadata: entity.metadata,
-      phase: entity.phase,
-      validationErrors: entity.validationErrors,
-      media: compact(
-        entity.files.getItems().map(
-          ({ media }) =>
-            media && {
-              id: media.id,
-              mimeType: media.mimeType,
-              rendition: this.mediaService.getRenditionUrl(archive, media),
-              type: 'image'
-            }
+    return {
+      ...res,
+      items: res.items.map((entity) => ({
+        id: entity.id,
+        metadata: entity.metadata,
+        phase: entity.phase,
+        validationErrors: entity.validationErrors,
+        media: compact(
+          entity.files.getItems().map(
+            ({ media }) =>
+              media && {
+                id: media.id,
+                mimeType: media.mimeType,
+                rendition: this.mediaService.getRenditionUrl(archive, media),
+                type: 'image'
+              }
+          )
         )
-      )
-    }));
+      }))
+    };
   }
 
   /**

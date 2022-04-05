@@ -19,12 +19,9 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
   const collectionService = new CollectionService();
   const assetService = new AssetService(collectionService, media);
 
-  router.bindArchiveRpc(
-    ListAssets,
-    async (archive, request, paginationToken) => {
-      return ok(await assetService.listAssets(archive, paginationToken));
-    }
-  );
+  router.bindArchiveRpc(ListAssets, async (archive, request, range) => {
+    return ok(await assetService.listAssets(archive, range));
+  });
 
   router.bindArchiveRpc(GetRootCollection, async (archive) =>
     ok(await collectionService.getRootCollection(archive))

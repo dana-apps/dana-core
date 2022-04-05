@@ -1,4 +1,6 @@
 import EventEmitter from 'eventemitter3';
+import produce, { castDraft } from 'immer';
+import { chunk, times } from 'lodash';
 import {
   createContext,
   useCallback,
@@ -11,11 +13,12 @@ import {
 import {
   EventInterface,
   FrontendIpc,
+  PageRange,
   RpcInterface
 } from '../../common/ipc.interfaces';
 import { ChangeEvent, Resource, ResourceList } from '../../common/resource';
 import { required } from '../../common/util/assert';
-import { ok, Result } from '../../common/util/error';
+import { error, ok, Result } from '../../common/util/error';
 import { Scheduler } from '../../common/util/scheduler';
 
 export const IpcContext = createContext<IpcContext | undefined>(undefined);
@@ -76,9 +79,9 @@ export function useRPC() {
     <Req, Res, Err>(
       descriptor: RpcInterface<Req, Res, Err>,
       req: Req,
-      paginationToken?: string
+      range?: PageRange
     ) => {
-      return ctx.ipc.invoke(descriptor, req, ctx.documentId, paginationToken);
+      return ctx.ipc.invoke(descriptor, req, ctx.documentId, range);
     },
     [ctx.ipc, ctx.documentId]
   );
@@ -143,9 +146,11 @@ export function useGet<T extends Resource, Err>(
 export function useList<T extends Resource, Q, Err>(
   resource: RpcInterface<Q, ResourceList<T>, Err>,
   query: () => Q,
-  deps: unknown[]
+  deps: unknown[],
+  { pageSize, initialFetch } = { pageSize: 50, initialFetch: 150 }
 ): ListCursor<T, Err> | undefined {
-  type DataState = Omit<ListCursor<T, Err>, 'fetchMore' | 'active' | 'events'>;
+  // Internal state. Equal to what we return without the derived properties and helpers.
+  type DataState = { total: number; pages: (T[] | undefined)[]; error?: Err };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const q = useMemo(query, deps);
@@ -154,49 +159,83 @@ export function useList<T extends Resource, Q, Err>(
   // If the query fails, return the error to the caller
   const [state, setState] = useState<DataState>();
 
+  // Track whether the query is active or not
   const [active, setActive] = useState(false);
 
+  // Track the current visible range so we know what to refetch
+  const visibleRange = useRef<PageRange>({
+    offset: 0,
+    limit: initialFetch
+  });
+
+  // Serialize all asynchronous updates
   const scheduler = useMemo(() => new Scheduler(), []);
+
+  // Notify subscribers when the query is invalidated so they can clear any downstream caches
   const events = useMemo(() => new EventEmitter<ListCursorEvents>(), []);
 
-  const paginationToken = useRef<{ next?: string }>();
+  // Is this the data load?
   const firstLoad = useRef(true);
+
+  // Fetch a specified range of data and insert it into the page cache.
+  const fetchRange = useCallback(
+    async ({ offset, limit }: PageRange, opts: { clearCache: boolean }) => {
+      const startPage = Math.floor(offset / pageSize);
+      const endPage = Math.ceil((offset + limit) / pageSize);
+
+      const data = await rpc(resource, q, {
+        offset: startPage * pageSize,
+        limit: (endPage - startPage) * pageSize
+      });
+
+      if (data.status === 'error') {
+        return setState({
+          pages: [],
+          error: data.error,
+          total: 0
+        });
+      }
+
+      setState((prev = { pages: [], total: 0 }) =>
+        produce(prev, (draft) => {
+          if (opts.clearCache) {
+            draft.pages.splice(0, draft.pages.length);
+          }
+
+          let pageIndex = startPage;
+          draft.total = data.value.total;
+
+          for (const page of chunk(data.value.items, pageSize)) {
+            draft.pages[pageIndex] = castDraft(page);
+            pageIndex += 1;
+          }
+        })
+      );
+    },
+    [pageSize, q, resource, rpc]
+  );
 
   // Triggered on first load, data change and when the query changes
   const refetchAll = useCallback(
     () =>
       scheduler.run(async () => {
-        if (!firstLoad.current) {
-          events.emit('change');
-        }
-
-        firstLoad.current = false;
         setActive(true);
 
         try {
-          const data = await rpc(resource, q);
-          if (data.status === 'error') {
-            return setState({
-              items: [],
-              error: data.error,
-              totalCount: 0
-            });
+          await fetchRange(visibleRange.current, { clearCache: true });
+        } finally {
+          if (!firstLoad.current) {
+            firstLoad.current = false;
+            events.emit('change');
           }
 
-          paginationToken.current = data.value;
-
-          setState({
-            items: data.value.items,
-            totalCount: data.value.total
-          });
-        } finally {
           setActive(false);
         }
       }),
-    [events, q, resource, rpc, scheduler]
+    [events, fetchRange, scheduler]
   );
 
-  // Refetch all when the query changes or on first load
+  // Refetch all when an invalidating parameter changes or on first load
   useEffect(() => {
     refetchAll();
   }, [refetchAll]);
@@ -209,53 +248,46 @@ export function useList<T extends Resource, Q, Err>(
     // that may be invalidated by edits to other types of objects in the database.
     if (type === resource.id) {
       refetchAll();
-      events.emit('change');
     }
   });
 
   return useMemo(
-    () =>
+    (): ListCursor<T, Err> | undefined =>
       state && {
-        ...state,
         events,
+        error: state.error,
+        totalCount: state.total,
+        get: (i: number) => {
+          const page = state.pages[Math.floor(i / pageSize)];
+          return page?.[i % pageSize];
+        },
+        isLoaded: (i: number) => {
+          const page = state.pages[Math.floor(i / pageSize)];
+          return page !== undefined;
+        },
         active,
+        setVisibleRange: (start, end) => {
+          scheduler.run(async () => {
+            visibleRange.current = {
+              offset: start,
+              limit: Math.max(0, end - start)
+            };
+          });
+        },
         reset: refetchAll,
         fetchMore: (start, end) =>
           scheduler.run(async () => {
             setActive(true);
-            const addedItems: T[] = [];
 
-            while (
-              addedItems.length < end - start &&
-              !(paginationToken.current && !paginationToken.current.next)
-            ) {
-              const res = await rpc(resource, q, paginationToken.current?.next);
-              if (res.status === 'error') {
-                return setState(
-                  (prev) =>
-                    prev && {
-                      ...prev,
-                      error: res.error
-                    }
-                );
-              }
-
-              addedItems.push(...res.value.items);
-              paginationToken.current = res.value;
+            try {
+              const range = { offset: start, limit: Math.max(end - start, 0) };
+              await fetchRange(range, { clearCache: false });
+            } finally {
+              setActive(false);
             }
-
-            setState(
-              (prev) =>
-                prev && {
-                  ...prev,
-                  items: [...(prev?.items ?? []), ...addedItems]
-                }
-            );
-
-            setActive(false);
           })
       },
-    [active, q, refetchAll, resource, rpc, events, scheduler, state]
+    [state, events, active, refetchAll, pageSize, scheduler, fetchRange]
   );
 }
 
@@ -264,41 +296,25 @@ export function useListAll<T extends Resource, Q, Err>(
   query: () => Q,
   deps: unknown[]
 ): Result<T[]> | undefined {
-  const rpc = useRPC();
-  const { ipc } = useIpc();
+  const result = useList(resource, query, deps, {
+    initialFetch: 10000,
+    pageSize: 10000
+  });
+  return useMemo(() => {
+    if (!result) {
+      return;
+    }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const q = useMemo(query, deps);
-  const [data, setData] = useState<Result<T[]>>();
+    if (result.error) {
+      return error(result.error);
+    }
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      const items: T[] = [];
+    if (result.totalCount >= 10000) {
+      throw Error('useListAll(): too many results returned');
+    }
 
-      let page;
-      do {
-        const res: Result<ResourceList<T>> = await rpc(resource, q, page);
-        if (res.status !== 'ok') {
-          return res;
-        }
-
-        items.push(...res.value.items);
-        page = res.value.next;
-      } while (page);
-
-      return ok(items);
-    };
-
-    fetchAll().then(setData);
-
-    return ipc.listen(ChangeEvent, (event) => {
-      if (event.type === resource.id) {
-        fetchAll().then(setData);
-      }
-    });
-  }, [ipc, q, resource, rpc]);
-
-  return data;
+    return ok(times(result.totalCount, result.get) as T[]);
+  }, [result]);
 }
 
 /**
@@ -315,10 +331,19 @@ export interface ListCursor<T extends Resource = Resource, Err = unknown> {
   events: EventEmitter<ListCursorEvents>;
 
   /** All items fetched so far */
-  items: T[];
+  get: (i: number) => T | undefined;
+
+  /** All items fetched so far */
+  isLoaded: (i: number) => boolean;
 
   /** Extend the cursor's range over the query */
   fetchMore: (start: number, end: number) => Promise<void>;
+
+  /** Refetch the query, preserving any scroll positions */
+  reset: () => Promise<void>;
+
+  /** Notify the list observer the range that needs to be refetched when the query is invalidated */
+  setVisibleRange: (start: number, end: number) => void;
 
   /** True if data is currently being fetched */
   active: boolean;
@@ -327,4 +352,15 @@ export interface ListCursor<T extends Resource = Resource, Err = unknown> {
 interface ListCursorEvents {
   /** Emitted when the query is invalidated and any downstream cache should be cleared. */
   change: [];
+}
+
+/**
+ * Convert a ListCursor into an Iterable for (for...of) iteration.
+ *
+ * @param cursor ListCursor to iterate over.
+ */
+export function* iterateListCursor<T extends Resource>(cursor: ListCursor<T>) {
+  for (let i = 0; i < cursor.totalCount; ++i) {
+    yield cursor.get(i);
+  }
 }
