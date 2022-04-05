@@ -11,10 +11,11 @@ import { Box, BoxProps, useThemeUI } from 'theme-ui';
 
 import { Resource } from '../../../common/resource';
 import { iterateListCursor, ListCursor } from '../../ipc/ipc.hooks';
-import { last, sumBy } from 'lodash';
+import { compact, last, meanBy } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
+import { take } from 'streaming-iterables';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -49,6 +50,30 @@ export function DataGrid<T extends Resource>({
     (): CellData<T> => ({ cursor: data, columns }),
     [data, columns]
   );
+
+  // Calculate widths for each of the columns based on an initial sample of the data
+  const columnWidths = useMemo(() => {
+    if (!data) {
+      return;
+    }
+
+    const dataSample = compact(Array.from(take(25, iterateListCursor(data))));
+
+    return columns.map((col) => {
+      const { width } = col.cell;
+      if (typeof width === 'undefined') {
+        return 100;
+      }
+
+      if (typeof width === 'function') {
+        return meanBy(dataSample, (x) => width(col.getData(x), fontSize));
+      }
+
+      return width;
+    });
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!data, columns, fontSize]);
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const loaderRef = useRef<Loader | null>(null);
@@ -129,19 +154,12 @@ export function DataGrid<T extends Resource>({
         }}
       >
         {({ height, width }) => {
-          const availableWidth = width - sumBy(columns, (c) => c.width ?? 0);
-          const flexColumns = columns.filter(
-            (c) => typeof c.width === 'undefined'
-          );
-          const defaultWidth = Math.max(
-            200,
-            Math.floor(availableWidth / flexColumns.length)
-          );
-          const columnOffsets = columns.reduce(
-            (prev: number[], x) => [
-              ...prev,
-              (last(prev) ?? 0) + (x.width ?? defaultWidth)
-            ],
+          if (!columnWidths) {
+            return null;
+          }
+
+          const columnOffsets = columnWidths.reduce(
+            (prev: number[], x) => [...prev, (last(prev) ?? 0) + x],
             []
           );
 
@@ -165,7 +183,7 @@ export function DataGrid<T extends Resource>({
                   <div
                     key={col.id}
                     sx={{
-                      width: col.width ?? defaultWidth,
+                      width: columnWidths[i],
                       position: 'absolute',
                       borderRight: '1px solid var(--theme-ui-colors-border)',
                       left: columnOffsets[i - 1] ?? 0,
@@ -193,7 +211,7 @@ export function DataGrid<T extends Resource>({
                         gridRef.current = grid;
                       }}
                       height={height - rowHeight}
-                      columnWidth={(i) => columns[i].width ?? defaultWidth}
+                      columnWidth={(i) => columnWidths[i]}
                       onScroll={({ scrollLeft }) => {
                         if (headerRef.current) {
                           headerRef.current.style.transform = `translateX(-${scrollLeft}px)`;
@@ -256,13 +274,17 @@ export interface GridColumn<T extends Resource = Resource, Val = any> {
 
   /** Presentation component for the cell */
   cell: DataGridCell<Val>;
-
-  /** Explicit size for the cell in pixels. If not provided, will be auto-sized by the view */
-  width?: number;
 }
 
 /** Presentation component for a datagrid */
-export type DataGridCell<Val = unknown> = FC<{ value: Val }>;
+export type DataGridCell<Val = unknown> = FC<{ value: Val }> & {
+  /**
+   * Explicit size for the cell in pixels. If not provided, will be auto-sized by the view.
+   *
+   * Provieding a function will cause the size to be estimated based on a sample of the grid data.
+   **/
+  width?: number | ((val: Val, fontSize: number) => number);
+};
 
 /**
  * Internal. Extract cell data from context and render using the cell component.
