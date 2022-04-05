@@ -180,8 +180,7 @@ const getGridColumns = (schema: SchemaProperty[]) => {
 
         return undefined;
       },
-      cell: ProgressCell,
-      width: 36
+      cell: ProgressCell
     },
     ...metadataColumns
   ];

@@ -44,7 +44,7 @@ export const ExampleDataGrid = () => {
         setState((state) => {
           faker.seed(start);
 
-          const newItems = times(end - start, (i) => ({
+          const newItems = times(end - start, () => ({
             id: faker.datatype.uuid(),
             name: faker.name.firstName(),
             favouriteDog: faker.animal.dog()
