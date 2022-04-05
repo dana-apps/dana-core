@@ -10,6 +10,7 @@ import { ResourceList } from './resource';
 export enum IngestPhase {
   READ_METADATA = 'READ_METADATA',
   READ_FILES = 'READ_FILES',
+  PROCESS_FILES = 'PROCESS_FILES',
   COMPLETED = 'COMPLETED',
   ERROR = 'ERROR'
 }
