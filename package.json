@@ -11,7 +11,7 @@
     "format": "prettier --write . && eslint --fix .",
     "build-config": "yarn vite build --config",
     "build": "yarn build-config vite.renderer.js && yarn build-config vite.electron.js",
-    "test": "jest --passWithNoTests",
+    "test": "jest --passWithNoTests --forceExit",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
   },
