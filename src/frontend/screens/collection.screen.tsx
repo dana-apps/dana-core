@@ -33,12 +33,12 @@ export const CollectionScreen: FC = () => {
   }, [collection]);
 
   const selectedAsset = useMemo(() => {
-    if (selection.selection && assets) {
+    if (selection.current && assets) {
       return Array.from(iterateListCursor(assets)).find(
-        (x) => x && x.id === selection.selection
+        (x) => x && x.id === selection.current
       );
     }
-  }, [assets?.items, selection]);
+  }, [assets, selection]);
 
   if (!assets || !collection || collection.status !== 'ok') {
     return null;

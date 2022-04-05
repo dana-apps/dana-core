@@ -38,9 +38,9 @@ export const ArchiveIngestScreen: FC = () => {
   const cancelImport = useCancelImport(sessionId);
   const selection = SelectionContext.useContainer();
   const selectedAsset = useMemo(() => {
-    if (selection.selection && assets) {
+    if (selection.current && assets) {
       return Array.from(iterateListCursor(assets)).find(
-        (x) => x && x.id === selection.selection
+        (x) => x && x.id === selection.current
       );
     }
   }, [assets, selection]);

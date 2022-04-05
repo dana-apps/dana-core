@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, useMemo, useRef } from 'react';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { FC, KeyboardEvent, useCallback, useMemo, useRef } from 'react';
+import AutoSizer, { Size } from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
 import {
   GridChildComponentProps,
@@ -10,10 +10,11 @@ import {
 import { Box, BoxProps, useThemeUI } from 'theme-ui';
 
 import { Resource } from '../../../common/resource';
-import { ListCursor } from '../../ipc/ipc.hooks';
+import { iterateListCursor, ListCursor } from '../../ipc/ipc.hooks';
 import { last, sumBy } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
+import { PageRange } from '../../../common/ipc.interfaces';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -38,6 +39,7 @@ export function DataGrid<T extends Resource>({
   ...props
 }: DataGridProps<T>) {
   const { theme } = useThemeUI();
+  const selection = SelectionContext.useContainer();
 
   const fontSize = Number(theme.fontSizes?.[fontSizeParam]) ?? 13;
   const padding = Number(theme.space?.[2]) ?? 3;
@@ -50,14 +52,82 @@ export function DataGrid<T extends Resource>({
 
   const headerRef = useRef<HTMLDivElement | null>(null);
   const loaderRef = useRef<Loader | null>(null);
+  const innerListRef = useRef<HTMLElement | null>();
+  const outerListRef = useRef<HTMLElement | null>();
+  const viewSize = useRef<Size>();
+  const visibleRange = useRef<PageRange>({ offset: 0, limit: 0 });
+  const gridRef = useRef<Grid | null>(null);
 
   useEventEmitter(data.events, 'change', () => {
     loaderRef.current?.resetloadMoreItemsCache(true);
   });
 
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<unknown>) => {
+      const findIndex = () =>
+        Array.from(iterateListCursor(data)).findIndex(
+          (x) => x && x.id === selection.current
+        );
+
+      if (event.key == 'ArrowUp') {
+        const index = findIndex() - 1;
+        const next = data.get(index);
+
+        if (next) {
+          selection.setSelection(next.id);
+
+          gridRef.current?.scrollToItem({
+            rowIndex: index - 1
+          });
+        }
+      } else if (event.key === 'ArrowDown') {
+        const index = findIndex() + 1;
+        const next = data.get(index);
+
+        if (next) {
+          selection.setSelection(next.id);
+
+          gridRef.current?.scrollToItem({
+            rowIndex: index + 1
+          });
+        }
+      } else if (event.key === 'PageUp') {
+        gridRef.current?.scrollToItem({
+          rowIndex: visibleRange.current.offset - visibleRange.current.limit,
+          align: 'start'
+        });
+      } else if (event.key === 'PageDown') {
+        gridRef.current?.scrollToItem({
+          rowIndex: visibleRange.current.offset + visibleRange.current.limit,
+          align: 'start'
+        });
+      } else if (event.key === 'Home') {
+        gridRef.current?.scrollToItem({
+          rowIndex: 0,
+          align: 'start'
+        });
+      } else if (event.key === 'End') {
+        gridRef.current?.scrollToItem({
+          rowIndex: data.totalCount - 1,
+          align: 'end'
+        });
+      }
+    },
+    [data, selection]
+  );
+
   return (
-    <Box sx={{ fontSize: 0, position: 'relative', minHeight: 0 }} {...props}>
-      <AutoSizer>
+    <Box
+      sx={{ fontSize: 0, position: 'relative', minHeight: 0, outline: 'none' }}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      {...props}
+    >
+      <AutoSizer
+        onResize={(size) => {
+          viewSize.current = size;
+        }}
+      >
         {({ height, width }) => {
           const availableWidth = width - sumBy(columns, (c) => c.width ?? 0);
           const flexColumns = columns.filter(
@@ -118,7 +188,10 @@ export function DataGrid<T extends Resource>({
                 {({ onItemsRendered, ref }) => (
                   <div sx={{ position: 'absolute', top: rowHeight }}>
                     <Grid<CellData<T>>
-                      ref={ref}
+                      ref={(grid) => {
+                        ref(grid);
+                        gridRef.current = grid;
+                      }}
                       height={height - rowHeight}
                       columnWidth={(i) => columns[i].width ?? defaultWidth}
                       onScroll={({ scrollLeft }) => {
@@ -130,11 +203,20 @@ export function DataGrid<T extends Resource>({
                       columnCount={columns.length}
                       rowHeight={() => rowHeight}
                       itemData={dataVal}
+                      outerRef={outerListRef}
+                      innerRef={innerListRef}
                       onItemsRendered={(props) => {
                         data.setVisibleRange(
                           props.overscanRowStartIndex,
                           props.overscanRowStopIndex
                         );
+
+                        visibleRange.current = {
+                          offset: props.visibleRowStartIndex,
+                          limit:
+                            props.visibleRowStopIndex -
+                            props.visibleRowStartIndex
+                        };
 
                         onItemsRendered({
                           overscanStartIndex: props.overscanRowStartIndex,
@@ -191,7 +273,7 @@ function CellWrapper<T extends Resource>({
   columnIndex,
   rowIndex
 }: GridChildComponentProps<CellData<T>>) {
-  const { selection, setSelection } = SelectionContext.useContainer();
+  const { current: selection, setSelection } = SelectionContext.useContainer();
   const colData = cursor.get(rowIndex);
   const column = columns[columnIndex];
   const plainBg = rowIndex % 2 === 0 ? 'background' : 'foreground';
