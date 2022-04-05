@@ -110,11 +110,11 @@ export async function initIngest(
 
   router.bindArchiveRpc(
     ListIngestAssets,
-    async (archive, { sessionId }, paginationToken) => {
+    async (archive, { sessionId }, range) => {
       const assets = await assetIngest.listSessionAssets(
         archive,
         sessionId,
-        paginationToken
+        range
       );
 
       return ok(assets);

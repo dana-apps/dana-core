@@ -25,7 +25,7 @@ export interface FrontendIpc {
     sourceArchiveId?: string,
 
     /** Relevant for a paginated queries only – identify the page of results to fetch. */
-    paginationToken?: string
+    range?: PageRange
   ): Promise<Result<Res, Err>>;
 
   /**
@@ -38,6 +38,17 @@ export interface FrontendIpc {
     /** Event handler implementation */
     handler: (x: Event) => void | Promise<void>
   ): () => void;
+}
+
+/**
+ * Represent a pagination range in a query.
+ */
+export interface PageRange {
+  /** Zero-indexed offset from the start */
+  offset: number;
+
+  /** Page size */
+  limit: number;
 }
 
 /**

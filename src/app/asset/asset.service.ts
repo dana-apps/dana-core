@@ -1,5 +1,6 @@
 import { EventEmitter } from 'eventemitter3';
 import { Asset } from '../../common/asset.interfaces';
+import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
@@ -165,7 +166,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
    */
   async listAssets(
     archive: ArchivePackage,
-    paginationToken?: string
+    range?: PageRange
   ): Promise<ResourceList<Asset>> {
     return archive.useDb(async () => {
       const entities = await archive.list(
@@ -173,7 +174,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
         {},
         {
           populate: ['mediaFiles'],
-          paginationToken
+          range
         }
       );
 

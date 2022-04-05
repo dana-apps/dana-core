@@ -3,6 +3,7 @@ import { isEqual } from 'lodash';
 import {
   EventInterface,
   FrontendIpc,
+  PageRange,
   RpcInterface
 } from '../../common/ipc.interfaces';
 import { Resource } from '../../common/resource';
@@ -18,7 +19,7 @@ interface MockedIpcMethod<Req = unknown, Res = unknown, Err = unknown> {
 type MockedResult<Req, Res, Err> = (
   req: Req,
   sourceArchiveId?: string,
-  paginationToken?: string
+  range?: PageRange
 ) => Promise<Result<Res, Err>>;
 
 /**
@@ -32,7 +33,7 @@ export class MockIpc implements FrontendIpc {
     descriptor: RpcInterface<Req, Res, Err>,
     req: Req,
     sourceArchiveId?: string,
-    paginationToken?: string
+    range?: PageRange
   ): Promise<Result<Res, Err>> {
     const matchingCall = required(
       this.rpcCalls.find(
@@ -43,11 +44,9 @@ export class MockIpc implements FrontendIpc {
       descriptor.id
     ) as MockedIpcMethod<Req, Res, Err>;
 
-    return matchingCall.result(
-      req,
-      sourceArchiveId,
-      paginationToken
-    ) as Promise<Result<Res, Err>>;
+    return matchingCall.result(req, sourceArchiveId, range) as Promise<
+      Result<Res, Err>
+    >;
   }
 
   listen<Event>(

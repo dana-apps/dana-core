@@ -3,7 +3,8 @@ import {
   ResponseType,
   RpcInterface,
   EventInterface,
-  RequestType
+  RequestType,
+  PageRange
 } from '../../common/ipc.interfaces';
 import { required } from '../../common/util/assert';
 import { Result } from '../../common/util/error';
@@ -27,8 +28,8 @@ export class ElectronRouter {
     descriptor: Rpc,
     handler: (
       request: RequestType<Rpc>,
-      paginationToken?: string,
-      archiveId?: string
+      archiveId?: string,
+      range?: PageRange
     ) => Promise<Result<ResponseType<Rpc>>>
   ) {
     this.ipc.handle(
@@ -36,18 +37,14 @@ export class ElectronRouter {
       async (
         _,
         request: Request,
-        paginationToken?: string,
-        archiveId?: string
+        archiveId?: string,
+        range?: PageRange
       ): Promise<Result> => {
         // The schema validators aren't strictly needed in the electron app, but we use them here anyway
         // to ensure consistent behaviour with any future Web UI.
         const validatedRequest = descriptor.request.parse(request);
 
-        const response = await handler(
-          validatedRequest,
-          archiveId,
-          paginationToken
-        );
+        const response = await handler(validatedRequest, archiveId, range);
 
         if (response.status === 'error') {
           const errorSchema = required(
@@ -81,10 +78,10 @@ export class ElectronRouter {
     handler: (
       archive: ArchivePackage,
       request: RequestType<Rpc>,
-      paginationToken?: string
+      range?: PageRange
     ) => Promise<Result<ResponseType<Rpc>>>
   ) {
-    this.bindRpc(descriptor, (request, paginationToken, archiveIdParam) => {
+    this.bindRpc(descriptor, (request, archiveIdParam, range) => {
       const archiveId = required(archiveIdParam, 'Expected archive id');
       const archive = required(
         this.archiveService.getArchive(archiveId),
@@ -92,7 +89,7 @@ export class ElectronRouter {
         archiveId
       );
 
-      return handler(archive, request, paginationToken);
+      return handler(archive, request, range);
     });
   }
 

@@ -1,6 +1,6 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, useCallback, useMemo, useRef } from 'react';
+import { FC, useMemo, useRef } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
 import {
@@ -43,13 +43,8 @@ export function DataGrid<T extends Resource>({
   const padding = Number(theme.space?.[2]) ?? 3;
   const rowHeight = 2 * padding + fontSize;
 
-  const isItemLoaded = useCallback(
-    (index: number) => index < data.items.length - 1,
-    [data]
-  );
-
   const dataVal = useMemo(
-    (): CellData<T> => ({ rows: data.items, columns }),
+    (): CellData<T> => ({ cursor: data, columns }),
     [data, columns]
   );
 
@@ -57,7 +52,7 @@ export function DataGrid<T extends Resource>({
   const loaderRef = useRef<Loader | null>(null);
 
   useEventEmitter(data.events, 'change', () => {
-    loaderRef.current?.resetloadMoreItemsCache();
+    loaderRef.current?.resetloadMoreItemsCache(true);
   });
 
   return (
@@ -116,7 +111,7 @@ export function DataGrid<T extends Resource>({
 
               <Loader
                 ref={loaderRef}
-                isItemLoaded={isItemLoaded}
+                isItemLoaded={data.isLoaded}
                 loadMoreItems={data.fetchMore}
                 itemCount={data.totalCount}
               >
@@ -136,6 +131,11 @@ export function DataGrid<T extends Resource>({
                       rowHeight={() => rowHeight}
                       itemData={dataVal}
                       onItemsRendered={(props) => {
+                        data.setVisibleRange(
+                          props.overscanRowStartIndex,
+                          props.overscanRowStopIndex
+                        );
+
                         onItemsRendered({
                           overscanStartIndex: props.overscanRowStartIndex,
                           overscanStopIndex: props.overscanRowStopIndex,
@@ -186,13 +186,13 @@ export type DataGridCell<Val = unknown> = FC<{ value: Val }>;
  * Internal. Extract cell data from context and render using the cell component.
  */
 function CellWrapper<T extends Resource>({
-  data: { rows, columns },
+  data: { cursor, columns },
   style,
   columnIndex,
   rowIndex
 }: GridChildComponentProps<CellData<T>>) {
-  const { current: selection, setSelection } = SelectionContext.useContainer();
-  const colData = rows[rowIndex];
+  const { selection, setSelection } = SelectionContext.useContainer();
+  const colData = cursor.get(rowIndex);
   const column = columns[columnIndex];
   const plainBg = rowIndex % 2 === 0 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
@@ -222,6 +222,6 @@ function CellWrapper<T extends Resource>({
 
 /** Data and context for grid cells */
 interface CellData<T extends Resource> {
-  rows: T[];
+  cursor: ListCursor<T>;
   columns: GridColumn<T>[];
 }

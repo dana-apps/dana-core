@@ -1,5 +1,5 @@
 import z from 'zod';
-import { EventInterface, EventType } from './ipc.interfaces';
+import { EventInterface, EventType, PageRange } from './ipc.interfaces';
 
 /** An object with an ID */
 export type Resource = { id: string };
@@ -25,61 +25,15 @@ export interface ResourceList<T> {
   /** Values in the current page */
   items: T[];
 
-  /** Pagination token for the current page of results */
-  page: string;
-
-  /** Pagination token for the next page of results (or undefined if the last page) */
-  next?: string;
-
-  /** Pagination token for the previous page of results (or undefined if the first page) */
-  prev?: string;
+  /** Location of the current page in the total set of results */
+  range: PageRange;
 }
 export const ResourceList = <T>(type: z.ZodSchema<T>) =>
   z.object({
     total: z.number(),
     items: z.array(type),
-
-    page: z.string(),
-    next: z.optional(z.string()),
-    prev: z.optional(z.string())
+    range: z.object({
+      limit: z.number(),
+      offset: z.number()
+    })
   });
-
-/** Implementation of ResourceList supporting iteration via await (for...in) */
-export class PaginatedResourceList<T extends Resource>
-  implements ResourceList<T>, AsyncIterable<T>
-{
-  constructor(
-    private fetchMore: (page: string) => Promise<ResourceList<T>>,
-    readonly total: number,
-    readonly items: T[],
-    readonly page: string,
-    readonly next?: string | undefined,
-    readonly prev?: string | undefined
-  ) {}
-
-  async *[Symbol.asyncIterator]() {
-    yield* this.items;
-
-    for (let page = this.next; page != undefined; ) {
-      const next = await this.fetchMore(page);
-      yield* next.items;
-
-      page = next.next;
-    }
-  }
-
-  map<MapT extends Resource>(fn: (val: T) => MapT) {
-    return new PaginatedResourceList<MapT>(
-      (page) =>
-        this.fetchMore(page).then((val) => ({
-          ...val,
-          items: val.items.map(fn)
-        })),
-      this.total,
-      this.items.map(fn),
-      this.page,
-      this.next,
-      this.prev
-    );
-  }
-}

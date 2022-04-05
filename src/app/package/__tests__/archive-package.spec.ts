@@ -3,7 +3,6 @@ import { SqliteDriver } from '@mikro-orm/sqlite';
 import { randomUUID } from 'crypto';
 import { mkdir } from 'fs/promises';
 import { times } from 'lodash';
-import { collect } from 'streaming-iterables';
 
 import { getTempfiles } from '../../../test/tempfile';
 import { ArchivePackage } from '../archive-package';
@@ -37,9 +36,21 @@ describe(ArchivePackage, () => {
       return entities;
     });
 
-    const listQuery = await archive.list(ExampleEntity, {}, { pageSize: 3 });
+    const returnedItems: ExampleEntity[] = [];
+    const range = { limit: 3, offset: 0 };
 
-    expect(await collect(listQuery)).toHaveLength(entities.length);
+    while (true) {
+      const listQuery = await archive.list(ExampleEntity, {}, { range });
+
+      returnedItems.push(...listQuery.items);
+      range.offset += range.limit;
+
+      if (returnedItems.length >= listQuery.total) {
+        break;
+      }
+    }
+
+    expect(returnedItems).toHaveLength(entities.length);
   });
 });
 

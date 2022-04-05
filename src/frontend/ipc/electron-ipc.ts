@@ -2,6 +2,7 @@ import type { IpcRenderer } from 'electron';
 import {
   EventInterface,
   FrontendIpc,
+  PageRange,
   RpcInterface
 } from '../../common/ipc.interfaces';
 import { Result } from '../../common/util/error';
@@ -16,14 +17,9 @@ export class ElectronRendererIpc implements FrontendIpc {
     descriptor: RpcInterface<Req, Res, never>,
     req: Req,
     sourceArchiveId?: string,
-    paginationToken?: string
+    range?: PageRange
   ): Promise<Result<Res, Err>> {
-    return this.ipc.invoke(
-      descriptor.id,
-      req,
-      sourceArchiveId,
-      paginationToken
-    );
+    return this.ipc.invoke(descriptor.id, req, sourceArchiveId, range);
   }
 
   listen<Event>(
