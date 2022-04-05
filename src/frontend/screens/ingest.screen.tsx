@@ -171,7 +171,7 @@ const getGridColumns = (schema: SchemaProperty[]) => {
         if (x.validationErrors) {
           return 'warning';
         }
-        if (x.phase === IngestPhase.READ_FILES) {
+        if (x.phase === IngestPhase.PROCESS_FILES) {
           return -1;
         }
         if (x.phase === IngestPhase.COMPLETED) {

@@ -5,11 +5,19 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { FolderPlus, ListColumns } from 'react-bootstrap-icons';
 import { Box, Flex, Text } from 'theme-ui';
 
-import { ListIngestSession, StartIngest } from '../../common/ingest.interfaces';
+import {
+  IngestPhase,
+  IngestSession,
+  ListIngestSession,
+  StartIngest
+} from '../../common/ingest.interfaces';
 import { Resource } from '../../common/resource';
 import { Result } from '../../common/util/error';
 import { useListAll, useRPC } from '../ipc/ipc.hooks';
-import { ToolbarButton } from '../ui/components/atoms.component';
+import {
+  ProgressIndicator,
+  ToolbarButton
+} from '../ui/components/atoms.component';
 import {
   NavListItem,
   NavListSection,
@@ -39,6 +47,7 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
                     key={session.id}
                     title={session.title}
                     path={`/ingest/${session.id}`}
+                    status={<IngestSessionStatusIndicator session={session} />}
                   />
                 ))}
               </NavListSection>
@@ -93,6 +102,22 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
       }
     />
   );
+};
+
+const IngestSessionStatusIndicator: FC<{ session: IngestSession }> = ({
+  session
+}) => {
+  if (session.phase === IngestPhase.COMPLETED) {
+    return <ProgressIndicator value={session.valid ? 1 : 'warning'} />;
+  }
+  if (session.phase === IngestPhase.ERROR) {
+    return <ProgressIndicator value="error" />;
+  }
+  if (!session.totalFiles) {
+    return <ProgressIndicator value={-1} />;
+  }
+
+  return <ProgressIndicator value={session.filesRead / session.totalFiles} />;
 };
 
 /**

@@ -35,6 +35,9 @@ interface NavListItemProps {
 
   /** Path navigated to on click */
   path: string;
+
+  /** Status indicator shown on the item */
+  status?: ReactNode;
 }
 
 /**
@@ -43,6 +46,7 @@ interface NavListItemProps {
 export const NavListItem: FC<NavListItemProps> = ({
   path,
   title: label,
+  status,
   ...props
 }) => (
   <NavLink
@@ -51,8 +55,10 @@ export const NavListItem: FC<NavListItemProps> = ({
     {...props}
   >
     {({ isActive }) => (
-      <Box
+      <Flex
         sx={{
+          flexDirection: 'row',
+          alignItems: 'center',
           bg: isActive ? 'highlight' : undefined,
           p: 1,
           px: 2,
@@ -65,8 +71,10 @@ export const NavListItem: FC<NavListItemProps> = ({
         }}
         {...props}
       >
-        {label}
-      </Box>
+        <span sx={{ flex: 1 }}>{label}</span>
+
+        {status}
+      </Flex>
     )}
   </NavLink>
 );

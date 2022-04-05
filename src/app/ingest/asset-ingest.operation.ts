@@ -410,6 +410,10 @@ export class AssetIngestOperation implements IngestSession {
     this.log.info('Read media file for asset', asset.path);
 
     await this.archive.useDb(async (db) => {
+      asset.phase = IngestPhase.PROCESS_FILES;
+      db.persistAndFlush(asset);
+      this.emitStatus([asset.id]);
+
       for (const file of await asset.files.loadItems()) {
         if (!this._active) {
           return;

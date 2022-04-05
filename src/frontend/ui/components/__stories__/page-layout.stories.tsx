@@ -1,7 +1,7 @@
 import faker from '@faker-js/faker';
 import { times } from 'lodash';
 import { useState } from 'react';
-import { Plus } from 'react-bootstrap-icons';
+import { Check2Circle, Plus } from 'react-bootstrap-icons';
 import { MemoryRouter } from 'react-router-dom';
 import { Box, Button, Grid, IconButton } from 'theme-ui';
 import { Window } from '../../window';
@@ -33,6 +33,7 @@ export const ScreenWithSidebar = () => {
                       key={j}
                       title={faker.word.noun()}
                       path={`/${i}.${j}`}
+                      status={i == 0 && j == 1 && <Check2Circle />}
                     />
                   ))}
                 </NavListSection>
