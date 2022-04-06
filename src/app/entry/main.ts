@@ -1,4 +1,11 @@
-import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
+import {
+  app as electronApp,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  protocol,
+  session
+} from 'electron';
 import path from 'path';
 import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
@@ -85,7 +92,8 @@ async function main() {
   async function showArchiveWindow(archive: ArchivePackage) {
     const window = createFrontendWindow({
       title: path.basename(archive.location, path.extname(archive.location)),
-      config: { documentId: archive.id }
+      config: { documentId: archive.id },
+      mediaDir: archive.blobPath
     });
 
     app.router.addWindow(window.webContents, archive.location);

@@ -1,7 +1,7 @@
 import z from 'zod';
 import { EventInterface, EventType } from './ipc.interfaces';
 
-/** An object with in id */
+/** An object with an ID */
 export type Resource = { id: string };
 
 /** Conventional event for indicating that one or more resources of a type has changed */

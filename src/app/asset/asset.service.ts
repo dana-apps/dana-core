@@ -17,6 +17,9 @@ interface CreateAssetOpts {
   media?: MediaFile[];
 }
 
+/**
+ * Manages creation, administration and retreival of assets.
+ */
 export class AssetService extends EventEmitter<AssetEvents> {
   constructor(
     private collectionService: CollectionService,
@@ -68,7 +71,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
         media: media.map((m) => ({
           id: m.id,
           mimeType: m.mimeType,
-          rendition: this.mediaService.getRenditionUrl(archive, m),
+          rendition: this.mediaService.getRenditionUri(archive, m),
           type: 'image'
         }))
       });
@@ -182,7 +185,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
             media: Array.from(entity.mediaFiles).map((file) => ({
               id: file.id,
               type: 'image',
-              rendition: this.mediaService.getRenditionUrl(archive, file),
+              rendition: this.mediaService.getRenditionUri(archive, file),
               mimeType: file.mimeType
             })),
             metadata: entity.metadata
