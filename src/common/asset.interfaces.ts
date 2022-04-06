@@ -21,7 +21,7 @@ export const Asset = z.object({
 export type Asset = z.TypeOf<typeof Asset>;
 
 /**
- * Enum vale for possible schema property types.
+ * Enum value for possible schema property types.
  */
 export enum SchemaPropertyType {
   FREE_TEXT = 'FREE_TEXT'

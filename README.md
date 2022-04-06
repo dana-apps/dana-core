@@ -55,7 +55,7 @@ please pay attention to its concept of a '[unit of work](https://mikro-orm.io/do
 Migrations can be auto-generated from entities (assuming the entity files follow the file naming convention of
 `*entity.ts`). To do this, run `yarn make-migrations`.
 
-The state of the current database schema is tracked in a json file in the migrations directory. If you need to revert
+The state of the current database schema is tracked in a JSON file in the migrations directory. If you need to revert
 to a previous version of the schema for generating new migrations, you can take advantage of the fact that this is version controlled to do that.
 
 Please do make sure that you squash any new migrations in your branch before opening a PR in order to keep them
