@@ -22,7 +22,7 @@ import { ProgressValue } from '../ui/components/atoms.component';
 import { ProgressCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { MediaDetail } from '../ui/components/media-detail.component';
-import { MasterDetail } from '../ui/components/page-layouts.component';
+import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { BottomBar } from '../ui/components/page-layouts.component';
 
@@ -66,7 +66,7 @@ export const ArchiveIngestScreen: FC = () => {
 
   return (
     <>
-      <MasterDetail
+      <PrimaryDetailLayout
         sx={{ flex: 1, width: '100%', position: 'relative' }}
         detail={detailView}
       >
@@ -75,7 +75,7 @@ export const ArchiveIngestScreen: FC = () => {
           columns={gridColumns}
           data={assets}
         />
-      </MasterDetail>
+      </PrimaryDetailLayout>
 
       <BottomBar
         actions={

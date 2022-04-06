@@ -10,7 +10,7 @@ import {
   NavListItem,
   NavListSection,
   ArchiveWindowLayout,
-  MasterDetail
+  PrimaryDetailLayout
 } from '../page-layouts.component';
 
 export default {
@@ -51,7 +51,7 @@ export const ScreenWithSidebar = () => {
   );
 };
 
-export const MasterDetailView = () => {
+export const PrimaryDetail = () => {
   faker.seed(1);
   const [state, setState] = useState<string>();
   const animals = times(10, faker.animal.dog);
@@ -60,7 +60,7 @@ export const MasterDetailView = () => {
 
   return (
     <Window>
-      <MasterDetail detail={detailView}>
+      <PrimaryDetailLayout detail={detailView}>
         <Grid>
           {animals.map((key, i) => (
             <Button onClick={() => setState(key)} key={i}>
@@ -68,7 +68,7 @@ export const MasterDetailView = () => {
             </Button>
           ))}
         </Grid>
-      </MasterDetail>
+      </PrimaryDetailLayout>
     </Window>
   );
 };
