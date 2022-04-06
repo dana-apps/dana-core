@@ -62,6 +62,7 @@ export class ArchivePackage {
 
   /**
    * TODO: Currently has same behaviour as useDb() - needs to detect nested transactions as sqlite doesn't support them.
+   * See: https://github.com/commonknowledge/dana-core/issues/19
    *
    * Execute a block in the context of a database transaction. A unit of work will be set up for the transaction
    * if not already in the context of one.
