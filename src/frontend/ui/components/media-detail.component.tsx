@@ -3,9 +3,13 @@ import { BoxProps, Flex, Image } from 'theme-ui';
 import { Asset } from '../../../common/asset.interfaces';
 
 interface MediaDetailProps extends BoxProps {
+  /** Asset to render details of */
   asset: Asset;
 }
 
+/**
+ * Panel displayed when an asset is selected in a collection view and we want to show the its media in a side-area.
+ */
 export const MediaDetail: FC<MediaDetailProps> = ({ asset, ...props }) => {
   const media = asset.media;
 

@@ -38,10 +38,10 @@ export const ArchiveIngestScreen: FC = () => {
   const cancelImport = useCancelImport(sessionId);
   const selection = SelectionContext.useContainer();
   const selectedAsset = useMemo(() => {
-    if (selection.selection && assets?.items) {
-      return assets.items.find((x) => x.id === selection.selection);
+    if (selection.current && assets?.items) {
+      return assets.items.find((x) => x.id === selection.current);
     }
-  }, [assets, selection.selection]);
+  }, [assets, selection]);
 
   const gridColumns = useMemo(() => {
     if (collection?.status === 'ok') {

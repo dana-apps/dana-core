@@ -3,6 +3,7 @@ import { copyFile, unlink } from 'fs/promises';
 import mime from 'mime';
 import path from 'path';
 import sharp, { FormatEnum } from 'sharp';
+import { Logger } from 'tslog';
 
 import { FileImportResult, IngestError } from '../../common/ingest.interfaces';
 import { error, ok } from '../../common/util/error';
@@ -12,6 +13,9 @@ import { MediaFile } from './media-file.entity';
 import { getMediaType } from './media-types';
 
 export class MediaFileService {
+  private static RENDITION_URI_PREFIX = 'media://';
+  private log = new Logger({ name: 'MediaFileService' });
+
   /**
    * Persist a media file in the archive.
    *
@@ -35,16 +39,29 @@ export class MediaFileService {
 
       try {
         await copyFile(source, this.getMediaPath(archive, mediaFile));
-      } catch {
+      } catch (err) {
+        this.log.error('Copy file to archive failed', source, err);
         return error(IngestError.IO_ERROR);
       }
 
       await this.createImageRendition(archive, mediaFile, 'png');
 
       await mediaRepository.persistAndFlush(mediaFile);
+      this.log.info('Created media file', source, mediaFile.id);
 
       return ok(mediaFile);
     });
+  }
+
+  /**
+   * Get the metadata for a file from the archive.
+   *
+   * @param archive Archive the file is stored in
+   * @param ids Ids of the file
+   * @returns Metadata about the file
+   */
+  getFile(archive: ArchivePackage, id: string) {
+    return archive.get(MediaFile, id);
   }
 
   /**
@@ -67,12 +84,16 @@ export class MediaFileService {
         // Remove the file
         try {
           await unlink(this.getMediaPath(archive, file));
+          await unlink(this.getRenditionPath(archive, file, 'png'));
 
           // Mark record for deletion
           db.remove(file);
 
           results.push(ok());
-        } catch {
+          this.log.info('Deleted file', file.id);
+        } catch (err) {
+          this.log.error('Failed to delete file', file.id, err);
+
           results.push(error(IngestError.IO_ERROR));
         }
       }
@@ -91,7 +112,22 @@ export class MediaFileService {
    * @returns A uri suitable for viewing a rendition of the file represented by `mediaFile`
    */
   getRenditionUri(archive: ArchivePackage, mediaFile: MediaFile) {
-    return 'media://' + this.getRenditionSlug(mediaFile, 'png');
+    return (
+      MediaFileService.RENDITION_URI_PREFIX +
+      this.getRenditionSlug(mediaFile, 'png')
+    );
+  }
+
+  /**
+   * Resolve rendition url to the absolute file path of the rendition.
+   *
+   * @param archive
+   * @param uri A uri returned by `getRenditionUri`
+   * @returns The resolved filename of the uri represented by `uri`
+   */
+  resolveRenditionUri(archive: ArchivePackage, uri: string) {
+    const slug = uri.substring(MediaFileService.RENDITION_URI_PREFIX.length);
+    return path.join(archive.blobPath, slug);
   }
 
   /**
@@ -102,6 +138,18 @@ export class MediaFileService {
    */
   listMedia(archive: ArchivePackage) {
     return archive.list(MediaFile);
+  }
+
+  /**
+   * Return the absolute path for the original file represented by a MediaFile instance
+   *
+   * @param archive Archive that `mediaFile` belongs to.
+   * @param mediaFile Media file to get the storage path of.
+   * @returns Absolute path for the file represented by a MediaFile instance
+   */
+  getMediaPath(archive: ArchivePackage, mediaFile: MediaFile) {
+    const ext = mime.getExtension(mediaFile.mimeType);
+    return path.join(archive.blobPath, mediaFile.id + '.' + ext);
   }
 
   /**
@@ -119,22 +167,12 @@ export class MediaFileService {
     mediaFile: MediaFile,
     format: keyof FormatEnum
   ) {
+    this.log.info('Create rendition for file', mediaFile.id);
+
     await sharp(this.getMediaPath(archive, mediaFile))
       .resize(1280)
       .toFormat(format)
       .toFile(this.getRenditionPath(archive, mediaFile, format));
-  }
-
-  /**
-   * Return the absolute path for the original file represented by a MediaFile instance
-   *
-   * @param archive Archive that `mediaFile` belongs to.
-   * @param mediaFile Media file to get the storage path of.
-   * @returns Absolute path for the file represented by a MediaFile instance
-   */
-  private getMediaPath(archive: ArchivePackage, mediaFile: MediaFile) {
-    const ext = mime.getExtension(mediaFile.mimeType);
-    return path.join(archive.blobPath, mediaFile.id + '.' + ext);
   }
 
   /**

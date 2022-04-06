@@ -33,10 +33,10 @@ export const CollectionScreen: FC = () => {
   }, [collection]);
 
   const selectedAsset = useMemo(() => {
-    if (selection.selection && assets?.items) {
-      return assets.items.find((x) => x.id === selection.selection);
+    if (selection.current && assets?.items) {
+      return assets.items.find((x) => x.id === selection.current);
     }
-  }, [assets, selection.selection]);
+  }, [assets?.items, selection]);
 
   if (!assets || !collection || collection.status !== 'ok') {
     return null;

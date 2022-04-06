@@ -23,6 +23,8 @@ import {
 } from '../asset-ingest.service';
 
 describe('AssetImportOperation', () => {
+  jest.setTimeout(15000);
+
   test('imports assets', async () => {
     const fixture = await setup();
     await fixture.givenACollectionMetadataSchema([

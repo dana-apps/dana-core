@@ -191,7 +191,7 @@ function CellWrapper<T extends Resource>({
   columnIndex,
   rowIndex
 }: GridChildComponentProps<CellData<T>>) {
-  const { selection, setSelection } = SelectionContext.useContainer();
+  const { current: selection, setSelection } = SelectionContext.useContainer();
   const colData = rows[rowIndex];
   const column = columns[columnIndex];
   const plainBg = rowIndex % 2 === 0 ? 'background' : 'foreground';

@@ -1,6 +1,5 @@
 import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
 import { uniqueId } from 'lodash';
-import path from 'path';
 
 import { FrontendConfig } from '../../common/frontend-config';
 import { getFrontendPlatform } from '../util/platform';
@@ -14,15 +13,18 @@ interface CreateFrontendWindow {
   /** Config object passed to frontend */
   config: Omit<FrontendConfig, 'platform' | 'windowId'>;
 
-  /** Directory from which `media:` url schemes will be resolved from */
-  mediaDir?: string;
+  /** Resolve `media:` url schemes to an absolute path */
+  resolveMedia?: MediaResolveFn;
 }
+
+/** Resolve `media:` url schemes to an absolute path */
+type MediaResolveFn = (uri: string) => string;
 
 /** Show a new frontend window */
 export function createFrontendWindow({
   title,
   config,
-  mediaDir
+  resolveMedia
 }: CreateFrontendWindow) {
   const mergedConfig: FrontendConfig = {
     ...config,
@@ -31,7 +33,7 @@ export function createFrontendWindow({
     title
   };
 
-  const partition = initUrlSchemePartition(mediaDir);
+  const partition = initUrlSchemePartition(resolveMedia);
   const frontendWindow = new BrowserWindow({
     title,
 
@@ -83,17 +85,13 @@ export function createFrontendWindow({
  * @param mediaDir Directory to serve media from.
  * @returns An electron partition id defining the privilages we're granting to the new window.
  */
-function initUrlSchemePartition(mediaDir?: string) {
-  if (mediaDir) {
+function initUrlSchemePartition(resolveMedia?: MediaResolveFn) {
+  if (resolveMedia) {
     const partition = uniqueId('partition:');
     const ses = session.fromPartition(partition);
-    const slugOffset = 'media://'.length;
 
     ses.protocol.registerFileProtocol('media', (request, cb) => {
-      const slug = request.url.substring(slugOffset);
-      const mediaPath = path.join(mediaDir, slug);
-
-      cb(path.normalize(mediaPath));
+      cb(resolveMedia(request.url));
     });
 
     return partition;

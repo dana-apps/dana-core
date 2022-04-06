@@ -169,6 +169,12 @@ export const BottomBar: FC<BottomBarProps> = ({
   </Flex>
 );
 
+/**
+ * Render a resizable horizontally split layout suitable for presenting a main 'list' area and a 'detail' area when
+ * an item is selected in the main area.
+ *
+ * This layout is sometimes refered to as a 'master-detail view'.
+ */
 export const PrimaryDetailLayout: FC<
   Omit<BoxProps, 'ref'> & { detail?: ReactNode }
 > = ({ detail, children, ...props }) => {
