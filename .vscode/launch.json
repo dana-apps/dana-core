@@ -19,6 +19,11 @@
       }
     },
     {
+      "name": "Attach",
+      "type": "node",
+      "request": "attach"
+    },
+    {
       "type": "node",
       "name": "vscode-jest-tests",
       "request": "launch",
