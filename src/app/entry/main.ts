@@ -83,7 +83,7 @@ async function main() {
    * Show the window for an archive.
    */
   async function showArchiveWindow(archive: ArchivePackage) {
-    const window = createFrontendWindow({
+    const window = await createFrontendWindow({
       title: path.basename(archive.location, path.extname(archive.location)),
       config: { documentId: archive.id },
       resolveMedia: (uri) => media.fileService.resolveRenditionUri(archive, uri)
@@ -125,7 +125,10 @@ async function main() {
       return;
     }
 
-    const window = createFrontendWindow({ title: 'New Archive', config: {} });
+    const window = await createFrontendWindow({
+      title: 'New Archive',
+      config: {}
+    });
 
     window.on('close', () => {
       app.router.removeWindow(window.webContents);

@@ -24,7 +24,8 @@ export const theme: Theme = {
     useCustomProperties: true,
     initialColorModeName: 'system',
     useRootStyles: true,
-    useBorderBox: true
+    useBorderBox: true,
+    useLocalStorage: false
   },
   space: [0, 3, 5, 8, 13, 21, 34],
   colors: {

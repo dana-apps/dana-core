@@ -14,6 +14,7 @@ const config = {
   mode: process.env.MODE,
   plugins: [react()],
   root: SRC_ROOT,
+  base: '',
 
   server: {
     fs: {

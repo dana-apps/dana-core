@@ -1,9 +1,15 @@
 import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
 import { uniqueId } from 'lodash';
+import path from 'path';
+import { URL } from 'url';
 
 import { FrontendConfig } from '../../common/frontend-config';
 import { getFrontendPlatform } from '../util/platform';
-import { FRONTEND_SOURCE_URL, SHOW_DEVTOOLS } from './config';
+import {
+  FRONTEND_BUNDLE_DIR,
+  FRONTEND_ENTRYPOINT,
+  SHOW_DEVTOOLS
+} from './config';
 import { getResourcePath } from './resources';
 
 interface CreateFrontendWindow {
@@ -21,7 +27,7 @@ interface CreateFrontendWindow {
 type MediaResolveFn = (uri: string) => string;
 
 /** Show a new frontend window */
-export function createFrontendWindow({
+export async function createFrontendWindow({
   title,
   config,
   resolveMedia
@@ -60,7 +66,6 @@ export function createFrontendWindow({
     webPreferences: {
       additionalArguments: [
         '--frontend-config=' + JSON.stringify(mergedConfig)
-        // ...(isDev ? ['] : [])
       ],
       webSecurity: true,
       partition,
@@ -68,8 +73,10 @@ export function createFrontendWindow({
     }
   });
 
-  showWindowAfterFirstRender(mergedConfig, frontendWindow);
-  frontendWindow.loadURL(FRONTEND_SOURCE_URL);
+  await Promise.all([
+    frontendWindow.loadURL(FRONTEND_ENTRYPOINT),
+    showWindowAfterFirstRender(mergedConfig, frontendWindow)
+  ]);
 
   app.dock?.show();
 
@@ -77,7 +84,7 @@ export function createFrontendWindow({
 }
 
 /**
- * Grants the window access to custom url schemes to access media files over media: uris.
+ * Grants the window access to custom url schemes to access media and source files over custom url schemes.
  * See: https://www.electronjs.org/docs/latest/api/protocol#using-protocol-with-a-custom-partition-or-session
  *
  * This is needed because we can't safely allow the renderer process access to `file://` urls.
@@ -86,16 +93,26 @@ export function createFrontendWindow({
  * @returns An electron partition id defining the privilages we're granting to the new window.
  */
 function initUrlSchemePartition(resolveMedia?: MediaResolveFn) {
-  if (resolveMedia) {
-    const partition = uniqueId('partition:');
-    const ses = session.fromPartition(partition);
+  const partition = uniqueId('partition:');
+  const ses = session.fromPartition(partition);
 
+  // Delegate resolution of `media:` urls to the caller of `createFrontendWindow()`
+  if (resolveMedia) {
     ses.protocol.registerFileProtocol('media', (request, cb) => {
       cb(resolveMedia(request.url));
     });
-
-    return partition;
   }
+
+  // If we're running against a built source bundle, resolve `app:` urls from the frontend bundle directory.
+  const bundleDir = FRONTEND_BUNDLE_DIR;
+  if (bundleDir) {
+    ses.protocol.registerFileProtocol('app', (request, cb) => {
+      const { pathname } = new URL(request.url);
+      cb(path.join(bundleDir, pathname));
+    });
+  }
+
+  return partition;
 }
 
 /** Don't show the window immediately – wait for react to render first */
@@ -103,38 +120,52 @@ function showWindowAfterFirstRender(
   config: FrontendConfig,
   window: BrowserWindow
 ) {
-  const onWindowRendered = (_evt: unknown, id: string) => {
-    if (id !== config.windowId) {
-      return;
-    }
+  return new Promise<void>((resolve) => {
+    const onWindowRendered = (_evt: unknown, id: string) => {
+      if (id !== config.windowId) {
+        return;
+      }
 
-    ipcMain.off('render-window', onWindowRendered);
-    if (window.isDestroyed()) {
-      return;
-    }
+      ipcMain.off('render-window', onWindowRendered);
+      if (window.isDestroyed()) {
+        return;
+      }
 
-    window.show();
+      window.show();
+      resolve();
 
-    if (SHOW_DEVTOOLS) {
-      window.maximize();
+      if (SHOW_DEVTOOLS) {
+        window.maximize();
 
-      // Showing devtools immediately after loading the window seems to break devtools and result in a blank pane.
-      // Wait for a few seconds before opening in order to keep electron happy.
-      setTimeout(() => {
-        window.webContents.openDevTools();
-      }, 2000);
-    }
-  };
+        // Showing devtools immediately after loading the window seems to break devtools and result in a blank pane.
+        // Wait for a few seconds before opening in order to keep electron happy.
+        setTimeout(() => {
+          window.webContents.openDevTools();
+        }, 2000);
+      }
+    };
 
-  ipcMain.on('render-window', onWindowRendered);
+    ipcMain.on('render-window', onWindowRendered);
+  });
 }
 
 /**
- * Declare that our custom media: uri scheme is safe and not subject to the CSP.
+ * Declare elevated privilages for our custom uri schemes safe and not subject to the CSP.
  * This must happen before the electron app is initialized, so we do it at module scope.
  *
  * See: https://www.electronjs.org/docs/latest/api/protocol#using-protocol-with-a-custom-partition-or-session
  */
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'media', privileges: { bypassCSP: true } }
+  // `media:` urls load media renditions from user data on the local filesystem.
+  // This tells the browser to treat them like https: urls.
+  { scheme: 'media', privileges: { secure: true } },
+
+  // `app:` urls load static assets and source files from the app bundle.
+  // This tells the browser to:
+  // - Treat them like https: urls
+  // - Treat them as origins (including a domain portion) so that they can reference each other via relative paths.
+  {
+    scheme: 'app',
+    privileges: { secure: true, standard: true }
+  }
 ]);
