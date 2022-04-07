@@ -50,7 +50,7 @@ async function setup() {
 
   const db = await MikroORM.init<SqliteDriver>({
     type: 'sqlite',
-    dbName: ':memory:',
+    dbName: temp(),
     migrations: {
       path: migrationsPath,
       emit: 'js'

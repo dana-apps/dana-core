@@ -19,7 +19,22 @@ import { onCleanup } from './teardown';
 export const getTempfiles = async (root?: string) => {
   const dir =
     root ?? (await fs.mkdtemp((await fs.realpath(os.tmpdir())) + path.sep));
-  onCleanup(() => fs.rm(dir, { recursive: true }));
+
+  onCleanup(async () => {
+    const timeout = 2000;
+    const deadline = Date.now() + timeout;
+
+    // Windows seems to have a small delay before actually releasing the lock on closed files.
+    // When removing a directory, spin for a couple of seconds if it fails to give time to catch up.
+    while (Date.now() < deadline) {
+      try {
+        await fs.rm(dir, { recursive: true });
+        break;
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    }
+  });
 
   return () => path.join(dir, randomUUID());
 };
