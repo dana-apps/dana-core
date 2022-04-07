@@ -1,9 +1,18 @@
 import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
 import { uniqueId } from 'lodash';
+import { platform } from 'os';
 import path from 'path';
 import { URL } from 'url';
 
 import { FrontendConfig } from '../../common/frontend-config';
+import {
+  GetMaximizationState,
+  MaximizationState,
+  MaximizationStateChanged,
+  ToggleMaximizeWindow,
+  MinimizeWindow
+} from '../../common/ui.interfaces';
+import { error, ok } from '../../common/util/error';
 import { getFrontendPlatform } from '../util/platform';
 import {
   FRONTEND_BUNDLE_DIR,
@@ -11,6 +20,32 @@ import {
   SHOW_DEVTOOLS
 } from './config';
 import { getResourcePath } from './resources';
+import { ElectronRouter } from './router';
+
+export async function initWindows(router: ElectronRouter) {
+  router.bindRpc(MinimizeWindow, async (_1, _2, _3, contents) => {
+    BrowserWindow.fromWebContents(contents)?.minimize();
+    return ok();
+  });
+  router.bindRpc(ToggleMaximizeWindow, async (_1, _2, _3, contents) => {
+    const window = BrowserWindow.fromWebContents(contents);
+    if (window?.isMaximized()) {
+      router.emit(MaximizationStateChanged, 'normal');
+      window.unmaximize();
+    } else {
+      router.emit(MaximizationStateChanged, 'maximized');
+      window?.maximize();
+    }
+
+    return ok();
+  });
+  router.bindRpc(GetMaximizationState, async (_1, _2, _3, contents) => {
+    const window = BrowserWindow.fromWebContents(contents);
+    return window
+      ? ok<MaximizationState>(getMaximizationState(window))
+      : error('UNKNOWN_WINDOW');
+  });
+}
 
 interface CreateFrontendWindow {
   /** Title of the window */
@@ -21,6 +56,8 @@ interface CreateFrontendWindow {
 
   /** Resolve `media:` url schemes to an absolute path */
   resolveMedia?: MediaResolveFn;
+
+  router: ElectronRouter;
 }
 
 /** Resolve `media:` url schemes to an absolute path */
@@ -30,7 +67,8 @@ type MediaResolveFn = (uri: string) => string;
 export async function createFrontendWindow({
   title,
   config,
-  resolveMedia
+  resolveMedia,
+  router
 }: CreateFrontendWindow) {
   const mergedConfig: FrontendConfig = {
     ...config,
@@ -60,7 +98,8 @@ export async function createFrontendWindow({
     maximizable: true,
     fullscreenable: true,
     closable: true,
-    titleBarStyle: 'customButtonsOnHover',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: platform() !== 'darwin',
     thickFrame: false,
 
     webPreferences: {
@@ -72,6 +111,14 @@ export async function createFrontendWindow({
       preload: getResourcePath('preload/browser-preload.js')
     }
   });
+
+  const emitState = (state: MaximizationState) => {
+    router.emit(MaximizationStateChanged, state, frontendWindow.webContents);
+  };
+
+  frontendWindow.on('minimize', () => emitState('minimized'));
+  frontendWindow.on('maximize', () => emitState('maximized'));
+  frontendWindow.on('unmaximize', () => emitState('normal'));
 
   await Promise.all([
     frontendWindow.loadURL(FRONTEND_ENTRYPOINT),
@@ -148,6 +195,16 @@ function showWindowAfterFirstRender(
     ipcMain.on('render-window', onWindowRendered);
   });
 }
+
+const getMaximizationState = (window: BrowserWindow): MaximizationState => {
+  if (window.isMinimized()) {
+    return 'minimized';
+  } else if (window.isMaximized()) {
+    return 'maximized';
+  } else {
+    return 'normal';
+  }
+};
 
 /**
  * Declare elevated privilages for our custom uri schemes safe and not subject to the CSP.

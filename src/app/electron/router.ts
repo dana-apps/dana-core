@@ -27,14 +27,15 @@ export class ElectronRouter {
     descriptor: Rpc,
     handler: (
       request: RequestType<Rpc>,
-      paginationToken?: string,
-      archiveId?: string
+      archiveId: string | undefined,
+      paginationToken: string | undefined,
+      window: WebContents
     ) => Promise<Result<ResponseType<Rpc>>>
   ) {
     this.ipc.handle(
       descriptor.id,
       async (
-        _,
+        event,
         request: Request,
         paginationToken?: string,
         archiveId?: string
@@ -46,7 +47,8 @@ export class ElectronRouter {
         const response = await handler(
           validatedRequest,
           archiveId,
-          paginationToken
+          paginationToken,
+          event.sender
         );
 
         if (response.status === 'error') {
@@ -106,7 +108,7 @@ export class ElectronRouter {
   emit<Event>(
     descriptor: EventInterface<Event>,
     event: Event,
-    targetArchiveId?: string
+    targetArchiveIdOrWindow?: string | WebContents
   ) {
     // The schema validators aren't strictly needed in the electron app, but we use them here anyway
     // to ensure consistent behaviour with the Web UI.
@@ -114,8 +116,14 @@ export class ElectronRouter {
 
     // If the event is sent to a specific archive, only send it to that window, otherwise send to all.
     for (const { archiveId, window } of this._windows) {
-      if (!targetArchiveId || archiveId === targetArchiveId) {
-        window.send(descriptor.id, eventPayload);
+      if (typeof targetArchiveIdOrWindow === 'string') {
+        if (archiveId === targetArchiveIdOrWindow) {
+          window.send(descriptor.id, eventPayload);
+        }
+      } else {
+        if (!targetArchiveIdOrWindow || targetArchiveIdOrWindow === window) {
+          window.send(descriptor.id, eventPayload);
+        }
       }
     }
   }

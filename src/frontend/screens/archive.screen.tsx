@@ -63,29 +63,37 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
           >
             <Text sx={{ fontWeight: 600 }}>{title}</Text>
 
-            <WindowDragArea
-              sx={{
-                px: 6,
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'flex-end',
-                justifyContent: 'flex-end',
-                p: 2,
-                flex: 1,
-                '> *': {
-                  pr: 4
-                }
-              }}
-            >
-              <Link to="/schema" sx={{ textDecoration: 'none' }}>
-                <ToolbarButton icon={ListColumns} label="Schema" />
-              </Link>
-              <ToolbarButton
-                icon={FolderPlus}
-                label="Import Assets"
-                onClick={acceptImport}
+            <div sx={{ flex: 1 }}>
+              <WindowInset
+                sx={{
+                  bg: 'gray1'
+                }}
+                platforms={['windows', 'linuxish']}
               />
-            </WindowDragArea>
+              <WindowDragArea
+                sx={{
+                  px: 6,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'flex-end',
+                  justifyContent: 'flex-end',
+                  p: 2,
+                  flex: 1,
+                  '> *': {
+                    pr: 4
+                  }
+                }}
+              >
+                <Link to="/schema" sx={{ textDecoration: 'none' }}>
+                  <ToolbarButton icon={ListColumns} label="Schema" />
+                </Link>
+                <ToolbarButton
+                  icon={FolderPlus}
+                  label="Import Assets"
+                  onClick={acceptImport}
+                />
+              </WindowDragArea>
+            </div>
           </WindowDragArea>
 
           <Outlet />
