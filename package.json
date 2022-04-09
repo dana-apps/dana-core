@@ -39,6 +39,7 @@
     "@mikro-orm/sqlite": "^5.1.1",
     "electron-devtools-installer": "^3.2.0",
     "electron-is-dev": "^2.0.0",
+    "electron-updater": "^4.6.5",
     "eventemitter3": "^4.0.7",
     "immer": "^9.0.7",
     "it-pushable": "^2.0.1",
@@ -179,7 +180,10 @@
       ]
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "res/entitlements.mac.plist",
@@ -187,12 +191,16 @@
       "category": "public.app-category.utilities"
     },
     "win": {
-      "target": "zip"
+      "target": [
+        "zip",
+        "nsis"
+      ]
     },
     "linux": {
       "icon": "res/icon.png",
       "target": [
-        "zip"
+        "zip",
+        "AppImage"
       ],
       "category": "Utility"
     },
