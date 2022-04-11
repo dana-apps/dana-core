@@ -37,7 +37,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
    * This should fail if the asset's metadata is not valid according to the archive's schema.
    *
    * @param archive The archive to store the asset in.
-   * @param param1 Options for
+   * @param param1 Options for creating the asset.
    * @returns An `Asset` object representing the inserted asset.
    */
   async createAsset(
@@ -125,7 +125,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
       }
 
       db.persist(asset);
-      return ok(asset);
+      return ok(this.entityToAsset(archive, asset));
     });
   }
 
@@ -181,19 +181,25 @@ export class AssetService extends EventEmitter<AssetEvents> {
       return {
         ...entities,
         items: await Promise.all(
-          entities.items.map(async (entity) => ({
-            id: entity.id,
-            media: Array.from(entity.mediaFiles).map((file) => ({
-              id: file.id,
-              type: 'image',
-              rendition: this.mediaService.getRenditionUri(archive, file),
-              mimeType: file.mimeType
-            })),
-            metadata: entity.metadata
-          }))
+          entities.items.map(async (entity) =>
+            this.entityToAsset(archive, entity)
+          )
         )
       };
     });
+  }
+
+  private entityToAsset(archive: ArchivePackage, entity: AssetEntity): Asset {
+    return {
+      id: entity.id,
+      media: Array.from(entity.mediaFiles).map((file) => ({
+        id: file.id,
+        type: 'image',
+        rendition: this.mediaService.getRenditionUri(archive, file),
+        mimeType: file.mimeType
+      })),
+      metadata: entity.metadata
+    };
   }
 }
 

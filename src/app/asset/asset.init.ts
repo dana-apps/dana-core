@@ -1,6 +1,7 @@
 import {
   GetRootCollection,
   ListAssets,
+  UpdateAssetMetadata,
   UpdateCollectionSchema
 } from '../../common/asset.interfaces';
 import { ChangeEvent } from '../../common/resource';
@@ -22,6 +23,13 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
   router.bindArchiveRpc(ListAssets, async (archive, request, range) => {
     return ok(await assetService.listAssets(archive, range));
   });
+
+  router.bindArchiveRpc(
+    UpdateAssetMetadata,
+    (archive, { assetId, payload }) => {
+      return assetService.updateAsset(archive, assetId, { metadata: payload });
+    }
+  );
 
   router.bindArchiveRpc(GetRootCollection, async (archive) =>
     ok(await collectionService.getRootCollection(archive))

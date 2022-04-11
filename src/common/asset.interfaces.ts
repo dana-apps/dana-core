@@ -124,3 +124,18 @@ export const ListAssets = RpcInterface({
   response: ResourceList(Asset),
   error: z.nativeEnum(FetchError)
 });
+
+/**
+ * Update the metadata for an asset.
+ *
+ * Performs a full update – missing keys are treated as setting the metadata value to null.
+ */
+export const UpdateAssetMetadata = RpcInterface({
+  id: 'assets/list',
+  request: z.object({
+    assetId: z.string(),
+    payload: z.record(z.unknown())
+  }),
+  response: Asset,
+  error: z.nativeEnum(FetchError).or(ValidationError)
+});
