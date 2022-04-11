@@ -5,7 +5,7 @@
   "author": "Common Knowledge <hello@commonknowledge.coop>",
   "main": "build/electron/main.cjs",
   "scripts": {
-    "start": "node scripts/watch",
+    "start": "node scripts/debug",
     "prepare": "husky install",
     "make-migrations": "mikro-orm migration:create && jest --clearCache",
     "format": "prettier --write . && eslint --fix .",
