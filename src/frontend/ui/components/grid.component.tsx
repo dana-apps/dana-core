@@ -283,7 +283,7 @@ export type DataGridCell<Val = unknown> = FC<{ value: Val }> & {
    *
    * Provieding a function will cause the size to be estimated based on a sample of the grid data.
    **/
-  width?: number | ((val: Val, fontSize: number) => number);
+  width?: number | ((val: Val | undefined, fontSize: number) => number);
 };
 
 /**
