@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 import { z, ZodIssueCode } from 'zod';
-import { RequestType, RpcInterface } from './ipc.interfaces';
+import { ErrorType, RequestType, RpcInterface } from './ipc.interfaces';
 import { Media } from './media.interfaces';
 import { ResourceList } from './resource';
 import { FetchError } from './util/error';
@@ -52,6 +52,7 @@ const BaseSchemaProperty = z.object({
 });
 
 export const ValidationError = z.record(z.array(z.string()));
+export type ValidationError = z.TypeOf<typeof ValidationError>;
 
 /**
  * Common interface for a schema property with no special configuration fields.
@@ -142,3 +143,4 @@ export const UpdateAssetMetadata = RpcInterface({
 export type UpdateAssetMetadataRequest = RequestType<
   typeof UpdateAssetMetadata
 >;
+export type UpdateAssetError = ErrorType<typeof UpdateAssetMetadata>;

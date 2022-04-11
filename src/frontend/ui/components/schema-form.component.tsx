@@ -1,5 +1,8 @@
+/** @jsxImportSource theme-ui */
+
 import { ChangeEvent, FC } from 'react';
-import { Box, BoxProps, Field, Label, Text } from 'theme-ui';
+import { ExclamationTriangleFill } from 'react-bootstrap-icons';
+import { Box, BoxProps, Field, Flex, Label, Text } from 'theme-ui';
 import {
   SchemaProperty,
   SchemaPropertyType
@@ -10,7 +13,7 @@ export interface SchemaFormFieldProps<T = unknown>
   extends Omit<BoxProps, 'value' | 'onChange' | 'property'> {
   property: SchemaProperty;
   value: T | undefined;
-  onChange: (change: T) => void;
+  onChange: (change: T | undefined) => void;
   editing: boolean;
 }
 
@@ -26,9 +29,9 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
       <Field
         name={property.id}
         label={property.label}
-        value={value}
+        value={value ?? ''}
         onChange={(event: ChangeEvent<HTMLInputElement>) =>
-          onChange(event.currentTarget.value)
+          onChange(event.currentTarget.value || undefined)
         }
         {...props}
       />
@@ -51,3 +54,22 @@ export const SchemaField: FC<SchemaFormFieldProps> = (props) => {
 
   return never(props.property.type);
 };
+
+interface ValidationErrorProps extends BoxProps {
+  errors: string[];
+}
+
+export const SchemaError: FC<ValidationErrorProps> = ({ errors, ...props }) => (
+  <Flex sx={{ flexDirection: 'row', mt: 1 }} {...props}>
+    <ExclamationTriangleFill
+      sx={{ mr: 2, mt: 1 }}
+      color="var(--theme-ui-colors-error)"
+    />
+
+    {errors.map((e, i) => (
+      <Text key={i} color="error" sx={{ fontSize: 1, fontWeight: 700 }}>
+        {e}
+      </Text>
+    ))}
+  </Flex>
+);

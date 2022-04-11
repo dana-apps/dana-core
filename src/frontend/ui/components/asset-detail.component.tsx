@@ -6,12 +6,16 @@ import { Box, BoxProps, Button, Flex, Grid, Image } from 'theme-ui';
 import {
   Asset,
   SchemaProperty,
-  UpdateAssetMetadata
+  UpdateAssetError,
+  UpdateAssetMetadata,
+  ValidationError
 } from '../../../common/asset.interfaces';
+import { FetchError } from '../../../common/util/error';
 import { Dict } from '../../../common/util/types';
 import { useRPC } from '../../ipc/ipc.hooks';
+import { useErrorDisplay } from '../hooks/error.hooks';
 import { TabBar, TabBarButton } from './atoms.component';
-import { SchemaField } from './schema-form.component';
+import { SchemaError, SchemaField } from './schema-form.component';
 
 interface MediaDetailProps extends BoxProps {
   /** Asset to render details of */
@@ -42,20 +46,36 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     () => ({ ...asset.metadata, ...edits }),
     [asset.metadata, edits]
   );
+  const displayError = useErrorDisplay();
+  const [editErrors, setEditErrors] = useState<ValidationError>();
 
   const handleStartEditing = useCallback(() => {
     setTabId('Metadata');
     setEdits({});
+    setEditErrors(undefined);
   }, []);
 
   const handleCommitEditing = useCallback(async () => {
-    setTabId('Metadata');
-    await rpc(UpdateAssetMetadata, { assetId: asset.id, payload: metadata });
-    setEdits(undefined);
-  }, [asset.id, metadata, rpc]);
+    const res = await rpc(UpdateAssetMetadata, {
+      assetId: asset.id,
+      payload: metadata
+    });
+    if (res.status === 'error') {
+      if (res.error === FetchError.DOES_NOT_EXIST) {
+        return displayError(
+          `Something unexpected happened. We weren't able to update this record.`
+        );
+      }
+
+      setEditErrors(res.error);
+    } else {
+      setEdits(undefined);
+    }
+  }, [asset.id, displayError, metadata, rpc]);
 
   const handleCancelEditing = useCallback(() => {
     setEdits(undefined);
+    setEditErrors(undefined);
   }, []);
 
   return (
@@ -89,15 +109,20 @@ export const AssetDetail: FC<MediaDetailProps> = ({
         <TabBarButton label="Metadata" icon={CardList}>
           <Grid sx={{ gap: 4, alignItems: 'start', p: 3 }}>
             {schema.map((property) => (
-              <SchemaField
-                key={property.id}
-                property={property}
-                editing={isEditing}
-                value={metadata[property.id]}
-                onChange={(change) =>
-                  setEdits((edits) => ({ ...edits, [property.id]: change }))
-                }
-              />
+              <Box key={property.id}>
+                <SchemaField
+                  property={property}
+                  editing={isEditing}
+                  value={metadata[property.id]}
+                  onChange={(change) =>
+                    setEdits((edits) => ({ ...edits, [property.id]: change }))
+                  }
+                />
+
+                {editErrors?.[property.id] && (
+                  <SchemaError errors={editErrors?.[property.id]} />
+                )}
+              </Box>
             ))}
           </Grid>
 

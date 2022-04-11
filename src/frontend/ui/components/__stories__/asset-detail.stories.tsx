@@ -2,6 +2,7 @@
 
 import faker from '@faker-js/faker';
 import { FC, useMemo, useRef, useState } from 'react';
+import { z } from 'zod';
 import {
   SchemaProperty,
   SchemaPropertyType,
@@ -9,7 +10,8 @@ import {
   UpdateAssetMetadataRequest
 } from '../../../../common/asset.interfaces';
 import { Media } from '../../../../common/media.interfaces';
-import { ok } from '../../../../common/util/error';
+import { never } from '../../../../common/util/assert';
+import { error, ok } from '../../../../common/util/error';
 import { Dict } from '../../../../common/util/types';
 import { IpcContext } from '../../../ipc/ipc.hooks';
 import { MockIpc } from '../../../ipc/mock-ipc';
@@ -51,27 +53,12 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
           media: MEDIA_FILES,
           metadata: metadata
         }}
-        schema={testSchema}
+        schema={SCHEMA}
         initialTab="Metadata"
       />
     </IpcContext.Provider>
   );
 };
-
-const testSchema: SchemaProperty[] = [
-  {
-    id: 'someProperty',
-    label: 'Some Property',
-    required: false,
-    type: SchemaPropertyType.FREE_TEXT
-  },
-  {
-    id: 'someOtherProperty',
-    label: 'Some Other Property',
-    required: false,
-    type: SchemaPropertyType.FREE_TEXT
-  }
-];
 
 const useIpcFixture = (
   onChange: (change: UpdateAssetMetadataRequest) => void
@@ -84,6 +71,11 @@ const useIpcFixture = (
     ipc.handle({
       type: UpdateAssetMetadata,
       result: async (params) => {
+        const result = Validator.safeParse(params.payload);
+        if (!result.success) {
+          return error(result.error.formErrors.fieldErrors);
+        }
+
         onChangeRef.current(params);
         return ok();
       }
@@ -106,3 +98,37 @@ const MEDIA_FILES: Media[] = [
     rendition: require('./media/b.jpg')
   }
 ];
+
+const SCHEMA: SchemaProperty[] = [
+  {
+    id: 'someProperty',
+    label: 'Some Property',
+    required: true,
+    type: SchemaPropertyType.FREE_TEXT
+  },
+  {
+    id: 'someOtherProperty',
+    label: 'Some Other Property',
+    required: false,
+    type: SchemaPropertyType.FREE_TEXT
+  }
+];
+
+const Validator = z.object(
+  Object.fromEntries(
+    SCHEMA.map((property) => {
+      let validator;
+
+      if (property.type === SchemaPropertyType.FREE_TEXT) {
+        validator = z.string().nonempty();
+      } else {
+        return never(property.type);
+      }
+
+      return [
+        property.id,
+        property.required ? validator : validator.optional()
+      ];
+    })
+  )
+);
