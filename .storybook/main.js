@@ -15,6 +15,10 @@ module.exports = {
     storyStoreV7: true
   },
   framework: '@storybook/react',
+  // Storybook is using an old version of emotion (v10), which conflicts with the one we use (v11). This prevents the
+  // app theme from being passed through react context to stories.
+  //
+  // Pin the version of emotion here so that the same instance is used throughout.
   webpackFinal: async (config) => {
     return {
       ...config,

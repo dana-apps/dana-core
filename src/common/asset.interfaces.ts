@@ -1,5 +1,5 @@
 import { v4 } from 'uuid';
-import { z, ZodIssueCode } from 'zod';
+import { z } from 'zod';
 import { ErrorType, RequestType, RpcInterface } from './ipc.interfaces';
 import { Media } from './media.interfaces';
 import { ResourceList } from './resource';

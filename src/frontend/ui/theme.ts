@@ -5,7 +5,7 @@ const controlHover = {
   '&:hover:not(:disabled):not(:active):not([aria-selected="true"])': {
     opacity: 0.5
   },
-  '&:disabled:not(:disabled):not(:active):not([aria-selected="true"])': {
+  '&:disabled:not(:active):not([aria-selected="true"])': {
     opacity: 0.5
   }
 };

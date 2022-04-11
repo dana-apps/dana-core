@@ -1,6 +1,6 @@
 /** @jsxImportSource theme-ui */
 
-import { Children, cloneElement, FC, ReactElement, useState } from 'react';
+import { Children, cloneElement, FC, ReactElement } from 'react';
 import { Icon, Check, ExclamationTriangleFill } from 'react-bootstrap-icons';
 import {
   BoxProps,
@@ -9,8 +9,7 @@ import {
   Flex,
   IconButton,
   IconButtonProps,
-  Spinner,
-  useThemeUI
+  Spinner
 } from 'theme-ui';
 
 interface LoadingCellProps {
@@ -124,64 +123,34 @@ export const ToolbarButton: FC<ToolbarButtonProps> = ({
   );
 };
 
-interface TabBarButtonProps extends IconButtonProps {
-  /** Icon */
-  icon: Icon;
+interface TabsProps extends BoxProps {
+  children?: ReactElement<IconTab>[];
 
-  /** Button label */
-  label: string;
-
-  /** Is the view active? */
-  active?: boolean;
-}
-
-/**
- * Represent a button in a tab bar
- */
-export const TabBarButton: FC<TabBarButtonProps> = ({
-  icon: Icon,
-  label,
-  active,
-  ...props
-}) => {
-  const { theme } = useThemeUI();
-  return (
-    <IconButton
-      aria-label={label}
-      aria-selected={active}
-      sx={{
-        bg: active ? 'primary' : undefined,
-        borderRadius: 0
-      }}
-      {...props}
-    >
-      <Icon
-        color={String(theme.colors?.[active ? 'primaryContrast' : 'text'])}
-      />
-    </IconButton>
-  );
-};
-
-interface TabBarProps extends BoxProps {
-  children?: ReactElement<TabBarButtonProps>[];
-
-  /** Initial tab to display. Defaults to first child. */
-  tabId: string | undefined;
+  /** Label of the tab to display. If not provided, defaults to the first tab. */
+  currentTab: string | undefined;
 
   /** If false, disable all the buttons except the active one. Defaults to true */
   onTabChange: (x: string) => void;
 }
 
-export const TabBar: FC<TabBarProps> = ({
+/**
+ * A mini-router and Tab bar component suitable for for tab displays in contextual side panels.
+ *
+ * Displays the children of the active tab (identified by its `label` attribute) and sets its `active`
+ * property to true.
+ *
+ * The parent is responsible for controlling the state by passing in `currentTab` and handling `onTabChange()`
+ */
+export const Tabs: FC<TabsProps> = ({
   children = [],
-  tabId = children[0]?.props.label,
+  currentTab: tabId = children[0]?.props.label,
   onTabChange,
   ...props
 }) => {
   return (
     <>
       <Flex sx={{ flexDirection: 'row', borderBottom: 'primary' }} {...props}>
-        {Children.map(children, (child: ReactElement<TabBarButtonProps>) =>
+        {Children.map(children, (child: ReactElement<IconTab>) =>
           cloneElement(child, {
             active: child.props.label === tabId,
             onClick: () => onTabChange(child.props.label)
@@ -191,5 +160,47 @@ export const TabBar: FC<TabBarProps> = ({
 
       {children.find((child) => child.props.label === tabId)?.props.children}
     </>
+  );
+};
+
+interface IconTab extends IconButtonProps {
+  /** Icon to render */
+  icon: Icon;
+
+  /** Accessibility / tooltip label */
+  label: string;
+
+  /** Render the tab button in active state if true */
+  active?: boolean;
+}
+
+/**
+ * A tab button suitable for use with `Tabs` that renders a small icon, along with an accessibility label and tooltip.
+ */
+export const IconTab: FC<IconTab> = ({
+  icon: Icon,
+  label,
+  active,
+  ...props
+}) => {
+  return (
+    <IconButton
+      aria-label={label}
+      aria-selected={active}
+      title={label}
+      sx={{
+        bg: active ? 'primary' : undefined,
+        borderRadius: 0
+      }}
+      {...props}
+    >
+      <Icon
+        color={
+          active
+            ? 'var(--theme-ui-colors-primaryContrast)'
+            : 'var(--theme-ui-colors-text)'
+        }
+      />
+    </IconButton>
   );
 };

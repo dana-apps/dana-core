@@ -6,7 +6,6 @@ import { Box, BoxProps, Button, Flex, Grid, Image } from 'theme-ui';
 import {
   Asset,
   SchemaProperty,
-  UpdateAssetError,
   UpdateAssetMetadata,
   ValidationError
 } from '../../../common/asset.interfaces';
@@ -14,7 +13,7 @@ import { FetchError } from '../../../common/util/error';
 import { Dict } from '../../../common/util/types';
 import { useRPC } from '../../ipc/ipc.hooks';
 import { useErrorDisplay } from '../hooks/error.hooks';
-import { TabBar, TabBarButton } from './atoms.component';
+import { Tabs, IconTab } from './atoms.component';
 import { SchemaError, SchemaField } from './schema-form.component';
 
 interface MediaDetailProps extends BoxProps {
@@ -37,7 +36,6 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   schema,
   ...props
 }) => {
-  const media = asset.media;
   const [tabId, setTabId] = useState(initialTab);
   const [edits, setEdits] = useState<Dict>();
   const rpc = useRPC();
@@ -49,12 +47,14 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   const displayError = useErrorDisplay();
   const [editErrors, setEditErrors] = useState<ValidationError>();
 
+  /** Begin an edit session */
   const handleStartEditing = useCallback(() => {
     setTabId('Metadata');
     setEdits({});
     setEditErrors(undefined);
   }, []);
 
+  /** Attempt to  */
   const handleCommitEditing = useCallback(async () => {
     const res = await rpc(UpdateAssetMetadata, {
       assetId: asset.id,
@@ -85,8 +85,9 @@ export const AssetDetail: FC<MediaDetailProps> = ({
       }}
       {...props}
     >
-      <TabBar tabId={tabId} onTabChange={setTabId}>
-        <TabBarButton label="Media" icon={Collection}>
+      <Tabs currentTab={tabId} onTabChange={setTabId}>
+        {/* Media Panel */}
+        <IconTab label="Media" icon={Collection}>
           <Flex
             sx={{
               flexDirection: 'column',
@@ -96,7 +97,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
               p: 3
             }}
           >
-            {media.map((item) => (
+            {asset.media.map((item) => (
               <Image
                 sx={{ '&:not(:first-of-type)': { mt: 3 } }}
                 key={item.id}
@@ -104,9 +105,10 @@ export const AssetDetail: FC<MediaDetailProps> = ({
               />
             ))}
           </Flex>
-        </TabBarButton>
+        </IconTab>
 
-        <TabBarButton label="Metadata" icon={CardList}>
+        {/* Metadata Panel */}
+        <IconTab label="Metadata" icon={CardList}>
           <Grid sx={{ gap: 4, alignItems: 'start', p: 3 }}>
             {schema.map((property) => (
               <Box key={property.id}>
@@ -127,9 +129,10 @@ export const AssetDetail: FC<MediaDetailProps> = ({
           </Grid>
 
           <span sx={{ flex: 1 }} />
-        </TabBarButton>
-      </TabBar>
+        </IconTab>
+      </Tabs>
 
+      {/* Save / edit controls */}
       <Flex
         sx={{
           flexDirection: 'row',
