@@ -10,6 +10,8 @@ Nothing unorthodox here. Clone, run yarn to install dependencies and `yarn start
 
 If you use vscode, you can optionally clone and run this repository in a development container. The GUI is accessible over vnc on port 5901 (password: vscode).
 
+This project comes with a launch.json configuration for debugging the electron process. If using vscode, you can start this by running the default configuration (usually this can be done by hitting F5.
+
 ## Developer how-tos:
 
 ### Code structure
