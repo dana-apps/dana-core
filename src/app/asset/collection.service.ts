@@ -2,18 +2,20 @@ import { mapValues } from 'lodash';
 import { z } from 'zod';
 import {
   AggregatedValidationError,
-  SchemaProperty,
-  SingleValidationError
+  SchemaProperty
 } from '../../common/asset.interfaces';
 import { DefaultMap } from '../../common/util/collection';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
-import { AssetCollectionEntity } from './asset.entity';
-import { SchemaPropertyValue } from './metadata.entity';
+import { AssetCollectionEntity, AssetEntity } from './asset.entity';
+import {
+  SchemaPropertyValue,
+  SchemaValidationContext
+} from './metadata.entity';
 
 /**
- * Manages collections of assets and associates them with a schema.
+ * Manages collections of records and associates them with a schema.
  *
  * Collections are intended to be structured hierarchically, with a collection potentially having multiple
  * sub-collections.
@@ -172,24 +174,28 @@ export class CollectionService {
     schema: SchemaPropertyValue[],
     items: { id: string; metadata: Dict }[]
   ): Promise<ValidateItemsResult[]> {
-    const validator = this.getRecordValidator(schema);
+    const validator = await this.getRecordValidator(archive, schema);
 
-    return items.map(({ id, metadata }) => {
-      const result = validator.safeParse(metadata);
-      if (result.success) {
+    const results = items.map(
+      async ({ id, metadata }): Promise<ValidateItemsResult> => {
+        const result = await validator.safeParseAsync(metadata);
+        if (result.success) {
+          return {
+            id,
+            success: true,
+            metadata: result.data
+          };
+        }
+
         return {
-          id,
-          success: true,
-          metadata: result.data
+          id: id,
+          success: false,
+          errors: result.error.flatten().fieldErrors
         };
       }
+    );
 
-      return {
-        id: id,
-        success: false,
-        errors: result.error.flatten().fieldErrors
-      };
-    });
+    return Promise.all(results);
   }
 
   /**
@@ -212,10 +218,29 @@ export class CollectionService {
    * @param schema Schema definition.
    * @returns a zod validator object generated from the schema.
    */
-  private getRecordValidator(schema: SchemaPropertyValue[]) {
-    return z.object(
-      Object.fromEntries(schema.map(({ id, validator }) => [id, validator]))
+  private async getRecordValidator(
+    archive: ArchivePackage,
+    schema: SchemaPropertyValue[]
+  ) {
+    const context: SchemaValidationContext = {
+      getRecord: (collectionId, itemId) => {
+        return archive.useDb(async (db) => {
+          const asset = await db.findOne(AssetEntity, {
+            collection: collectionId,
+            id: itemId
+          });
+          return asset ?? undefined;
+        });
+      }
+    };
+
+    const fieldValidators = await Promise.all(
+      schema.map(async (property) => {
+        const validator = await property.getValidator(context);
+        return [property.id, validator];
+      })
     );
+    return z.object(Object.fromEntries(fieldValidators));
   }
 }
 

@@ -126,6 +126,11 @@ describe(CollectionService, () => {
     );
     expect(resultWithValue.status).toEqual('ok');
   });
+
+  describe('Controlled databases', () => {
+    test('Accepts reference to a controlled database', undefined);
+    test('Rejects controlled databases that are not', undefined);
+  });
 });
 
 async function setup() {

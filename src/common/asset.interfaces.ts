@@ -24,7 +24,8 @@ export type Asset = z.TypeOf<typeof Asset>;
  * Enum value for possible schema property types.
  */
 export enum SchemaPropertyType {
-  FREE_TEXT = 'FREE_TEXT'
+  FREE_TEXT = 'FREE_TEXT',
+  CONTROLLED_DATABASE = 'CONTROLLED_DATABASE'
 }
 
 /**
@@ -75,10 +76,23 @@ export const ScalarSchemaProperty = z.object({
 });
 export type ScalarSchemaProperty = z.TypeOf<typeof ScalarSchemaProperty>;
 
+export const ControlledDatabaseSchemaProperty = z.object({
+  ...BaseSchemaProperty.shape,
+
+  type: z.literal(SchemaPropertyType.CONTROLLED_DATABASE),
+  databaseId: z.string()
+});
+export type ControlledDatabaseSchemaProperty = z.TypeOf<
+  typeof ControlledDatabaseSchemaProperty
+>;
+
 /**
  * All schema property interface types
  */
-export const SchemaProperty = ScalarSchemaProperty;
+export const SchemaProperty = z.union([
+  ScalarSchemaProperty,
+  ControlledDatabaseSchemaProperty
+]);
 export type SchemaProperty = z.TypeOf<typeof SchemaProperty>;
 
 /**

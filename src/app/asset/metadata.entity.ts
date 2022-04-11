@@ -2,11 +2,14 @@ import { Embeddable, Property } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import {
+  ControlledDatabaseSchemaProperty,
   ScalarSchemaProperty,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
 import { never } from '../../common/util/assert';
+import { Dict, MaybeAsync } from '../../common/util/types';
+import { AssetEntity } from './asset.entity';
 
 /**
  * Base class for schema property values.
@@ -31,9 +34,11 @@ export abstract class SchemaPropertyValue {
   static fromJson(json: SchemaProperty) {
     if (json.type === SchemaPropertyType.FREE_TEXT) {
       return Object.assign(new FreeTextSchemaPropertyValue(), json);
+    } else if (json.type === SchemaPropertyType.CONTROLLED_DATABASE) {
+      return Object.assign(new ControlledDatabaseSchemaPropertyValue(), json);
+    } else {
+      return never(json);
     }
-
-    return never(json.type);
   }
 
   /**
@@ -45,7 +50,7 @@ export abstract class SchemaPropertyValue {
   /**
    * Human-readable property value used for displaying metadata and as the source column for bulk imports.
    */
-  @Property({ type: 'string ' })
+  @Property({ type: 'string' })
   label!: string;
 
   /**
@@ -64,17 +69,20 @@ export abstract class SchemaPropertyValue {
    * Return a zod validator object for the schema type. It only needs to define behaviour related to the `type` field,
    * not to other ones such as `required`.
    */
-  protected abstract getValueSchema(): z.Schema<unknown>;
+  protected abstract getValueSchema(
+    context: SchemaValidationContext
+  ): MaybeAsync<z.Schema<unknown>>;
 
   /**
    * Return a zod validator object for this schema property.
    */
-  get validator() {
+  async getValidator(context: SchemaValidationContext) {
     if (!this.required) {
-      return this.getValueSchema().optional();
+      const innerSchema = await this.getValueSchema(context);
+      return innerSchema.optional();
     }
 
-    return this.getValueSchema();
+    return this.getValueSchema(context);
   }
 }
 
@@ -86,9 +94,53 @@ export class FreeTextSchemaPropertyValue
   extends SchemaPropertyValue
   implements ScalarSchemaProperty
 {
-  type = SchemaPropertyType.FREE_TEXT;
+  type: SchemaPropertyType.FREE_TEXT = SchemaPropertyType.FREE_TEXT;
 
   protected getValueSchema() {
     return z.string();
   }
+}
+
+/**
+ * Schema type for a link to a record in a controlled database
+ */
+@Embeddable({ discriminatorValue: SchemaPropertyType.CONTROLLED_DATABASE })
+export class ControlledDatabaseSchemaPropertyValue
+  extends SchemaPropertyValue
+  implements ControlledDatabaseSchemaProperty
+{
+  type: SchemaPropertyType.CONTROLLED_DATABASE =
+    SchemaPropertyType.CONTROLLED_DATABASE;
+
+  @Property({ type: 'string' })
+  databaseId!: string;
+
+  /**
+   * Validate that the value of this item points
+   *
+   * @param param0
+   * @returns
+   */
+  protected getValueSchema({ getRecord }: SchemaValidationContext) {
+    return z.string().superRefine(async (refId, ctx) => {
+      const referencedItem = await getRecord(this.databaseId, refId);
+
+      if (!referencedItem) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Record does not exist in referenced database'
+        });
+      }
+    });
+  }
+}
+
+/**
+ * Context passed to the getValidator()
+ */
+export interface SchemaValidationContext {
+  getRecord(
+    collectionId: string,
+    itemId: string
+  ): Promise<AssetEntity | undefined>;
 }

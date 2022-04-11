@@ -3,3 +3,5 @@ export type UnwrapPromise<T> = T extends Promise<unknown>
   : T;
 
 export type Dict<T = unknown, Key extends string = string> = Record<Key, T>;
+
+export type MaybeAsync<T> = T | Promise<T>;
