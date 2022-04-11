@@ -1,6 +1,6 @@
-const { devDependencies } = require('../package.json');
+const path = require('path');
 
-const bundledDevDependencies = new Set(['@faker-js/faker']);
+const toPath = (_path) => path.join(process.cwd(), _path);
 
 module.exports = {
   stories: ['../src/**/*.stories.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
@@ -13,5 +13,20 @@ module.exports = {
     // Optional, for fastest build
     storyStoreV7: true
   },
-  framework: '@storybook/react'
+  framework: '@storybook/react',
+  webpackFinal: async (config) => {
+    return {
+      ...config,
+      resolve: {
+        ...config.resolve,
+        alias: {
+          ...config.resolve.alias,
+          '@emotion/core': toPath('node_modules/@emotion/react'),
+          '@emotion/styled': toPath('node_modules/@emotion/styled'),
+          'emotion-theming': toPath('node_modules/@emotion/react'),
+          '@babel/preset-react': toPath('node_modules/@babel/preset-react')
+        }
+      }
+    };
+  }
 };
