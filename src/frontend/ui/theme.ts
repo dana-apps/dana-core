@@ -2,7 +2,10 @@ import { Theme } from 'theme-ui';
 import * as polished from 'polished';
 
 const controlHover = {
-  '&:hover:not(:disabled)': {
+  '&:hover:not(:disabled):not(:active):not([aria-selected="true"])': {
+    opacity: 0.5
+  },
+  '&:disabled:not(:disabled):not(:active):not([aria-selected="true"])': {
     opacity: 0.5
   }
 };

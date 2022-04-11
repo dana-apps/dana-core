@@ -12,7 +12,7 @@ import { never } from '../../common/util/assert';
 import { iterateListCursor, useGet, useList } from '../ipc/ipc.hooks';
 import { TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
-import { MediaDetail } from '../ui/components/media-detail.component';
+import { AssetDetail } from '../ui/components/asset-detail.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 
@@ -45,7 +45,11 @@ export const CollectionScreen: FC = () => {
   }
 
   const detailView = selectedAsset ? (
-    <MediaDetail asset={selectedAsset} sx={{ width: '100%', height: '100%' }} />
+    <AssetDetail
+      sx={{ width: '100%', height: '100%' }}
+      asset={selectedAsset}
+      schema={collection.value.schema}
+    />
   ) : undefined;
 
   return (

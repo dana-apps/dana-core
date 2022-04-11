@@ -1,8 +1,17 @@
 /** @jsxImportSource theme-ui */
 
-import { FC } from 'react';
+import { Children, cloneElement, FC, ReactElement, useState } from 'react';
 import { Icon, Check, ExclamationTriangleFill } from 'react-bootstrap-icons';
-import { Button, Donut, IconButtonProps, Spinner } from 'theme-ui';
+import {
+  BoxProps,
+  Button,
+  Donut,
+  Flex,
+  IconButton,
+  IconButtonProps,
+  Spinner,
+  useThemeUI
+} from 'theme-ui';
 
 interface LoadingCellProps {
   /** Represents progress to display */
@@ -112,5 +121,75 @@ export const ToolbarButton: FC<ToolbarButtonProps> = ({
       <Icon size={32} sx={{ pb: 1 }} />
       <span sx={{ fontSize: 0, fontWeight: 500 }}>{label}</span>
     </Button>
+  );
+};
+
+interface TabBarButtonProps extends IconButtonProps {
+  /** Icon */
+  icon: Icon;
+
+  /** Button label */
+  label: string;
+
+  /** Is the view active? */
+  active?: boolean;
+}
+
+/**
+ * Represent a button in a tab bar
+ */
+export const TabBarButton: FC<TabBarButtonProps> = ({
+  icon: Icon,
+  label,
+  active,
+  ...props
+}) => {
+  const { theme } = useThemeUI();
+  return (
+    <IconButton
+      aria-label={label}
+      aria-selected={active}
+      sx={{
+        bg: active ? 'primary' : undefined,
+        borderRadius: 0
+      }}
+      {...props}
+    >
+      <Icon
+        color={String(theme.colors?.[active ? 'primaryContrast' : 'text'])}
+      />
+    </IconButton>
+  );
+};
+
+interface TabBarProps extends BoxProps {
+  children?: ReactElement<TabBarButtonProps>[];
+
+  /** Initial tab to display. Defaults to first child. */
+  tabId: string | undefined;
+
+  /** If false, disable all the buttons except the active one. Defaults to true */
+  onTabChange: (x: string) => void;
+}
+
+export const TabBar: FC<TabBarProps> = ({
+  children = [],
+  tabId = children[0]?.props.label,
+  onTabChange,
+  ...props
+}) => {
+  return (
+    <>
+      <Flex sx={{ flexDirection: 'row', borderBottom: 'primary' }} {...props}>
+        {Children.map(children, (child: ReactElement<TabBarButtonProps>) =>
+          cloneElement(child, {
+            active: child.props.label === tabId,
+            onClick: () => onTabChange(child.props.label)
+          })
+        )}
+      </Flex>
+
+      {children.find((child) => child.props.label === tabId)?.props.children}
+    </>
   );
 };

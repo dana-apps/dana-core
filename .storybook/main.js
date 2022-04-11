@@ -1,4 +1,5 @@
 const path = require('path');
+const { devDependencies } = require('../package.json');
 
 const toPath = (_path) => path.join(process.cwd(), _path);
 

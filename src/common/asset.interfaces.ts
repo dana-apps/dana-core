@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
-import { z } from 'zod';
-import { RpcInterface } from './ipc.interfaces';
+import { z, ZodIssueCode } from 'zod';
+import { RequestType, RpcInterface } from './ipc.interfaces';
 import { Media } from './media.interfaces';
 import { ResourceList } from './resource';
 import { FetchError } from './util/error';
@@ -136,6 +136,9 @@ export const UpdateAssetMetadata = RpcInterface({
     assetId: z.string(),
     payload: z.record(z.unknown())
   }),
-  response: Asset,
+  response: z.object({}),
   error: z.nativeEnum(FetchError).or(ValidationError)
 });
+export type UpdateAssetMetadataRequest = RequestType<
+  typeof UpdateAssetMetadata
+>;

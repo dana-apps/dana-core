@@ -21,7 +21,7 @@ import { iterateListCursor, useGet, useList, useRPC } from '../ipc/ipc.hooks';
 import { ProgressValue } from '../ui/components/atoms.component';
 import { ProgressCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
-import { MediaDetail } from '../ui/components/media-detail.component';
+import { AssetDetail } from '../ui/components/asset-detail.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { BottomBar } from '../ui/components/page-layouts.component';
@@ -53,12 +53,16 @@ export const ArchiveIngestScreen: FC = () => {
     return [];
   }, [collection]);
 
-  if (!assets || !session) {
+  if (!assets || !session || !collection || collection.status !== 'ok') {
     return null;
   }
 
   const detailView = selectedAsset ? (
-    <MediaDetail asset={selectedAsset} sx={{ width: '100%', height: '100%' }} />
+    <AssetDetail
+      asset={selectedAsset}
+      schema={collection.value.schema}
+      sx={{ width: '100%', height: '100%' }}
+    />
   ) : undefined;
 
   const allowComplete =
