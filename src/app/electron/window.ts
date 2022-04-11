@@ -22,31 +22,6 @@ import {
 import { getResourcePath } from './resources';
 import { ElectronRouter } from './router';
 
-export async function initWindows(router: ElectronRouter) {
-  router.bindRpc(MinimizeWindow, async (_1, _2, _3, contents) => {
-    BrowserWindow.fromWebContents(contents)?.minimize();
-    return ok();
-  });
-  router.bindRpc(ToggleMaximizeWindow, async (_1, _2, _3, contents) => {
-    const window = BrowserWindow.fromWebContents(contents);
-    if (window?.isMaximized()) {
-      router.emit(MaximizationStateChanged, 'normal');
-      window.unmaximize();
-    } else {
-      router.emit(MaximizationStateChanged, 'maximized');
-      window?.maximize();
-    }
-
-    return ok();
-  });
-  router.bindRpc(GetMaximizationState, async (_1, _2, _3, contents) => {
-    const window = BrowserWindow.fromWebContents(contents);
-    return window
-      ? ok<MaximizationState>(getMaximizationState(window))
-      : error('UNKNOWN_WINDOW');
-  });
-}
-
 interface CreateFrontendWindow {
   /** Title of the window */
   title: string;
@@ -226,3 +201,35 @@ protocol.registerSchemesAsPrivileged([
     privileges: { secure: true, standard: true }
   }
 ]);
+
+/**
+ * Setup IPC handlers for managing windows
+ *
+ * @param router The IPC router to bind to
+ */
+export async function initWindows(router: ElectronRouter) {
+  router.bindRpc(MinimizeWindow, async (_1, _2, _3, contents) => {
+    BrowserWindow.fromWebContents(contents)?.minimize();
+    return ok();
+  });
+
+  router.bindRpc(ToggleMaximizeWindow, async (_1, _2, _3, contents) => {
+    const window = BrowserWindow.fromWebContents(contents);
+    if (window?.isMaximized()) {
+      router.emit(MaximizationStateChanged, 'normal');
+      window.unmaximize();
+    } else {
+      router.emit(MaximizationStateChanged, 'maximized');
+      window?.maximize();
+    }
+
+    return ok();
+  });
+
+  router.bindRpc(GetMaximizationState, async (_1, _2, _3, contents) => {
+    const window = BrowserWindow.fromWebContents(contents);
+    return window
+      ? ok<MaximizationState>(getMaximizationState(window))
+      : error('UNKNOWN_WINDOW');
+  });
+}
