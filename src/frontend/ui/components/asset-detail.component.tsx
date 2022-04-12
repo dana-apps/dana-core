@@ -81,7 +81,8 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   return (
     <Flex
       sx={{
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}
       {...props}
     >
@@ -93,7 +94,9 @@ export const AssetDetail: FC<MediaDetailProps> = ({
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
+              overflow: 'auto',
               flex: 1,
+              flexBasis: 0,
               p: 3
             }}
           >
@@ -109,7 +112,16 @@ export const AssetDetail: FC<MediaDetailProps> = ({
 
         {/* Metadata Panel */}
         <IconTab label="Metadata" icon={CardList}>
-          <Grid sx={{ gap: 4, alignItems: 'start', p: 3 }}>
+          <Grid
+            sx={{
+              gap: 4,
+              alignItems: 'start',
+              overflow: 'auto',
+              flexBasis: 0,
+              flex: 1,
+              p: 3
+            }}
+          >
             {schema.map((property) => (
               <Box key={property.id}>
                 <SchemaField
@@ -140,7 +152,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
           borderTop: 'primary',
           p: 3,
           '> *': {
-            marginInlineStart: 5
+            ml: 5
           }
         }}
       >

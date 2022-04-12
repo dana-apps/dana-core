@@ -209,8 +209,9 @@ export const PrimaryDetailLayout: FC<
       {detail && (
         <ReflexElement
           sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
-          flex={0.25}
+          flex={0.5}
           minSize={100}
+          maxSize={300}
         >
           <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
             {detail}
