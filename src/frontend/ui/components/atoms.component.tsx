@@ -3,13 +3,15 @@
 import { Children, cloneElement, FC, ReactElement } from 'react';
 import { Icon, Check, ExclamationTriangleFill } from 'react-bootstrap-icons';
 import {
+  Box,
   BoxProps,
   Button,
   Donut,
   Flex,
   IconButton,
   IconButtonProps,
-  Spinner
+  Spinner,
+  Text
 } from 'theme-ui';
 
 interface LoadingCellProps {
@@ -204,3 +206,38 @@ export const IconTab: FC<IconTab> = ({
     </IconButton>
   );
 };
+
+interface ValidationErrorProps extends BoxProps {
+  /** List of validation errors to display */
+  errors: string[];
+}
+
+/**
+ * Displays a list of validation errors.
+ *
+ * Suitable for rendering underneath a form control.
+ */
+export const ValidationError: FC<ValidationErrorProps> = ({
+  errors,
+  ...props
+}) => (
+  <Flex sx={{ flexDirection: 'row', mt: 1 }} {...props}>
+    <ExclamationTriangleFill
+      sx={{ mr: 2, mt: 1 }}
+      color="var(--theme-ui-colors-error)"
+    />
+
+    <Box>
+      {errors.map((e, i) => (
+        <Text
+          as="p"
+          key={i}
+          color="error"
+          sx={{ fontSize: 1, fontWeight: 700 }}
+        >
+          {e}
+        </Text>
+      ))}
+    </Box>
+  </Flex>
+);

@@ -6,15 +6,15 @@ import { Box, BoxProps, Button, Flex, Grid, Image } from 'theme-ui';
 import {
   Asset,
   SchemaProperty,
-  UpdateAssetMetadata,
-  ValidationError
+  SingleValidationError,
+  UpdateAssetMetadata
 } from '../../../common/asset.interfaces';
 import { FetchError } from '../../../common/util/error';
 import { Dict } from '../../../common/util/types';
 import { useRPC } from '../../ipc/ipc.hooks';
 import { useErrorDisplay } from '../hooks/error.hooks';
-import { Tabs, IconTab } from './atoms.component';
-import { SchemaError, SchemaField } from './schema-form.component';
+import { Tabs, IconTab, ValidationError } from './atoms.component';
+import { SchemaField } from './schema-form.component';
 
 interface MediaDetailProps extends BoxProps {
   /** Asset to render details of */
@@ -45,7 +45,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     [asset.metadata, edits]
   );
   const displayError = useErrorDisplay();
-  const [editErrors, setEditErrors] = useState<ValidationError>();
+  const [editErrors, setEditErrors] = useState<SingleValidationError>();
 
   /** Begin an edit session */
   const handleStartEditing = useCallback(() => {
@@ -134,7 +134,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
                 />
 
                 {editErrors?.[property.id] && (
-                  <SchemaError errors={editErrors?.[property.id]} />
+                  <ValidationError errors={editErrors?.[property.id]} />
                 )}
               </Box>
             ))}

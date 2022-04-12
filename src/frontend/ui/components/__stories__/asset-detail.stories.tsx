@@ -84,7 +84,7 @@ const useIpcFixture = (
   }, []);
 };
 
-export const MEDIA_FILES: Media[] = [
+const MEDIA_FILES: Media[] = [
   {
     id: '1',
     type: 'image',

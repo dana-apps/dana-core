@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { RequestType, ResponseType, RpcInterface } from './ipc.interfaces';
-import { Asset, ValidationError } from './asset.interfaces';
+import { Asset, SingleValidationError } from './asset.interfaces';
 import { FetchError, Result } from './util/error';
 import { ResourceList } from './resource';
 
@@ -48,7 +48,7 @@ export const IngestedAsset = z.object({
   phase: z.nativeEnum(IngestPhase),
 
   /** Validation errors */
-  validationErrors: ValidationError.optional().nullable()
+  validationErrors: SingleValidationError.optional().nullable()
 });
 export type IngestedAsset = z.TypeOf<typeof IngestedAsset>;
 

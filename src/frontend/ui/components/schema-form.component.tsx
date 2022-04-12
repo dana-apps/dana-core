@@ -1,8 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { ChangeEvent, FC, useCallback } from 'react';
-import { ExclamationTriangleFill } from 'react-bootstrap-icons';
-import { Box, BoxProps, Field, Flex, Label, Text } from 'theme-ui';
+import { Box, BoxProps, Field, Label, Text } from 'theme-ui';
 import {
   SchemaProperty,
   SchemaPropertyType
@@ -77,28 +76,3 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
     </Box>
   );
 };
-
-interface ValidationErrorProps extends BoxProps {
-  /** List of validation errors to display */
-  errors: string[];
-}
-
-/**
- * Displays a list of validation errors.
- *
- * Suitable for rendering underneath a form control.
- */
-export const SchemaError: FC<ValidationErrorProps> = ({ errors, ...props }) => (
-  <Flex sx={{ flexDirection: 'row', mt: 1 }} {...props}>
-    <ExclamationTriangleFill
-      sx={{ mr: 2, mt: 1 }}
-      color="var(--theme-ui-colors-error)"
-    />
-
-    {errors.map((e, i) => (
-      <Text key={i} color="error" sx={{ fontSize: 1, fontWeight: 700 }}>
-        {e}
-      </Text>
-    ))}
-  </Flex>
-);

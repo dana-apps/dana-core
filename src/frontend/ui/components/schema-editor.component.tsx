@@ -14,14 +14,19 @@ import {
   Switch
 } from 'theme-ui';
 import {
+  AggregatedValidationError,
   SchemaProperty,
   SchemaPropertyType
 } from '../../../common/asset.interfaces';
+import { ValidationError } from './atoms.component';
 
 export interface SchemaEditorProps
   extends Omit<BoxProps, 'value' | 'onChange'> {
   /** Current value of the schema */
   value: SchemaProperty[];
+
+  /** Errors displayed when the schema update is rejected due to being incompatible with the current contents */
+  errors?: AggregatedValidationError;
 
   /** Called whenever a property is edited. State management is the responsibility of the parent. */
   onChange: (schema: SchemaProperty[]) => void;
@@ -32,6 +37,7 @@ export interface SchemaEditorProps
  */
 export const SchemaEditor: FC<SchemaEditorProps> = ({
   value,
+  errors = {},
   onChange,
   ...props
 }) => {
@@ -126,6 +132,18 @@ export const SchemaEditor: FC<SchemaEditorProps> = ({
                 }
               )}
             />
+          </Box>
+
+          <Box>
+            {errors[item.id]?.length > 0 && (
+              <ValidationError
+                sx={{ mt: 4 }}
+                errors={errors[item.id].map(
+                  ({ message, count }) =>
+                    `${count} items were rejected due to: ${message}`
+                )}
+              />
+            )}
           </Box>
         </Box>
       ))}

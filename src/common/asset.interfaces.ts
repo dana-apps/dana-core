@@ -28,13 +28,6 @@ export enum SchemaPropertyType {
 }
 
 /**
- * Error code when a request fails due to a schema validation error.
- */
-export enum SchemaValidationError {
-  VALIDATION_ERROR = 'VALIDATION_ERROR'
-}
-
-/**
  * Common properties shared by all schema properties
  */
 const BaseSchemaProperty = z.object({
@@ -51,8 +44,26 @@ const BaseSchemaProperty = z.object({
   type: z.nativeEnum(SchemaPropertyType)
 });
 
-export const ValidationError = z.record(z.array(z.string()));
-export type ValidationError = z.TypeOf<typeof ValidationError>;
+/**
+ * Error object for validation of a single record
+ */
+export const SingleValidationError = z.record(z.array(z.string()));
+export type SingleValidationError = z.TypeOf<typeof SingleValidationError>;
+
+/**
+ * Error object for validation of a multiple records
+ */
+export const AggregatedValidationError = z.record(
+  z.array(
+    z.object({
+      message: z.string(),
+      count: z.number()
+    })
+  )
+);
+export type AggregatedValidationError = z.TypeOf<
+  typeof AggregatedValidationError
+>;
 
 /**
  * Common interface for a schema property with no special configuration fields.
@@ -113,7 +124,7 @@ export const UpdateCollectionSchema = RpcInterface({
     value: z.array(SchemaProperty)
   }),
   response: z.object({}),
-  error: z.nativeEnum(FetchError).or(z.nativeEnum(SchemaValidationError))
+  error: z.nativeEnum(FetchError).or(AggregatedValidationError)
 });
 
 /**
@@ -138,7 +149,7 @@ export const UpdateAssetMetadata = RpcInterface({
     payload: z.record(z.unknown())
   }),
   response: z.object({}),
-  error: z.nativeEnum(FetchError).or(ValidationError)
+  error: z.nativeEnum(FetchError).or(SingleValidationError)
 });
 export type UpdateAssetMetadataRequest = RequestType<
   typeof UpdateAssetMetadata

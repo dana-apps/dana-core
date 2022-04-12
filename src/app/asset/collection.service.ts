@@ -1,8 +1,11 @@
+import { mapValues } from 'lodash';
 import { z } from 'zod';
 import {
+  AggregatedValidationError,
   SchemaProperty,
-  SchemaValidationError
+  SingleValidationError
 } from '../../common/asset.interfaces';
+import { DefaultMap } from '../../common/util/collection';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
@@ -84,7 +87,12 @@ export class CollectionService {
         return error(FetchError.DOES_NOT_EXIST);
       }
 
-      let isValid = true;
+      // Map from schema property to counts of validation errors
+      const errorTracker = new DefaultMap<string, DefaultMap<string, number>>(
+        () => new DefaultMap(() => 0)
+      );
+
+      const schemaDef = schema.map(SchemaPropertyValue.fromJson);
 
       for await (const assets of this.recurseiveIterateAssetsWithinCollection(
         archive,
@@ -92,17 +100,35 @@ export class CollectionService {
       )) {
         const validationResults = await this.validateItemsForSchema(
           archive,
-          schema.map(SchemaPropertyValue.fromJson),
+          schemaDef,
           assets
         );
 
-        if (validationResults.some((res) => !res.success)) {
-          isValid = false;
+        // Collect counts of validation errors against properties
+        for (const result of validationResults) {
+          if (!result.success) {
+            for (const [key, errors] of Object.entries(result.errors)) {
+              const propertyErrors = errorTracker.get(key);
+
+              for (const error of errors) {
+                propertyErrors.set(error, propertyErrors.get(error) + 1);
+              }
+            }
+          }
         }
       }
 
-      if (!isValid) {
-        return error(SchemaValidationError);
+      if (errorTracker.size > 0) {
+        const errors = mapValues(
+          Object.fromEntries(errorTracker.entries()),
+          (propertyErrors) =>
+            Array.from(propertyErrors.entries()).map(([message, count]) => ({
+              message,
+              count
+            }))
+        );
+
+        return error<AggregatedValidationError>(errors);
       }
 
       collection.schema = schema.map(SchemaPropertyValue.fromJson);
@@ -145,7 +171,7 @@ export class CollectionService {
     archive: ArchivePackage,
     schema: SchemaPropertyValue[],
     items: { id: string; metadata: Dict }[]
-  ) {
+  ): Promise<ValidateItemsResult[]> {
     const validator = this.getRecordValidator(schema);
 
     return items.map(({ id, metadata }) => {
@@ -192,3 +218,7 @@ export class CollectionService {
     );
   }
 }
+
+type ValidateItemsResult =
+  | { success: true; id: string; metadata: Dict }
+  | { success: false; id: string; errors: Dict<string[]> };

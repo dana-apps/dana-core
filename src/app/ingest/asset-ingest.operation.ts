@@ -296,14 +296,14 @@ export class AssetIngestOperation implements IngestSession {
         return;
       }
 
-      const [validationErrors] =
+      const [validationResult] =
         await this.collectionService.validateItemsForCollection(
           this.archive,
           collection.id,
           [{ id: locator, metadata }]
         );
 
-      if (!validationErrors.success) {
+      if (!validationResult.success) {
         this.session.valid = false;
         db.persist(this.session);
       }
@@ -313,7 +313,9 @@ export class AssetIngestOperation implements IngestSession {
         path: locator,
         session: this.session,
         phase: IngestPhase.READ_FILES,
-        validationErrors: validationErrors.errors
+        validationErrors: validationResult.success
+          ? undefined
+          : validationResult.errors
       });
       db.persist(asset);
 
