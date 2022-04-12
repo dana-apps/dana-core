@@ -29,7 +29,7 @@ export class ElectronRouter {
     handler: (
       request: RequestType<Rpc>,
       archiveId: string | undefined,
-      range?: PageRange,
+      range: PageRange | undefined,
       window: WebContents
     ) => Promise<Result<ResponseType<Rpc>>>
   ) {
