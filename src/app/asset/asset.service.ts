@@ -80,7 +80,8 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
     if (res.status === 'ok') {
       this.emit('change', {
-        created: [res.value.id]
+        created: [res.value.id],
+        updated: []
       });
     }
 
@@ -104,7 +105,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
     assetId: string,
     { metadata, media }: Partial<CreateAssetOpts>
   ) {
-    return await archive.useDb(async (db) => {
+    const res = await archive.useDb(async (db) => {
       const asset = await db.findOne(
         AssetEntity,
         { id: assetId },
@@ -129,6 +130,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
       db.persist(asset);
       return ok(this.entityToAsset(archive, asset));
     });
+
+    if (res.status === 'ok') {
+      this.emit('change', { updated: [res.value.id], created: [] });
+    }
+
+    return res;
   }
 
   async setMetadataAndMedia(
@@ -213,4 +220,7 @@ interface AssetEvents {
 export interface AssetsChangedEvent {
   /** Ids of newly created assets */
   created: string[];
+
+  /** Ids of updated assets */
+  updated: string[];
 }

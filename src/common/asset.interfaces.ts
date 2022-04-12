@@ -132,7 +132,7 @@ export const ListAssets = RpcInterface({
  * Performs a full update – missing keys are treated as setting the metadata value to null.
  */
 export const UpdateAssetMetadata = RpcInterface({
-  id: 'assets/list',
+  id: 'assets/update',
   request: z.object({
     assetId: z.string(),
     payload: z.record(z.unknown())

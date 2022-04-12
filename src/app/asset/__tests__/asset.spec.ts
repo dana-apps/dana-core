@@ -2,10 +2,11 @@ import {
   SchemaProperty,
   SchemaPropertyType
 } from '../../../common/asset.interfaces';
+import { collectEvents } from '../../../test/event';
 import { requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { MediaFileService } from '../../media/media-file.service';
-import { AssetService } from '../asset.service';
+import { AssetsChangedEvent, AssetService } from '../asset.service';
 import { CollectionService } from '../collection.service';
 
 const SCHEMA: SchemaProperty[] = [
@@ -24,8 +25,12 @@ const SCHEMA: SchemaProperty[] = [
 ];
 
 describe(AssetService, () => {
-  test('Creating and updating asset metadata replaces its metadata only with properties defined in the schema', async () => {
+  test('Creating and updating asset metadata replaces its metadata only with properties defined in the schema and emits the correct events', async () => {
     const fixture = await setup();
+    const createEvents = collectEvents<AssetsChangedEvent>(
+      fixture.service,
+      'change'
+    );
 
     const asset = requireSuccess(
       await fixture.service.createAsset(
@@ -41,6 +46,12 @@ describe(AssetService, () => {
       )
     );
 
+    expect(createEvents).toEqual([
+      expect.objectContaining({
+        created: [asset.id]
+      })
+    ]);
+
     expect(await fixture.service.listAssets(fixture.archive)).toEqual(
       expect.objectContaining({
         items: [
@@ -54,11 +65,22 @@ describe(AssetService, () => {
       })
     );
 
+    const updateEvents = collectEvents<AssetsChangedEvent>(
+      fixture.service,
+      'change'
+    );
+
     await fixture.service.updateAsset(fixture.archive, asset.id, {
       metadata: {
         requiredProperty: 'Replace'
       }
     });
+
+    expect(updateEvents).toEqual([
+      expect.objectContaining({
+        updated: [asset.id]
+      })
+    ]);
 
     expect(await fixture.service.listAssets(fixture.archive)).toEqual(
       expect.objectContaining({
