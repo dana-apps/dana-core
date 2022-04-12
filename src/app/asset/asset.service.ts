@@ -90,6 +90,8 @@ export class AssetService extends EventEmitter<AssetEvents> {
   /**
    * Given an existing asset in the archive, update its metadata and/or media files.
    *
+   * Both the metadata and media options _fully replace_ the current values.
+   *
    * Changes are validated against the collection schema and rejected if validation doesn't pass.
    *
    * @param archive The archive the asset is stored in.
