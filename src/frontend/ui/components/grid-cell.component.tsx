@@ -7,7 +7,7 @@ import { DataGridCell } from './grid.component';
 export const TextCell: DataGridCell<string> = ({ value }) => <>{value}</>;
 
 TextCell.width = (data, fontSize) =>
-  Math.max(100, Math.min(600, data ? data.length * (fontSize * 0.5) : 0));
+  Math.max(100, Math.min(600, data ? data.length * fontSize : 300));
 
 /** Datagrid cell for indicating progress */
 export const ProgressCell: DataGridCell<ProgressValue> = ({ value }) => (

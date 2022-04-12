@@ -11,7 +11,7 @@ import { Box, BoxProps, useThemeUI } from 'theme-ui';
 
 import { Resource } from '../../../common/resource';
 import { iterateListCursor, ListCursor } from '../../ipc/ipc.hooks';
-import { compact, last, meanBy } from 'lodash';
+import { compact, last, max } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
@@ -66,7 +66,9 @@ export function DataGrid<T extends Resource>({
       }
 
       if (typeof width === 'function') {
-        return meanBy(dataSample, (x) => width(col.getData(x), fontSize));
+        return (
+          max(dataSample.map((x) => width(col.getData(x), fontSize))) ?? 100
+        );
       }
 
       return width;
