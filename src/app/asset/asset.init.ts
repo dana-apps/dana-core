@@ -32,7 +32,7 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
   );
 
   router.bindArchiveRpc(GetRootCollection, async (archive) =>
-    ok(await collectionService.getRootCollection(archive))
+    ok(await collectionService.getRootAssetCollection(archive))
   );
 
   router.bindArchiveRpc(UpdateCollectionSchema, async (archive, req) => {

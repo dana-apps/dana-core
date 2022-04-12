@@ -17,3 +17,6 @@ export const ProgressCell: DataGridCell<ProgressValue> = ({ value }) => (
 );
 
 ProgressCell.width = 36;
+
+/** Datagrid cell for database references */
+export const ReferenceCell: DataGridCell<string> = ({ value }) => <>{value}</>;

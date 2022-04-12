@@ -149,7 +149,9 @@ async function setup() {
   const collectionService = new CollectionService();
   const mediaService = new MediaFileService();
   const service = new AssetService(collectionService, mediaService);
-  const rootCollection = await collectionService.getRootCollection(archive);
+  const rootCollection = await collectionService.getRootAssetCollection(
+    archive
+  );
   await collectionService.updateCollectionSchema(
     archive,
     rootCollection.id,

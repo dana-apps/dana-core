@@ -161,7 +161,9 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param sessionId Id of the session to return.
    */
   async commitSession(archive: ArchivePackage, sessionId: string) {
-    const collection = await this.collectionService.getRootCollection(archive);
+    const collection = await this.collectionService.getRootAssetCollection(
+      archive
+    );
 
     const res = await archive.useDbTransaction(async (db) => {
       const assets = await db.find(AssetImportEntity, { session: sessionId });

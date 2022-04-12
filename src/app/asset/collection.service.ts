@@ -2,6 +2,7 @@ import { mapValues } from 'lodash';
 import { z } from 'zod';
 import {
   AggregatedValidationError,
+  Collection,
   SchemaProperty
 } from '../../common/asset.interfaces';
 import { DefaultMap } from '../../common/util/collection';
@@ -27,43 +28,73 @@ import {
  */
 export class CollectionService {
   /**
-   * Return the root collection of the archive. Created if it does not yet exist.
-   *
-   * Currently this is the only way of accessing a collection, but we anticipate in future to support hierarchically
-   * aranged collections.
+   * Return the root asset collection of the archive. Created if it does not yet exist.
    *
    * @param archive Archive containing the collection.
-   * @returns The root collection for `archive`
+   * @returns The root asset collection for `archive`
    */
-  async getRootCollection(archive: ArchivePackage) {
+  async getRootAssetCollection(archive: ArchivePackage) {
     return archive.useDbTransaction(async (db) => {
       let collection = await db.findOne(AssetCollectionEntity, '$root');
 
       if (!collection) {
         collection = db.create(AssetCollectionEntity, {
           id: '$root',
+          title: 'Assets',
           schema: []
         });
         db.persist(collection);
       }
 
-      return collection;
+      return this.toCollectionValue(collection);
     });
   }
 
   /**
-   * Return the metadata schema for a collection.
+   * Return the root controlled databases collection of the archive. Created if it does not yet exist.
    *
-   * When we support multiple / nested collections, this should be able to inherit from parent collections.
-   *
-   * @param archive Archive containing the schema
-   * @param collectionId Id of the collection we want a schema for.
-   * @returns An object representing the collection schema.
+   * @param archive Archive containing the collection.
+   * @returns The root controlled database collection for `archive`
    */
-  async getCollectionSchema(archive: ArchivePackage, collectionId: string) {
-    const collection = await archive.get(AssetCollectionEntity, collectionId);
+  async getRootDatabaseCollection(archive: ArchivePackage) {
+    return archive.useDbTransaction(async (db) => {
+      let collection = await db.findOne(AssetCollectionEntity, '$databases');
 
-    return collection?.schema;
+      if (!collection) {
+        collection = db.create(AssetCollectionEntity, {
+          id: '$databases',
+          title: 'Databases',
+          schema: []
+        });
+        db.persist(collection);
+      }
+
+      return this.toCollectionValue(collection);
+    });
+  }
+
+  /**
+   * Return the root controlled databases collection of the archive. Created if it does not yet exist.
+   *
+   * @param archive Archive containing the collection.
+   * @param parentId Parent collection. All user-created collections must have a parent.
+   * @param opts: Properties of the newly created collection.
+   * @returns The root controlled database collection for `archive`
+   */
+  async createCollection(
+    archive: ArchivePackage,
+    parentId: string,
+    opts: CreateCollectionOpts
+  ) {
+    return archive.useDbTransaction(async (db) => {
+      const collection = db.create(AssetCollectionEntity, {
+        parent: parentId,
+        ...opts
+      });
+      db.persist(collection);
+
+      return this.toCollectionValue(collection);
+    });
   }
 
   /**
@@ -242,8 +273,18 @@ export class CollectionService {
     );
     return z.object(Object.fromEntries(fieldValidators));
   }
+
+  private toCollectionValue(entity: AssetCollectionEntity): Collection {
+    return {
+      id: entity.id,
+      schema: entity.schema.map((e) => e.toJson()),
+      title: entity.title
+    };
+  }
 }
 
 type ValidateItemsResult =
   | { success: true; id: string; metadata: Dict }
   | { success: false; id: string; errors: Dict<string[]> };
+
+type CreateCollectionOpts = Pick<Collection, 'schema' | 'title'>;

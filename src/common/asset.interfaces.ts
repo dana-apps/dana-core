@@ -67,6 +67,19 @@ export type AggregatedValidationError = z.TypeOf<
 >;
 
 /**
+ * Error object for a rejected delete
+ */
+export const ReferentialIntegrityError = z.array(
+  z.object({
+    assetId: z.string(),
+    collectionId: z.string()
+  })
+);
+export type ReferentialIntegrityError = z.TypeOf<
+  typeof ReferentialIntegrityError
+>;
+
+/**
  * Common interface for a schema property with no special configuration fields.
  */
 export const ScalarSchemaProperty = z.object({
@@ -113,6 +126,7 @@ export const defaultSchemaProperty = (i: number): SchemaProperty => ({
  */
 export const Collection = z.object({
   id: z.string(),
+  title: z.string(),
   schema: z.array(SchemaProperty)
 });
 export type Collection = z.TypeOf<typeof Collection>;

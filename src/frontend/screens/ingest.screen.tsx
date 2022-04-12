@@ -19,7 +19,11 @@ import {
 import { never, required } from '../../common/util/assert';
 import { iterateListCursor, useGet, useList, useRPC } from '../ipc/ipc.hooks';
 import { ProgressValue } from '../ui/components/atoms.component';
-import { ProgressCell, TextCell } from '../ui/components/grid-cell.component';
+import {
+  ProgressCell,
+  ReferenceCell,
+  TextCell
+} from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { AssetDetail } from '../ui/components/asset-detail.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
@@ -161,8 +165,16 @@ const getGridColumns = (schema: SchemaProperty[]) => {
         label: property.label
       };
     }
+    if (property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
+      return {
+        id: property.id,
+        cell: ReferenceCell,
+        getData: (x) => x.metadata[property.id],
+        label: property.label
+      };
+    }
 
-    return never(property.type);
+    return never(property);
   });
 
   return [

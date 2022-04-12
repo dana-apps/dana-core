@@ -48,7 +48,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
     const res = await archive.useDb(async (db) => {
       const asset = db.create(AssetEntity, {
         mediaFiles: [],
-        collection: await this.collectionService.getRootCollection(archive),
+        collection: collectionId,
         metadata: {}
       });
 

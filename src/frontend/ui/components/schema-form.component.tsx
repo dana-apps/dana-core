@@ -36,7 +36,16 @@ export const SchemaField: FC<SchemaFormFieldProps> = ({ value, ...props }) => {
     return <FreeTextField {...props} value={stringVal} />;
   }
 
-  return never(props.property.type);
+  if (props.property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
+    const stringVal =
+      typeof value === 'string' || typeof value === 'undefined'
+        ? value
+        : undefined;
+
+    return <DatabaseReferenceField {...props} value={stringVal} />;
+  }
+
+  return never(props.property);
 };
 
 /**
@@ -68,6 +77,27 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
     );
   }
 
+  return (
+    <Box {...props}>
+      <Label>{property.label}</Label>
+
+      <Text>{value ?? <i>None</i>}</Text>
+    </Box>
+  );
+};
+
+/**
+ * Render a control for displaying and editing properties witg the CONTROLLED_DATABASE schema type.
+ *
+ * Currently read-only.
+ */
+export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
+  property,
+  value,
+  onChange,
+  editing,
+  ...props
+}) => {
   return (
     <Box {...props}>
       <Label>{property.label}</Label>

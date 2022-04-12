@@ -4,6 +4,9 @@ import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
 import { Logger } from 'tslog';
+import { compact } from 'lodash';
+import { ObjectQuery } from '@mikro-orm/core';
+import { SqlEntityManager } from '@mikro-orm/sqlite';
 
 import {
   IngestError,
@@ -20,9 +23,6 @@ import {
 } from './asset-import.entity';
 import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
-import { compact } from 'lodash';
-import { ObjectQuery } from '@mikro-orm/core';
-import { SqlEntityManager } from '@mikro-orm/sqlite';
 import { CollectionService } from '../asset/collection.service';
 import { SchemaProperty } from '../../common/asset.interfaces';
 
@@ -275,7 +275,7 @@ export class AssetIngestOperation implements IngestSession {
    * @param locator Unique string representing the location (path, path + line number, etc) this item was imported from
    */
   async readMetadataObject(metadata: Dict, files: string[], locator: string) {
-    const collection = await this.collectionService.getRootCollection(
+    const collection = await this.collectionService.getRootAssetCollection(
       this.archive
     );
     const convertToSchema = this.getMetadataConverter(collection.schema);
@@ -284,7 +284,7 @@ export class AssetIngestOperation implements IngestSession {
     await this.archive.useDbTransaction(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
       const fileRepository = db.getRepository(FileImport);
-      const collection = await this.collectionService.getRootCollection(
+      const collection = await this.collectionService.getRootAssetCollection(
         this.archive
       );
 

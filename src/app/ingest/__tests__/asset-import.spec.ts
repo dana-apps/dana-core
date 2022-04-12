@@ -274,7 +274,9 @@ const setup = async () => {
     assetService,
     collectionService,
     givenACollectionMetadataSchema: async (schema: SchemaProperty[]) => {
-      const collection = await collectionService.getRootCollection(archive);
+      const collection = await collectionService.getRootAssetCollection(
+        archive
+      );
       await collectionService.updateCollectionSchema(
         archive,
         collection.id,

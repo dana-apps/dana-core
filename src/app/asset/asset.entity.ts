@@ -52,6 +52,27 @@ export class AssetCollectionEntity {
   id = randomUUID();
 
   /**
+   * Human-readable name of the collection
+   */
+  @Property({ type: 'string', nullable: false })
+  title!: string;
+
+  /**
+   * Parent of this collection
+   */
+  @ManyToOne(() => AssetCollectionEntity, {
+    nullable: true,
+    onDelete: 'set null'
+  })
+  parent?: AssetCollectionEntity;
+
+  /**
+   * Parent of this collection
+   */
+  @OneToMany(() => AssetCollectionEntity, (child) => child.parent)
+  children = new Collection<AssetCollectionEntity>(this);
+
+  /**
    * Assets in this collection
    */
   @OneToMany(() => AssetEntity, (media) => media.collection)

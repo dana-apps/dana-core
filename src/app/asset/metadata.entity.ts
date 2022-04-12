@@ -66,12 +66,13 @@ export abstract class SchemaPropertyValue {
   required!: boolean;
 
   /**
-   * Return a zod validator object for the schema type. It only needs to define behaviour related to the `type` field,
-   * not to other ones such as `required`.
+   * Override to define collections referenced by this property. Defaults to none.
+   *
+   * @returns The id of a referenced collection or undefined if none.
    */
-  protected abstract getValueSchema(
-    context: SchemaValidationContext
-  ): MaybeAsync<z.Schema<unknown>>;
+  getReferencedCollection(): string | undefined {
+    return undefined;
+  }
 
   /**
    * Return a zod validator object for this schema property.
@@ -84,6 +85,19 @@ export abstract class SchemaPropertyValue {
 
     return this.getValueSchema(context);
   }
+
+  /**
+   * Return a zod validator object for the schema type. It only needs to define behaviour related to the `type` field,
+   * not to other ones such as `required`.
+   */
+  protected abstract getValueSchema(
+    context: SchemaValidationContext
+  ): MaybeAsync<z.Schema<unknown>>;
+
+  /**
+   * Cast to a SchemaProperty instance suitable for returning over APIs
+   */
+  abstract toJson(): SchemaProperty;
 }
 
 /**
@@ -98,6 +112,10 @@ export class FreeTextSchemaPropertyValue
 
   protected getValueSchema() {
     return z.string();
+  }
+
+  toJson() {
+    return this;
   }
 }
 
@@ -132,6 +150,14 @@ export class ControlledDatabaseSchemaPropertyValue
         });
       }
     });
+  }
+
+  toJson() {
+    return this;
+  }
+
+  getReferencedCollection(): string | undefined {
+    return this.databaseId;
   }
 }
 

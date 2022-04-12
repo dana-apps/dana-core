@@ -121,8 +121,10 @@ const Validator = z.object(
 
       if (property.type === SchemaPropertyType.FREE_TEXT) {
         validator = z.string().nonempty();
+      } else if (property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
+        validator = z.string().nonempty();
       } else {
-        return never(property.type);
+        return never(property);
       }
 
       return [
