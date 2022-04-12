@@ -1,11 +1,19 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, HTMLAttributes } from 'react';
-import { X } from 'react-bootstrap-icons';
-import { IconButton } from 'theme-ui';
+import { FC, HTMLAttributes, useCallback, useState } from 'react';
+import { FrontendPlatform } from '../../common/frontend-config';
+import {
+  MaximizationState,
+  MaximizationStateChanged,
+  ToggleMaximizeWindow,
+  MinimizeWindow
+} from '../../common/ui.interfaces';
 import { useFrontendConfig } from '../config';
+import { useEvent, useRPC } from '../ipc/ipc.hooks';
 
 const TITLEBAR_HEIGHT = '32px';
+
+const WindowsIcons = import.meta.globEager('./icons/windows/*.png');
 
 /**
  * Window wrapper chrome. Suitable for rendering a frameless window in an electron app.
@@ -46,37 +54,34 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
     >
       {children}
 
-      {/* Linux can't render window chrome in frameless mode, so do it here instead */}
-      {platform === 'linuxish' && (
-        <div
-          sx={{
-            height: TITLEBAR_HEIGHT,
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            zIndex: 100
-          }}
-        >
-          <IconButton onClick={() => window.close()}>
-            <X fontSize={18} />
-          </IconButton>
-        </div>
+      {/* Windows & linux don't render window chrome in frameless mode, so do it here instead */}
+      {(platform === 'linuxish' || platform === 'windows') && (
+        <WindowControls />
       )}
     </div>
   );
 };
 
 /** Inset window content to ensure it isn't obscured by window chrome on platforms where the chome is added on top  */
-export const WindowInset: FC<HTMLAttributes<unknown>> = (props) => (
-  <div
-    sx={{
-      height: TITLEBAR_HEIGHT,
-      WebkitAppRegion: 'drag',
-      '> *': { WebkitAppRegion: 'no-drag' }
-    }}
-    {...props}
-  />
-);
+export const WindowInset: FC<
+  HTMLAttributes<unknown> & { platforms?: FrontendPlatform[] }
+> = ({ platforms, ...props }) => {
+  const { platform } = useFrontendConfig();
+  if (platforms && !platforms.includes(platform)) {
+    return null;
+  }
+
+  return (
+    <div
+      sx={{
+        height: TITLEBAR_HEIGHT,
+        WebkitAppRegion: 'drag',
+        '> *': { WebkitAppRegion: 'no-drag' }
+      }}
+      {...props}
+    />
+  );
+};
 
 export const WindowDragArea: FC<HTMLAttributes<unknown>> = (props) => (
   <div
@@ -87,3 +92,147 @@ export const WindowDragArea: FC<HTMLAttributes<unknown>> = (props) => (
     {...props}
   />
 );
+
+const WindowControls = () => {
+  const rpc = useRPC();
+  const [state, setState] = useState<MaximizationState>();
+
+  useEvent(MaximizationStateChanged, async (state) => {
+    setState(state);
+  });
+
+  const minimize = useCallback(() => rpc(MinimizeWindow, {}), [rpc]);
+  const toggleMaximize = useCallback(
+    () => rpc(ToggleMaximizeWindow, {}),
+    [rpc]
+  );
+
+  if (!state) {
+    return null;
+  }
+
+  return (
+    <div
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 46px)',
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        height: '32px',
+        filter: 'invert(100%)',
+        '> *': {
+          gridRow: '1 / span 1',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          height: '100%',
+          '&:hover': {
+            opacity: 0.5
+          }
+        }
+      }}
+    >
+      <div role="button" onClick={minimize}>
+        <img
+          srcSet={`${windowsIcon(
+            './icons/windows/min-w-10.png'
+          )} 1x, ${windowsIcon(
+            './icons/windows/min-w-12.png'
+          )} 1.25x, ${windowsIcon(
+            './icons/windows/min-w-15.png'
+          )} 1.5x, ${windowsIcon(
+            './icons/windows/min-w-15.png'
+          )} 1.75x, ${windowsIcon(
+            './icons/windows/min-w-20.png'
+          )} 2x, ${windowsIcon(
+            './icons/windows/min-w-20.png'
+          )} 2.25x, ${windowsIcon(
+            './icons/windows/min-w-24.png'
+          )} 2.5x, ${windowsIcon(
+            './icons/windows/min-w-30.png'
+          )} 3x, ${windowsIcon('./icons/windows/min-w-30.png')} 3.5x`}
+          draggable="false"
+        />
+      </div>
+
+      {state !== 'maximized' && (
+        <div role="button" onClick={toggleMaximize}>
+          <img
+            srcSet={`${windowsIcon(
+              './icons/windows/max-w-10.png'
+            )} 1x, ${windowsIcon(
+              './icons/windows/max-w-12.png'
+            )} 1.25x, ${windowsIcon(
+              './icons/windows/max-w-15.png'
+            )} 1.5x, ${windowsIcon(
+              './icons/windows/max-w-15.png'
+            )} 1.75x, ${windowsIcon(
+              './icons/windows/max-w-20.png'
+            )} 2x, ${windowsIcon(
+              './icons/windows/max-w-20.png'
+            )} 2.25x, ${windowsIcon(
+              './icons/windows/max-w-24.png'
+            )} 2.5x, ${windowsIcon(
+              './icons/windows/max-w-30.png'
+            )} 3x, ${windowsIcon('./icons/windows/max-w-30.png')} 3.5x`}
+            draggable="false"
+          />
+        </div>
+      )}
+
+      {state === 'maximized' && (
+        <div role="button" onClick={toggleMaximize}>
+          <img
+            srcSet={`${windowsIcon(
+              './icons/windows/restore-w-10.png'
+            )} 1x, ${windowsIcon(
+              './icons/windows/restore-w-12.png'
+            )} 1.25x, ${windowsIcon(
+              './icons/windows/restore-w-15.png'
+            )} 1.5x, ${windowsIcon(
+              './icons/windows/restore-w-15.png'
+            )} 1.75x, ${windowsIcon(
+              './icons/windows/restore-w-20.png'
+            )} 2x, ${windowsIcon(
+              './icons/windows/restore-w-20.png'
+            )} 2.25x, ${windowsIcon(
+              './icons/windows/restore-w-24.png'
+            )} 2.5x, ${windowsIcon(
+              './icons/windows/restore-w-30.png'
+            )} 3x, ${windowsIcon('./icons/windows/restore-w-30.png')} 3.5x`}
+            draggable="false"
+          />
+        </div>
+      )}
+
+      <div role="button" onClick={window.close}>
+        <img
+          srcSet={`${windowsIcon(
+            './icons/windows/close-w-10.png'
+          )} 1x, ${windowsIcon(
+            './icons/windows/close-w-12.png'
+          )} 1.25x, ${windowsIcon(
+            './icons/windows/close-w-15.png'
+          )} 1.5x, ${windowsIcon(
+            './icons/windows/close-w-15.png'
+          )} 1.75x, ${windowsIcon(
+            './icons/windows/close-w-20.png'
+          )} 2x, ${windowsIcon(
+            './icons/windows/close-w-20.png'
+          )} 2.25x, ${windowsIcon(
+            './icons/windows/close-w-24.png'
+          )} 2.5x, ${windowsIcon(
+            './icons/windows/close-w-30.png'
+          )} 3x, ${windowsIcon('./icons/windows/close-w-30.png')} 3.5x`}
+          draggable="false"
+        />
+      </div>
+    </div>
+  );
+};
+
+function windowsIcon(key: string) {
+  return WindowsIcons[key].default;
+}

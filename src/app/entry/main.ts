@@ -1,5 +1,8 @@
 import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
+import { platform } from 'os';
 import path from 'path';
+import { autoUpdater } from 'electron-updater';
+
 import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
 import {
@@ -8,16 +11,24 @@ import {
   updateUserConfig
 } from '../electron/config';
 import { getSystray } from '../electron/systray';
-import { createFrontendWindow } from '../electron/window';
+import { createFrontendWindow, initWindows } from '../electron/window';
 import { initIngest } from '../ingest/ingest.init';
 import { initMedia } from '../media/media.init';
 import { ArchivePackage } from '../package/archive-package';
 
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
+  const app = await initApp();
+
+  await initUpdates();
+  await initWindows(app.router);
+  await initDevtools();
+  await initSystray();
+  await initRouter();
+  await initArchives();
+  await showInitialScreen();
 
   /** Setup the business logic of the app */
-  const app = await initApp();
   const media = initMedia();
   const assets = initAssets(app.router, media.fileService);
   await initIngest(
@@ -33,11 +44,12 @@ async function main() {
     electronApp.exit();
   });
 
-  await initDevtools();
-  await initSystray();
-  await initWindows();
-  await initArchives();
-  await showInitialScreen();
+  // Quit on non-osx platforms when windows all close.
+  electronApp.on('window-all-closed', () => {
+    if (platform() !== 'darwin') {
+      electronApp.exit();
+    }
+  });
 
   /**
    * Setup electon bindings for archives.
@@ -60,17 +72,9 @@ async function main() {
    * Ensure that all opened windows are registered/unregistered with the ipc router and setup behaviour when all
    * windows are closed.
    */
-  async function initWindows() {
-    // Move to 'background' mode when all windows are closed.
-    electronApp.on('window-all-closed', () => {
-      electronApp.dock?.hide();
-    });
-
+  async function initRouter() {
     // Ensure windows are added to and removed from router when they are opened and closed.
     electronApp.on('browser-window-created', (_, window) => {
-      // Move to 'foreground' mode.
-      electronApp.dock?.show();
-
       app.router.addWindow(window.webContents);
 
       window.on('close', () => {
@@ -83,10 +87,12 @@ async function main() {
    * Show the window for an archive.
    */
   async function showArchiveWindow(archive: ArchivePackage) {
-    const window = createFrontendWindow({
+    const window = await createFrontendWindow({
       title: path.basename(archive.location, path.extname(archive.location)),
       config: { documentId: archive.id },
-      resolveMedia: (uri) => media.fileService.resolveRenditionUri(archive, uri)
+      resolveMedia: (uri) =>
+        media.fileService.resolveRenditionUri(archive, uri),
+      router: app.router
     });
 
     app.router.addWindow(window.webContents, archive.location);
@@ -125,7 +131,11 @@ async function main() {
       return;
     }
 
-    const window = createFrontendWindow({ title: 'New Archive', config: {} });
+    const window = await createFrontendWindow({
+      title: 'New Archive',
+      config: {},
+      router: app.router
+    });
 
     window.on('close', () => {
       app.router.removeWindow(window.webContents);
@@ -169,6 +179,10 @@ async function main() {
         .then((name: string) => console.log(`Added Extension:  ${name}`))
         .catch((err: unknown) => console.log('An error occurred: ', err));
     }
+  }
+
+  async function initUpdates() {
+    await autoUpdater.checkForUpdatesAndNotify();
   }
 }
 

@@ -3,25 +3,30 @@ import isDev from 'electron-is-dev';
 import { mkdir } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import { getFileUrl } from '../util/platform';
 import { readJson, writeJson } from '../util/json-utils';
 
 const CONFIG_DIR = path.join(app.getPath('userData'), 'danacore');
 
-/** Relative location of app bundle root */
-const BUILD_ROOT = path.join(__dirname, '..', '..');
+/**
+ * Absolute path of built frontend bundle (if we're running in production).
+ * Note that `__dirname` here is that of the built electron process bundle, not this source file
+ **/
+export const FRONTEND_BUNDLE_DIR = isDev
+  ? undefined
+  : path.join(__dirname, '..', 'renderer');
 
 /** Default frontend entrypoint (if not overriden through environment) */
-const DEFAULT_FRONTEND_SOURCE_URL = isDev
-  ? 'http://localhost:3000/desktop.html'
-  : getFileUrl(path.join(BUILD_ROOT, 'build/renderer/desktop.html'));
+const DEFAULT_FRONTEND_ENTRYPOINT = FRONTEND_BUNDLE_DIR
+  ? 'app://app/desktop.html'
+  : 'http://localhost:3000/desktop.html';
 
 /** Enable developer tools */
-export const SHOW_DEVTOOLS = process.env.SHOW_DEVTOOLS || isDev ? true : false;
+export const SHOW_DEVTOOLS =
+  process.env['SHOW_DEVTOOLS'] || isDev ? true : false;
 
 /** Override frontend source URL */
-export const FRONTEND_SOURCE_URL =
-  process.env.FRONTEND_SOURCE_URL ?? DEFAULT_FRONTEND_SOURCE_URL;
+export const FRONTEND_ENTRYPOINT =
+  process.env['FRONTEND_SOURCE_URL'] ?? DEFAULT_FRONTEND_ENTRYPOINT;
 
 /**
  * Schema for the user's config file.

@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { Asset } from '../../common/asset.interfaces';
 import { AssetEntity } from '../asset/asset.entity';
 
-@Entity()
+@Entity({ tableName: 'media_file' })
 export class MediaFile {
   @PrimaryKey({ type: 'string' })
   id = randomUUID();
