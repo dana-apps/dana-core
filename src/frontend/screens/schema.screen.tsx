@@ -5,7 +5,7 @@ import { Button } from 'theme-ui';
 import {
   AggregatedValidationError,
   defaultSchemaProperty,
-  GetRootCollection,
+  GetRootAssetsCollection,
   SchemaProperty,
   UpdateCollectionSchema
 } from '../../common/asset.interfaces';
@@ -21,7 +21,7 @@ import { useErrorDisplay } from '../ui/hooks/error.hooks';
  * Currently we only support editing the root collection, but could be easily made more generic.
  */
 export const SchemaScreen = () => {
-  const collection = useGet(GetRootCollection);
+  const collection = useGet(GetRootAssetsCollection);
   const displayError = useErrorDisplay();
   const [state, setState] = useState<SchemaProperty[]>();
   const rpc = useRPC();

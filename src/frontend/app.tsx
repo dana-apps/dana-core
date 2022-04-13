@@ -21,7 +21,7 @@ export const ArchiveWindow: FC<{ title?: string }> = ({ title }) => (
     <Route path="/" element={<ArchiveScreen title={title} />}>
       <Route index element={<></>} />
       <Route path="ingest/:sessionId" element={<ArchiveIngestScreen />} />
-      <Route path="collection" element={<CollectionScreen />} />
+      <Route path="collection/:collectionId" element={<CollectionScreen />} />
       <Route path="schema" element={<SchemaScreen />} />
     </Route>
   </Routes>

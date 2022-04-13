@@ -3,25 +3,30 @@
 import { FC, useMemo } from 'react';
 import {
   Asset,
-  GetRootCollection,
+  GetCollection,
   ListAssets,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
-import { never } from '../../common/util/assert';
+import { never, required } from '../../common/util/assert';
 import { iterateListCursor, useGet, useList } from '../ipc/ipc.hooks';
 import { ReferenceCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { AssetDetail } from '../ui/components/asset-detail.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
+import { useParams } from 'react-router-dom';
 
 /**
  * Screen for viewing the assets in a collection.
  */
 export const CollectionScreen: FC = () => {
+  const collectionId = required(
+    useParams().collectionId,
+    'Expected collectionId param'
+  );
+  const collection = useGet(GetCollection, collectionId);
   const assets = useList(ListAssets, () => ({}), []);
-  const collection = useGet(GetRootCollection);
   const selection = SelectionContext.useContainer();
 
   const gridColumns = useMemo(() => {

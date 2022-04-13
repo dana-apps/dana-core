@@ -132,11 +132,56 @@ export const Collection = z.object({
 export type Collection = z.TypeOf<typeof Collection>;
 
 /**
- * Return the archive's root collection.
+ * Return the archive's root asset collection.
  */
-export const GetRootCollection = RpcInterface({
-  id: 'collection/get',
+export const GetRootAssetsCollection = RpcInterface({
+  id: 'collection/assets',
   request: z.undefined(),
+  response: Collection
+});
+
+/**
+ * Return the archive's root controlled database collection.
+ */
+export const GetRootDatabaseCollection = RpcInterface({
+  id: 'collection/databases',
+  request: z.undefined(),
+  response: Collection
+});
+
+/**
+ * Get a collection by id.
+ */
+export const GetCollection = RpcInterface({
+  id: 'collection',
+  request: z.object({
+    id: z.string()
+  }),
+  response: Collection,
+  error: z.nativeEnum(FetchError)
+});
+
+/**
+ * Return the subcollections of a collection.
+ */
+export const GetSubcollections = RpcInterface({
+  id: 'collection/subcollections',
+  request: z.object({
+    parent: z.string()
+  }),
+  response: ResourceList(Collection)
+});
+
+/**
+ * Return the subcollections of a collection.
+ */
+export const CreateCollection = RpcInterface({
+  id: 'collection/create',
+  request: z.object({
+    parent: z.string(),
+    title: z.string(),
+    schema: z.array(SchemaProperty)
+  }),
   response: Collection
 });
 

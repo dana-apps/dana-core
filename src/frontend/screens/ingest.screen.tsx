@@ -4,7 +4,7 @@ import { FC, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from 'theme-ui';
 import {
-  GetRootCollection,
+  GetRootAssetsCollection,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
@@ -37,7 +37,7 @@ export const ArchiveIngestScreen: FC = () => {
   const sessionId = required(useParams().sessionId, 'Expected sessionId param');
   const assets = useList(ListIngestAssets, () => ({ sessionId }), [sessionId]);
   const session = useGet(GetIngestSession, sessionId);
-  const collection = useGet(GetRootCollection);
+  const collection = useGet(GetRootAssetsCollection);
   const completeImport = useCompleteImport(sessionId);
   const cancelImport = useCancelImport(sessionId);
   const selection = SelectionContext.useContainer();

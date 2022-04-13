@@ -2,8 +2,8 @@
 
 import { FC, useCallback } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { FolderPlus, ListColumns } from 'react-bootstrap-icons';
-import { Box, Flex, Text } from 'theme-ui';
+import { FolderPlus, ListColumns, Plus } from 'react-bootstrap-icons';
+import { Box, Flex, IconButton, Text } from 'theme-ui';
 
 import {
   IngestPhase,
@@ -13,7 +13,7 @@ import {
 } from '../../common/ingest.interfaces';
 import { Resource } from '../../common/resource';
 import { Result } from '../../common/util/error';
-import { useListAll, useRPC } from '../ipc/ipc.hooks';
+import { unwrapGetResult, useGet, useListAll, useRPC } from '../ipc/ipc.hooks';
 import {
   ProgressIndicator,
   ToolbarButton
@@ -24,6 +24,15 @@ import {
   ArchiveWindowLayout
 } from '../ui/components/page-layouts.component';
 import { WindowDragArea, WindowInset } from '../ui/window';
+import { useContextMenu } from '../ui/hooks/menu.hooks';
+import {
+  CreateCollection,
+  defaultSchemaProperty,
+  GetRootAssetsCollection,
+  GetRootDatabaseCollection,
+  GetSubcollections
+} from '../../common/asset.interfaces';
+import { useErrorDisplay } from '../ui/hooks/error.hooks';
 
 /**
  * The wrapper component for an archive window. Shows the screen's top-level navigation and renders the active route.
@@ -31,6 +40,18 @@ import { WindowDragArea, WindowInset } from '../ui/window';
 export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const imports = useListAll(ListIngestSession, () => ({}), []);
   const acceptImport = useStartImport();
+  const assetRoot = unwrapGetResult(useGet(GetRootAssetsCollection));
+  const databaseRoot = unwrapGetResult(useGet(GetRootDatabaseCollection));
+  const databases = useListAll(
+    GetSubcollections,
+    () => (databaseRoot ? { parent: databaseRoot.id } : 'skip'),
+    [databaseRoot]
+  );
+  const createMenu = useCreateMenu();
+
+  if (!assetRoot) {
+    return null;
+  }
 
   return (
     <ArchiveWindowLayout
@@ -53,10 +74,34 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
               </NavListSection>
             ))}
 
+            {/* Assets */}
             <NavListSection title="Collections">
-              <NavListItem title="Main Collection" path="/collection" />
+              <NavListItem
+                title="Main Collection"
+                path={`/collection/${assetRoot.id}`}
+              />
             </NavListSection>
+
+            {/* Databases */}
+            {renderIfPresent(databases, (databases) => (
+              <NavListSection title="Controlled Databases">
+                {databases.map((db) => (
+                  <NavListItem
+                    key={db.id}
+                    title={db.title}
+                    path={`/collection/${db.id}`}
+                  />
+                ))}
+              </NavListSection>
+            ))}
           </Box>
+        </>
+      }
+      sidebarButtons={
+        <>
+          <IconButton {...createMenu.triggerProps}>
+            <Plus size={32} />
+          </IconButton>
         </>
       }
       main={
@@ -172,4 +217,39 @@ function renderIfPresent<T extends Resource[], Return>(
   }
 
   return fn(queryResult.value);
+}
+
+function useCreateMenu() {
+  const rpc = useRPC();
+  const error = useErrorDisplay();
+  const root = useGet(GetRootDatabaseCollection);
+  const navigate = useNavigate();
+
+  const createControlledDatabase = async () => {
+    if (!root || root.status !== 'ok') {
+      return;
+    }
+
+    const res = await rpc(CreateCollection, {
+      parent: root.value.id,
+      schema: [{ ...defaultSchemaProperty(0), label: 'Title' }],
+      title: 'New Database'
+    });
+    if (res.status !== 'ok') {
+      return error.unexpected(res.error);
+    }
+
+    navigate(`/collection/${res.value.id}`);
+  };
+
+  return useContextMenu({
+    on: 'click',
+    options: [
+      {
+        id: 'newControlledDatabase',
+        label: 'New Controlled Database',
+        action: createControlledDatabase
+      }
+    ]
+  });
 }

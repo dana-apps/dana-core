@@ -15,6 +15,8 @@ export function ok(value: unknown = {}): OkResult<unknown> {
 }
 
 /** Convenience for creating an ErrorResult */
+export function error<Err extends string>(error: Err): ErrorResult<Err>;
+export function error<Err>(error: Err): ErrorResult<Err>;
 export function error<Err>(error: Err): ErrorResult<Err> {
   return { status: 'error', error };
 }

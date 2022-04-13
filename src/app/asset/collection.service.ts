@@ -1,3 +1,4 @@
+import { EventEmitter } from 'eventemitter3';
 import { mapValues } from 'lodash';
 import { z } from 'zod';
 import {
@@ -5,6 +6,7 @@ import {
   Collection,
   SchemaProperty
 } from '../../common/asset.interfaces';
+import { PageRange } from '../../common/ipc.interfaces';
 import { DefaultMap } from '../../common/util/collection';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
@@ -26,7 +28,7 @@ import {
  * The archive has a root collection, which may define a default schema.
  * All other collections must be descendents of this.
  */
-export class CollectionService {
+export class CollectionService extends EventEmitter<CollectionEvents> {
   /**
    * Return the root asset collection of the archive. Created if it does not yet exist.
    *
@@ -74,6 +76,42 @@ export class CollectionService {
   }
 
   /**
+   * Get a collection by id.
+   *
+   * @param archive Archive containing the collection.
+   * @param collectionId ID of the collection.
+   * @returns The root controlled database collection for `archive`
+   */
+  async getCollection(archive: ArchivePackage, collectionId: string) {
+    return archive
+      .get(AssetCollectionEntity, collectionId)
+      .then((entity) => entity && this.toCollectionValue(entity));
+  }
+
+  /**
+   * Return the root controlled databases collection of the archive. Created if it does not yet exist.
+   *
+   * @param archive Archive containing the collection.
+   * @returns The root controlled database collection for `archive`
+   */
+  async listSubcollections(
+    archive: ArchivePackage,
+    parentCollectionId: string,
+    range: PageRange | undefined
+  ) {
+    const listedAssets = await archive.list(
+      AssetCollectionEntity,
+      { parent: parentCollectionId },
+      { range }
+    );
+
+    return {
+      ...listedAssets,
+      items: listedAssets.items.map((item) => this.toCollectionValue(item))
+    };
+  }
+
+  /**
    * Return the root controlled databases collection of the archive. Created if it does not yet exist.
    *
    * @param archive Archive containing the collection.
@@ -91,7 +129,8 @@ export class CollectionService {
         parent: parentId,
         ...opts
       });
-      db.persist(collection);
+      db.persistAndFlush(collection);
+      this.emit('change', { created: [collection.id] });
 
       return this.toCollectionValue(collection);
     });
@@ -166,6 +205,7 @@ export class CollectionService {
 
       collection.schema = schema.map(SchemaPropertyValue.fromJson);
       await db.persistAndFlush(collection);
+      this.emit('change', { updated: [collectionId] });
 
       return ok();
     });
@@ -281,6 +321,16 @@ export class CollectionService {
       title: entity.title
     };
   }
+}
+
+export interface CollectionsChangedEvent {
+  created?: string[];
+  updated?: string[];
+  deleted?: string[];
+}
+
+interface CollectionEvents {
+  change: [CollectionsChangedEvent];
 }
 
 type ValidateItemsResult =
