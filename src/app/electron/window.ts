@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, protocol, session } from 'electron';
 import { uniqueId } from 'lodash';
 import { platform } from 'os';
 import path from 'path';
@@ -10,7 +10,9 @@ import {
   MaximizationState,
   MaximizationStateChanged,
   ToggleMaximizeWindow,
-  MinimizeWindow
+  MinimizeWindow,
+  ShowContextMenu,
+  ShowContextMenuResult
 } from '../../common/ui.interfaces';
 import { error, ok } from '../../common/util/error';
 import { getFrontendPlatform } from '../util/platform';
@@ -208,6 +210,28 @@ protocol.registerSchemesAsPrivileged([
  * @param router The IPC router to bind to
  */
 export async function initWindows(router: ElectronRouter) {
+  router.bindRpc(
+    ShowContextMenu,
+    (req) =>
+      new Promise<ShowContextMenuResult>((resolve) => {
+        const menu = Menu.buildFromTemplate(
+          req.menuItems.map((item) => ({
+            label: item.label,
+            click: () => {
+              resolve(ok({ action: item.id }));
+            }
+          }))
+        );
+
+        menu.popup({ x: req.x, y: req.y });
+        menu.on('menu-will-close', () => {
+          setTimeout(() => {
+            resolve(error('cancelled'));
+          });
+        });
+      })
+  );
+
   router.bindRpc(MinimizeWindow, async (_1, _2, _3, contents) => {
     BrowserWindow.fromWebContents(contents)?.minimize();
     return ok();
