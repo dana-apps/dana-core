@@ -205,7 +205,9 @@ export const UpdateCollectionSchema = RpcInterface({
  */
 export const ListAssets = RpcInterface({
   id: 'assets/list',
-  request: z.object({}),
+  request: z.object({
+    collectionId: z.string()
+  }),
   response: ResourceList(Asset),
   error: z.nativeEnum(FetchError)
 });

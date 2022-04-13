@@ -9,7 +9,12 @@ import {
   SchemaPropertyType
 } from '../../common/asset.interfaces';
 import { never, required } from '../../common/util/assert';
-import { iterateListCursor, useGet, useList } from '../ipc/ipc.hooks';
+import {
+  iterateListCursor,
+  unwrapGetResult,
+  useGet,
+  useList
+} from '../ipc/ipc.hooks';
 import { ReferenceCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { AssetDetail } from '../ui/components/asset-detail.component';
@@ -25,16 +30,16 @@ export const CollectionScreen: FC = () => {
     useParams().collectionId,
     'Expected collectionId param'
   );
-  const collection = useGet(GetCollection, collectionId);
-  const assets = useList(ListAssets, () => ({}), []);
+  const collection = unwrapGetResult(useGet(GetCollection, collectionId));
+  const assets = useList(
+    ListAssets,
+    () => (collection ? { collectionId: collection.id } : 'skip'),
+    [collection]
+  );
   const selection = SelectionContext.useContainer();
 
   const gridColumns = useMemo(() => {
-    if (collection?.status === 'ok') {
-      return getGridColumns(collection.value.schema);
-    }
-
-    return [];
+    return collection ? getGridColumns(collection.schema) : [];
   }, [collection]);
 
   const selectedAsset = useMemo(() => {
@@ -45,7 +50,7 @@ export const CollectionScreen: FC = () => {
     }
   }, [assets, selection]);
 
-  if (!assets || !collection || collection.status !== 'ok') {
+  if (!assets || !collection) {
     return null;
   }
 
@@ -53,7 +58,7 @@ export const CollectionScreen: FC = () => {
     <AssetDetail
       sx={{ width: '100%', height: '100%' }}
       asset={selectedAsset}
-      schema={collection.value.schema}
+      schema={collection.schema}
     />
   ) : undefined;
 
@@ -61,6 +66,7 @@ export const CollectionScreen: FC = () => {
     <>
       <PrimaryDetailLayout
         sx={{ flex: 1, width: '100%', position: 'relative' }}
+        key={collectionId}
         detail={detailView}
       >
         <DataGrid

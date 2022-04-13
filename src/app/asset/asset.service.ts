@@ -175,12 +175,15 @@ export class AssetService extends EventEmitter<AssetEvents> {
    */
   async listAssets(
     archive: ArchivePackage,
+    collectionId: string,
     range?: PageRange
   ): Promise<ResourceList<Asset>> {
     return archive.useDb(async () => {
       const entities = await archive.list(
         AssetEntity,
-        {},
+        {
+          collection: collectionId
+        },
         {
           populate: ['mediaFiles'],
           range

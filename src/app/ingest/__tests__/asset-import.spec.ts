@@ -238,7 +238,10 @@ describe('AssetImportOperation', () => {
     );
     await fixture.importService.commitSession(fixture.archive, session.id);
 
-    const assets = await fixture.assetService.listAssets(fixture.archive);
+    const assets = await fixture.assetService.listAssets(
+      fixture.archive,
+      fixture.rootCollection.id
+    );
 
     // Creates the asssets and associates them with files
     expect(assets.total).toBe(2);
@@ -266,6 +269,9 @@ const setup = async () => {
     assetService,
     collectionService
   );
+  const rootCollection = await collectionService.getRootAssetCollection(
+    archive
+  );
 
   return {
     archive,
@@ -273,13 +279,11 @@ const setup = async () => {
     importService,
     assetService,
     collectionService,
+    rootCollection,
     givenACollectionMetadataSchema: async (schema: SchemaProperty[]) => {
-      const collection = await collectionService.getRootAssetCollection(
-        archive
-      );
       await collectionService.updateCollectionSchema(
         archive,
-        collection.id,
+        rootCollection.id,
         schema
       );
     },

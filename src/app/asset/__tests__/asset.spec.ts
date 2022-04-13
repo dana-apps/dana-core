@@ -52,7 +52,12 @@ describe(AssetService, () => {
       })
     ]);
 
-    expect(await fixture.service.listAssets(fixture.archive)).toEqual(
+    expect(
+      await fixture.service.listAssets(
+        fixture.archive,
+        fixture.rootCollection.id
+      )
+    ).toEqual(
       expect.objectContaining({
         items: [
           expect.objectContaining({
@@ -82,7 +87,12 @@ describe(AssetService, () => {
       })
     ]);
 
-    expect(await fixture.service.listAssets(fixture.archive)).toEqual(
+    expect(
+      await fixture.service.listAssets(
+        fixture.archive,
+        fixture.rootCollection.id
+      )
+    ).toEqual(
       expect.objectContaining({
         items: [
           expect.objectContaining({

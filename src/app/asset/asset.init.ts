@@ -25,7 +25,9 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
   const assetService = new AssetService(collectionService, media);
 
   router.bindArchiveRpc(ListAssets, async (archive, request, range) => {
-    return ok(await assetService.listAssets(archive, range));
+    return ok(
+      await assetService.listAssets(archive, request.collectionId, range)
+    );
   });
 
   router.bindArchiveRpc(
@@ -89,10 +91,10 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
       });
     }
 
-    if (created) {
+    if (created || deleted) {
       router.emit(ChangeEvent, {
         type: GetSubcollections.id,
-        ids: [...created]
+        ids: [...(created ?? []), ...(deleted ?? [])]
       });
     }
   });
