@@ -33,5 +33,9 @@ module.exports = {
         }
       }
     };
-  }
+  },
+  babel: async (options) => ({
+    ...options,
+    presets: [...(options.presets || []), 'babel-preset-vite']
+  })
 };
