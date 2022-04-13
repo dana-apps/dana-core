@@ -11,6 +11,7 @@ import { ArchiveScreen } from './screens/archive.screen';
 import { CollectionScreen } from './screens/collection.screen';
 import { ArchiveIngestScreen } from './screens/ingest.screen';
 import { SchemaScreen } from './screens/schema.screen';
+import { InvalidateOnPageChange } from './ui/components/util.component';
 import { WindowInset } from './ui/window';
 
 /**
@@ -20,9 +21,30 @@ export const ArchiveWindow: FC<{ title?: string }> = ({ title }) => (
   <Routes>
     <Route path="/" element={<ArchiveScreen title={title} />}>
       <Route index element={<></>} />
-      <Route path="ingest/:sessionId" element={<ArchiveIngestScreen />} />
-      <Route path="collection/:collectionId" element={<CollectionScreen />} />
-      <Route path="schema" element={<SchemaScreen />} />
+      <Route
+        path="ingest/:sessionId"
+        element={
+          <InvalidateOnPageChange>
+            <ArchiveIngestScreen />
+          </InvalidateOnPageChange>
+        }
+      />
+      <Route
+        path="collection/:collectionId"
+        element={
+          <InvalidateOnPageChange>
+            <CollectionScreen />
+          </InvalidateOnPageChange>
+        }
+      />
+      <Route
+        path="schema"
+        element={
+          <InvalidateOnPageChange>
+            <SchemaScreen />
+          </InvalidateOnPageChange>
+        }
+      />
     </Route>
   </Routes>
 );

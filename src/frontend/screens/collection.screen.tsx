@@ -66,7 +66,6 @@ export const CollectionScreen: FC = () => {
     <>
       <PrimaryDetailLayout
         sx={{ flex: 1, width: '100%', position: 'relative' }}
-        key={collectionId}
         detail={detailView}
       >
         <DataGrid
