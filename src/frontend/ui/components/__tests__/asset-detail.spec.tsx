@@ -44,7 +44,11 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail asset={asset} schema={SCHEMA} />
+        <AssetDetail
+          asset={asset}
+          schema={SCHEMA}
+          collection={fixture.collection}
+        />
       </fixture.context>
     );
 
@@ -71,7 +75,11 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail asset={asset} schema={SCHEMA} />
+        <AssetDetail
+          asset={asset}
+          schema={SCHEMA}
+          collection={fixture.collection}
+        />
       </fixture.context>
     );
 
@@ -96,7 +104,11 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail asset={asset} schema={SCHEMA} />
+        <AssetDetail
+          asset={asset}
+          schema={SCHEMA}
+          collection={fixture.collection}
+        />
       </fixture.context>
     );
 
@@ -119,6 +131,11 @@ function setup() {
       return (
         <IpcContext.Provider value={{ ipc }}>{children}</IpcContext.Provider>
       );
+    },
+    collection: {
+      id: 'someCollection',
+      title: 'Some Collection',
+      schema: SCHEMA
     },
     givenThatTheUpdateSucceeds() {
       const onUpdate = jest.fn();

@@ -61,13 +61,15 @@ export const ArchiveIngestScreen: FC = () => {
     return null;
   }
 
-  const detailView = selectedAsset ? (
-    <AssetDetail
-      asset={selectedAsset}
-      schema={collection.value.schema}
-      sx={{ width: '100%', height: '100%' }}
-    />
-  ) : undefined;
+  const detailView =
+    selectedAsset && collection.status === 'ok' ? (
+      <AssetDetail
+        asset={selectedAsset}
+        schema={collection.value.schema}
+        sx={{ width: '100%', height: '100%' }}
+        collection={collection.value}
+      />
+    ) : undefined;
 
   const allowComplete =
     session.status === 'ok' &&

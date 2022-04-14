@@ -1,10 +1,12 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useCallback, useMemo, useState } from 'react';
-import { CardList, Collection } from 'react-bootstrap-icons';
+import { CardList, Collection as CollectionIcon } from 'react-bootstrap-icons';
 import { Box, BoxProps, Button, Flex, Grid, Image } from 'theme-ui';
 import {
   Asset,
+  Collection,
+  CreateAsset,
   SchemaProperty,
   SingleValidationError,
   UpdateAssetMetadata
@@ -20,11 +22,21 @@ interface MediaDetailProps extends BoxProps {
   /** Asset to render details of */
   asset: Asset;
 
+  /** Collection containing the asset */
+  collection: Collection;
+
   /** Schema of the collection containing the asset */
   schema: SchemaProperty[];
 
   /** Initial tab to display. One of the labels of the detail tabs */
   initialTab?: string;
+
+  /**  */
+  action?: 'create' | 'update';
+
+  onCancelCreate?: () => void;
+
+  onCreate?: (asset: Asset) => void;
 }
 
 /**
@@ -32,12 +44,18 @@ interface MediaDetailProps extends BoxProps {
  */
 export const AssetDetail: FC<MediaDetailProps> = ({
   asset,
-  initialTab,
+  collection,
   schema,
+  action = 'update',
+  initialTab = action === 'create' ? 'Metadata' : undefined,
+  onCancelCreate,
+  onCreate,
   ...props
 }) => {
   const [tabId, setTabId] = useState(initialTab);
-  const [edits, setEdits] = useState<Dict>();
+  const [edits, setEdits] = useState<Dict | undefined>(
+    action === 'create' ? {} : undefined
+  );
   const rpc = useRPC();
   const isEditing = !!edits;
   const metadata = useMemo(
@@ -54,8 +72,8 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     setEditErrors(undefined);
   }, []);
 
-  /** Attempt to  */
-  const handleCommitEditing = useCallback(async () => {
+  /** Attempt to commit editing of the asset */
+  const updateAsset = useCallback(async () => {
     const res = await rpc(UpdateAssetMetadata, {
       assetId: asset.id,
       payload: metadata
@@ -73,10 +91,37 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     }
   }, [asset.id, displayError, metadata, rpc]);
 
+  /** Create the asset */
+  const createAsset = useCallback(async () => {
+    const res = await rpc(CreateAsset, {
+      collection: collection.id,
+      metadata
+    });
+
+    if (res.status === 'error') {
+      if (res.error === FetchError.DOES_NOT_EXIST) {
+        return displayError(
+          `Something unexpected happened. We weren't able to update this record.`
+        );
+      }
+
+      setEditErrors(res.error);
+    } else {
+      setEdits(undefined);
+      onCreate?.(res.value);
+    }
+  }, [collection.id, displayError, metadata, onCreate, rpc]);
+
   const handleCancelEditing = useCallback(() => {
     setEdits(undefined);
     setEditErrors(undefined);
-  }, []);
+
+    if (action === 'create') {
+      onCancelCreate?.();
+    }
+  }, [action, onCancelCreate]);
+
+  const handleSave = action === 'create' ? createAsset : updateAsset;
 
   return (
     <Flex
@@ -88,7 +133,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     >
       <Tabs currentTab={tabId} onTabChange={setTabId}>
         {/* Media Panel */}
-        <IconTab label="Media" icon={Collection}>
+        <IconTab label="Media" icon={CollectionIcon}>
           <Flex
             sx={{
               flexDirection: 'column',
@@ -150,18 +195,21 @@ export const AssetDetail: FC<MediaDetailProps> = ({
           flexDirection: 'row',
           justifyContent: 'flex-end',
           borderTop: 'primary',
-          p: 3,
-          '> *': {
-            ml: 5
-          }
+          p: 3
         }}
       >
         {isEditing && (
           <>
-            <Button variant="primaryTransparent" onClick={handleCancelEditing}>
+            <Button
+              sx={{ mr: 5 }}
+              variant="primaryTransparent"
+              onClick={handleCancelEditing}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCommitEditing}>Save Changes</Button>
+            <Button onClick={handleSave}>
+              {action === 'create' ? 'Create' : 'Save Changes'}
+            </Button>
           </>
         )}
         {!isEditing && (

@@ -226,6 +226,19 @@ export const ListAssets = RpcInterface({
 });
 
 /**
+ * Create a new asset.
+ */
+export const CreateAsset = RpcInterface({
+  id: 'assets/create',
+  request: z.object({
+    collection: z.string(),
+    metadata: z.record(z.unknown())
+  }),
+  response: Asset,
+  error: z.nativeEnum(FetchError)
+});
+
+/**
  * Update the metadata for an asset.
  *
  * Performs a full update – missing keys are treated as setting the metadata value to null.

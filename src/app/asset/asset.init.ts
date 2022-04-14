@@ -7,7 +7,8 @@ import {
   UpdateAssetMetadata,
   UpdateCollectionSchema,
   CreateCollection,
-  UpdateCollection
+  UpdateCollection,
+  CreateAsset
 } from '../../common/asset.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { ok, okIfExists } from '../../common/util/error';
@@ -24,6 +25,10 @@ import { CollectionService } from './collection.service';
 export function initAssets(router: ElectronRouter, media: MediaFileService) {
   const collectionService = new CollectionService();
   const assetService = new AssetService(collectionService, media);
+
+  router.bindArchiveRpc(CreateAsset, (archive, { collection, ...props }) => {
+    return assetService.createAsset(archive, collection, props);
+  });
 
   router.bindArchiveRpc(ListAssets, async (archive, request, range) => {
     return ok(

@@ -352,7 +352,7 @@ export const PrimaryDetailLayout: FC<
           flex={0.25}
           minSize={320}
         >
-          <Box>{detail}</Box>
+          {detail}
         </ReflexElement>
       )}
     </ReflexContainer>

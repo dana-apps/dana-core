@@ -54,6 +54,11 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
           metadata: metadata
         }}
         schema={SCHEMA}
+        collection={{
+          id: 'someCollection',
+          title: 'Some Collection',
+          schema: SCHEMA
+        }}
         initialTab="Metadata"
       />
     </IpcContext.Provider>

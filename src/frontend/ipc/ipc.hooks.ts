@@ -226,6 +226,7 @@ export function useList<T extends Resource, Q, Err>(
         if (q === 'skip') {
           return;
         }
+        console.log('refetch', visibleRange.current);
 
         setActive(true);
 
@@ -278,7 +279,7 @@ export function useList<T extends Resource, Q, Err>(
           scheduler.run(async () => {
             visibleRange.current = {
               offset: start,
-              limit: Math.max(0, end - start)
+              limit: Math.max(0, end + 1 - start)
             };
           });
         },

@@ -232,7 +232,8 @@ export function DataGrid<T extends Resource>({
                       }}
                       rowCount={data.totalCount}
                       columnCount={
-                        endPadding >= 0 ? columns.length + 1 : columns.length
+                        // endPadding >= 0 ? columns.length + 1 : columns.length
+                        columns.length
                       }
                       rowHeight={() => rowHeight}
                       itemData={dataVal}

@@ -1,6 +1,6 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, useMemo } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 import {
   Asset,
   GetCollection,
@@ -11,6 +11,7 @@ import {
 import { never, required } from '../../common/util/assert';
 import {
   iterateListCursor,
+  ListCursor,
   unwrapGetResult,
   useGet,
   useList
@@ -26,7 +27,7 @@ import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useContextMenu } from '../ui/hooks/menu.hooks';
 import { IconButton } from 'theme-ui';
-import { Gear } from 'react-bootstrap-icons';
+import { Gear, Plus } from 'react-bootstrap-icons';
 
 /**
  * Screen for viewing the assets in a collection.
@@ -38,12 +39,51 @@ export const CollectionScreen: FC = () => {
   );
   const navigate = useNavigate();
   const collection = unwrapGetResult(useGet(GetCollection, collectionId));
-  const assets = useList(
+  const fetchedAssets = useList(
     ListAssets,
     () => (collection ? { collectionId: collection.id } : 'skip'),
     [collection]
   );
   const selection = SelectionContext.useContainer();
+  const [pendingAsset, setPendingAsset] = useState<Asset>();
+
+  const assets = useMemo((): ListCursor<Asset> | undefined => {
+    if (!fetchedAssets) {
+      return;
+    }
+
+    if (!pendingAsset) {
+      return fetchedAssets;
+    }
+
+    return {
+      ...fetchedAssets,
+      totalCount: fetchedAssets.totalCount + 1,
+      get: (i) => (i === 0 ? pendingAsset : fetchedAssets.get(i + 1)),
+      isLoaded: (i) => (i === 0 ? true : fetchedAssets.isLoaded(i + 1)),
+      fetchMore: (start, end) => fetchedAssets.fetchMore(start + 1, end + 1),
+      setVisibleRange: (start, end) =>
+        fetchedAssets.setVisibleRange(start + 1, end + 1)
+    };
+  }, [fetchedAssets, pendingAsset]);
+
+  const newAsset = useCallback(() => {
+    setPendingAsset({
+      id: '$pending',
+      media: [],
+      metadata: {}
+    });
+  }, []);
+
+  const onCancelCreateAsset = () => {
+    setPendingAsset(undefined);
+    selection.setSelection(undefined);
+  };
+
+  const onCreateAsset = (asset: Asset) => {
+    setPendingAsset(undefined);
+    selection.setSelection(asset.id);
+  };
 
   const configMenu = useContextMenu({
     on: 'click',
@@ -77,8 +117,13 @@ export const CollectionScreen: FC = () => {
   const detailView = selectedAsset ? (
     <AssetDetail
       sx={{ width: '100%', height: '100%' }}
+      key={selectedAsset.id}
+      collection={collection}
       asset={selectedAsset}
       schema={collection.schema}
+      action={selectedAsset.id === '$pending' ? 'create' : 'update'}
+      onCancelCreate={onCancelCreateAsset}
+      onCreate={onCreateAsset}
     />
   ) : undefined;
 
@@ -96,9 +141,14 @@ export const CollectionScreen: FC = () => {
 
         <BottomBar
           actions={
-            <IconButton aria-label="Settings" {...configMenu.triggerProps}>
-              <Gear />
-            </IconButton>
+            <>
+              <IconButton onClick={newAsset} aria-label="Add">
+                <Plus />
+              </IconButton>
+              <IconButton aria-label="Settings" {...configMenu.triggerProps}>
+                <Gear />
+              </IconButton>
+            </>
           }
         />
       </PrimaryDetailLayout>
