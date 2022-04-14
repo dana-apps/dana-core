@@ -1,8 +1,8 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, useCallback } from 'react';
+import { FC } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { FolderPlus, Plus } from 'react-bootstrap-icons';
+import { Plus } from 'react-bootstrap-icons';
 import { Box, Flex, IconButton, Text } from 'theme-ui';
 
 import {
@@ -14,10 +14,7 @@ import {
 import { Resource } from '../../common/resource';
 import { Result } from '../../common/util/error';
 import { unwrapGetResult, useGet, useListAll, useRPC } from '../ipc/ipc.hooks';
-import {
-  ProgressIndicator,
-  ToolbarButton
-} from '../ui/components/atoms.component';
+import { ProgressIndicator } from '../ui/components/atoms.component';
 import {
   NavListItem,
   NavListSection,
@@ -48,7 +45,6 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
     [databaseRoot]
   );
 
-  const acceptImport = useStartImport();
   const createMenu = useCreateMenu();
 
   if (!assetRoot) {
@@ -110,43 +106,12 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
         <Flex sx={{ height: '100%', flexDirection: 'column' }}>
           <WindowDragArea
             sx={{
-              bg: 'gray1',
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              px: 5
+              py: 5,
+              px: 4,
+              bg: 'gray1'
             }}
           >
             <Text sx={{ fontWeight: 600 }}>{title}</Text>
-
-            <div sx={{ flex: 1 }}>
-              <WindowInset
-                sx={{
-                  bg: 'gray1'
-                }}
-                platforms={['windows', 'linuxish']}
-              />
-              <WindowDragArea
-                sx={{
-                  px: 6,
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'flex-end',
-                  justifyContent: 'flex-end',
-                  p: 2,
-                  flex: 1,
-                  '> *': {
-                    pr: 4
-                  }
-                }}
-              >
-                <ToolbarButton
-                  icon={FolderPlus}
-                  label="Import Assets"
-                  onClick={acceptImport}
-                />
-              </WindowDragArea>
-            </div>
           </WindowDragArea>
 
           <Outlet />
@@ -171,26 +136,6 @@ const IngestSessionStatusIndicator: FC<{ session: IngestSession }> = ({
 
   return <ProgressIndicator value={session.filesRead / session.totalFiles} />;
 };
-
-/**
- * Return a callback that starts a new import section and navigates to it if starts successfuly.
- *
- * TODO: Show an error if it fails.
- */
-function useStartImport() {
-  const navigate = useNavigate();
-  const rpc = useRPC();
-
-  const startImport = useCallback(async () => {
-    const session = await rpc(StartIngest, {});
-
-    if (session.status === 'ok') {
-      navigate(`/ingest/${session.value.id}`);
-    }
-  }, [navigate, rpc]);
-
-  return startImport;
-}
 
 /**
  * Helper for the navlist's sections, which we want to hide if their query returns an empty result.
@@ -224,6 +169,19 @@ function useCreateMenu() {
   const root = useGet(GetRootDatabaseCollection);
   const navigate = useNavigate();
 
+  /**
+   * Return a callback that starts a new import section and navigates to it if starts successfuly.
+   *
+   * TODO: Show an error if it fails.
+   */
+  const startImport = async () => {
+    const session = await rpc(StartIngest, {});
+
+    if (session.status === 'ok') {
+      navigate(`/ingest/${session.value.id}`);
+    }
+  };
+
   const createControlledDatabase = async () => {
     if (!root || root.status !== 'ok') {
       return;
@@ -248,6 +206,12 @@ function useCreateMenu() {
         id: 'newControlledDatabase',
         label: 'New Controlled Database',
         action: createControlledDatabase
+      },
+      '-',
+      {
+        id: 'newImport',
+        label: 'Bulk import…',
+        action: startImport
       }
     ]
   });

@@ -215,12 +215,20 @@ export async function initWindows(router: ElectronRouter) {
     (req) =>
       new Promise<ShowContextMenuResult>((resolve) => {
         const menu = Menu.buildFromTemplate(
-          req.menuItems.map((item) => ({
-            label: item.label,
-            click: () => {
-              resolve(ok({ action: item.id }));
+          req.menuItems.map((item) => {
+            if (item.id === '-') {
+              return {
+                type: 'separator'
+              };
             }
-          }))
+
+            return {
+              label: item.label,
+              click: () => {
+                resolve(ok({ action: item.id }));
+              }
+            };
+          })
         );
 
         menu.popup({ x: req.x, y: req.y });
