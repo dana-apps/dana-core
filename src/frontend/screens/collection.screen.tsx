@@ -18,9 +18,15 @@ import {
 import { ReferenceCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { AssetDetail } from '../ui/components/asset-detail.component';
-import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
+import {
+  BottomBar,
+  PrimaryDetailLayout
+} from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useContextMenu } from '../ui/hooks/menu.hooks';
+import { IconButton } from 'theme-ui';
+import { Gear } from 'react-bootstrap-icons';
 
 /**
  * Screen for viewing the assets in a collection.
@@ -30,6 +36,7 @@ export const CollectionScreen: FC = () => {
     useParams().collectionId,
     'Expected collectionId param'
   );
+  const navigate = useNavigate();
   const collection = unwrapGetResult(useGet(GetCollection, collectionId));
   const assets = useList(
     ListAssets,
@@ -37,6 +44,19 @@ export const CollectionScreen: FC = () => {
     [collection]
   );
   const selection = SelectionContext.useContainer();
+
+  const configMenu = useContextMenu({
+    on: 'click',
+    options: [
+      {
+        id: 'editSchema',
+        label: 'Edit Schema',
+        action: () => {
+          navigate(`/collection/${collectionId}/schema`);
+        }
+      }
+    ]
+  });
 
   const gridColumns = useMemo(() => {
     return collection ? getGridColumns(collection.schema) : [];
@@ -69,9 +89,17 @@ export const CollectionScreen: FC = () => {
         detail={detailView}
       >
         <DataGrid
-          sx={{ flex: 1, width: '100%', height: '100%' }}
+          sx={{ flex: 1, width: '100%' }}
           columns={gridColumns}
           data={assets}
+        />
+
+        <BottomBar
+          actions={
+            <IconButton aria-label="Settings" {...configMenu.triggerProps}>
+              <Gear />
+            </IconButton>
+          }
         />
       </PrimaryDetailLayout>
     </>

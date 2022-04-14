@@ -1,14 +1,16 @@
 /** @jsxImportSource theme-ui */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { Button } from 'theme-ui';
 import {
   AggregatedValidationError,
   defaultSchemaProperty,
-  GetRootAssetsCollection,
+  GetCollection,
   SchemaProperty,
   UpdateCollectionSchema
 } from '../../common/asset.interfaces';
+import { required } from '../../common/util/assert';
 import { FetchError } from '../../common/util/error';
 import { useGet, useRPC } from '../ipc/ipc.hooks';
 import { BottomBar } from '../ui/components/page-layouts.component';
@@ -21,7 +23,12 @@ import { useErrorDisplay } from '../ui/hooks/error.hooks';
  * Currently we only support editing the root collection, but could be easily made more generic.
  */
 export const SchemaScreen = () => {
-  const collection = useGet(GetRootAssetsCollection);
+  const collectionId = required(
+    useParams().collectionId,
+    'Expected collectionId param'
+  );
+
+  const collection = useGet(GetCollection, collectionId);
   const displayError = useErrorDisplay();
   const [state, setState] = useState<SchemaProperty[]>();
   const rpc = useRPC();

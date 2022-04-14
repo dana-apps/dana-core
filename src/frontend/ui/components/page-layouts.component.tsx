@@ -130,7 +130,8 @@ export const ArchiveWindowLayout: FC<ArchiveWindowLayoutProps> = ({
               pt: 1,
               flexShrink: 0,
               borderTop: '1px solid var(--theme-ui-colors-border)',
-              color: 'muted'
+              color: 'muted',
+              bg: 'gray1'
             }}
           >
             {sidebarButtons}
@@ -202,7 +203,12 @@ export const PrimaryDetailLayout: FC<
       orientation="vertical"
       {...props}
     >
-      <ReflexElement minSize={320}>{children}</ReflexElement>
+      <ReflexElement
+        sx={{ display: 'flex', flexDirection: 'column' }}
+        minSize={320}
+      >
+        {children}
+      </ReflexElement>
 
       {detail && <ReflexSplitter propagate={true} />}
 
@@ -213,9 +219,7 @@ export const PrimaryDetailLayout: FC<
           minSize={100}
           maxSize={300}
         >
-          <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            {detail}
-          </Box>
+          <Box>{detail}</Box>
         </ReflexElement>
       )}
     </ReflexContainer>

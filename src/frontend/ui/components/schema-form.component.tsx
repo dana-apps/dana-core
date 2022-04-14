@@ -87,7 +87,7 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
 };
 
 /**
- * Render a control for displaying and editing properties witg the CONTROLLED_DATABASE schema type.
+ * Render a control for displaying and editing properties with the CONTROLLED_DATABASE schema type.
  *
  * Currently read-only.
  */

@@ -30,18 +30,18 @@ export const ArchiveWindow: FC<{ title?: string }> = ({ title }) => (
         }
       />
       <Route
-        path="collection/:collectionId"
+        path="collection/:collectionId/schema"
         element={
           <InvalidateOnPageChange>
-            <CollectionScreen />
+            <SchemaScreen />
           </InvalidateOnPageChange>
         }
       />
       <Route
-        path="schema"
+        path="collection/:collectionId"
         element={
           <InvalidateOnPageChange>
-            <SchemaScreen />
+            <CollectionScreen />
           </InvalidateOnPageChange>
         }
       />

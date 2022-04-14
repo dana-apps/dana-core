@@ -1,8 +1,8 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useCallback } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { FolderPlus, ListColumns, Plus } from 'react-bootstrap-icons';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { FolderPlus, Plus } from 'react-bootstrap-icons';
 import { Box, Flex, IconButton, Text } from 'theme-ui';
 
 import {
@@ -39,14 +39,16 @@ import { useErrorDisplay } from '../ui/hooks/error.hooks';
  */
 export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const imports = useListAll(ListIngestSession, () => ({}), []);
-  const acceptImport = useStartImport();
   const assetRoot = unwrapGetResult(useGet(GetRootAssetsCollection));
+
   const databaseRoot = unwrapGetResult(useGet(GetRootDatabaseCollection));
   const databases = useListAll(
     GetSubcollections,
     () => (databaseRoot ? { parent: databaseRoot.id } : 'skip'),
     [databaseRoot]
   );
+
+  const acceptImport = useStartImport();
   const createMenu = useCreateMenu();
 
   if (!assetRoot) {
@@ -138,9 +140,6 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
                   }
                 }}
               >
-                <Link to="/schema" sx={{ textDecoration: 'none' }}>
-                  <ToolbarButton icon={ListColumns} label="Schema" />
-                </Link>
                 <ToolbarButton
                   icon={FolderPlus}
                   label="Import Assets"
