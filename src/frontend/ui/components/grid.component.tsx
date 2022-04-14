@@ -232,8 +232,7 @@ export function DataGrid<T extends Resource>({
                       }}
                       rowCount={data.totalCount}
                       columnCount={
-                        // endPadding >= 0 ? columns.length + 1 : columns.length
-                        columns.length
+                        endPadding >= 0 ? columns.length + 1 : columns.length
                       }
                       rowHeight={() => rowHeight}
                       itemData={dataVal}
@@ -293,7 +292,10 @@ export interface GridColumn<T extends Resource = Resource, Val = any> {
 }
 
 /** Presentation component for a datagrid */
-export type DataGridCell<Val = unknown> = FC<{ value: Val }> & {
+export type DataGridCell<Val = unknown> = FC<{
+  value: Val;
+  property: string;
+}> & {
   /**
    * Explicit size for the cell in pixels. If not provided, will be auto-sized by the view.
    *
@@ -335,7 +337,7 @@ function CellWrapper<T extends Resource>({
 
   return (
     <div sx={sx} style={style} onClick={() => setSelection(colData.id)}>
-      <column.cell value={column.getData(colData)} />
+      <column.cell value={column.getData(colData)} property={column.id} />
     </div>
   );
 }

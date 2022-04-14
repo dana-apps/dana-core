@@ -157,33 +157,32 @@ export const AssetDetail: FC<MediaDetailProps> = ({
 
         {/* Metadata Panel */}
         <IconTab label="Metadata" icon={CardList}>
-          <Grid
-            sx={{
-              gap: 4,
-              alignItems: 'start',
-              overflow: 'auto',
-              flexBasis: 0,
-              flex: 1,
-              p: 3
-            }}
-          >
-            {schema.map((property) => (
-              <Box key={property.id}>
-                <SchemaField
-                  property={property}
-                  editing={isEditing}
-                  value={metadata[property.id]}
-                  onChange={(change) =>
-                    setEdits((edits) => ({ ...edits, [property.id]: change }))
-                  }
-                />
+          <Box sx={{ overflow: 'auto', flex: 1 }}>
+            <Grid
+              gap={4}
+              repeat="fit"
+              sx={{
+                p: 3
+              }}
+            >
+              {schema.map((property) => (
+                <Box key={property.id}>
+                  <SchemaField
+                    property={property}
+                    editing={isEditing}
+                    value={metadata[property.id]}
+                    onChange={(change) =>
+                      setEdits((edits) => ({ ...edits, [property.id]: change }))
+                    }
+                  />
 
-                {editErrors?.[property.id] && (
-                  <ValidationError errors={editErrors?.[property.id]} />
-                )}
-              </Box>
-            ))}
-          </Grid>
+                  {editErrors?.[property.id] && (
+                    <ValidationError errors={editErrors?.[property.id]} />
+                  )}
+                </Box>
+              ))}
+            </Grid>
+          </Box>
 
           <span sx={{ flex: 1 }} />
         </IconTab>

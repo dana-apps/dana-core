@@ -8,7 +8,9 @@ import {
   UpdateCollectionSchema,
   CreateCollection,
   UpdateCollection,
-  CreateAsset
+  CreateAsset,
+  GetAsset,
+  SearchAsset
 } from '../../common/asset.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { ok, okIfExists } from '../../common/util/error';
@@ -33,6 +35,19 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
   router.bindArchiveRpc(ListAssets, async (archive, request, range) => {
     return ok(
       await assetService.listAssets(archive, request.collectionId, range)
+    );
+  });
+
+  router.bindArchiveRpc(GetAsset, async (archive, request) => {
+    return okIfExists(await assetService.get(archive, request.id));
+  });
+
+  router.bindArchiveRpc(SearchAsset, async (archive, request, range) => {
+    return await assetService.searchAssets(
+      archive,
+      request.collection,
+      request.query,
+      range
     );
   });
 

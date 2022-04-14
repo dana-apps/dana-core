@@ -59,11 +59,12 @@ export const CollectionScreen: FC = () => {
     return {
       ...fetchedAssets,
       totalCount: fetchedAssets.totalCount + 1,
-      get: (i) => (i === 0 ? pendingAsset : fetchedAssets.get(i + 1)),
-      isLoaded: (i) => (i === 0 ? true : fetchedAssets.isLoaded(i + 1)),
-      fetchMore: (start, end) => fetchedAssets.fetchMore(start + 1, end + 1),
+      get: (i) => (i === 0 ? pendingAsset : fetchedAssets.get(i - 1)),
+      isLoaded: (i) => (i === 0 ? true : fetchedAssets.isLoaded(i - 1)),
+      fetchMore: (start, end) =>
+        fetchedAssets.fetchMore(Math.max(start - 1, 0), end - 1),
       setVisibleRange: (start, end) =>
-        fetchedAssets.setVisibleRange(start + 1, end + 1)
+        fetchedAssets.setVisibleRange(Math.max(start - 1, 0), end - 1)
     };
   }, [fetchedAssets, pendingAsset]);
 
@@ -73,7 +74,8 @@ export const CollectionScreen: FC = () => {
       media: [],
       metadata: {}
     });
-  }, []);
+    selection.setSelection('$pending');
+  }, [selection]);
 
   const onCancelCreateAsset = () => {
     setPendingAsset(undefined);
@@ -109,6 +111,9 @@ export const CollectionScreen: FC = () => {
       );
     }
   }, [assets, selection]);
+
+  console.log(assets);
+  console.log(selection.current, selectedAsset);
 
   if (!assets || !collection) {
     return null;

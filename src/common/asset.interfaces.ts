@@ -226,6 +226,18 @@ export const ListAssets = RpcInterface({
 });
 
 /**
+ * Get an asset by id.
+ */
+export const GetAsset = RpcInterface({
+  id: 'assets/get',
+  request: z.object({
+    id: z.string()
+  }),
+  response: Asset,
+  error: z.nativeEnum(FetchError)
+});
+
+/**
  * Create a new asset.
  */
 export const CreateAsset = RpcInterface({
@@ -235,6 +247,19 @@ export const CreateAsset = RpcInterface({
     metadata: z.record(z.unknown())
   }),
   response: Asset,
+  error: z.nativeEnum(FetchError)
+});
+
+/**
+ * Create a new asset.
+ */
+export const SearchAsset = RpcInterface({
+  id: 'assets/search',
+  request: z.object({
+    collection: z.string(),
+    query: z.string()
+  }),
+  response: ResourceList(Asset),
   error: z.nativeEnum(FetchError)
 });
 

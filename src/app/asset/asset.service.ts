@@ -2,7 +2,7 @@ import { EventEmitter } from 'eventemitter3';
 import { Asset } from '../../common/asset.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
-import { error, FetchError, ok } from '../../common/util/error';
+import { error, FetchError, ok, Result } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 import { MediaFileService } from '../media/media-file.service';
@@ -199,6 +199,63 @@ export class AssetService extends EventEmitter<AssetEvents> {
         )
       };
     });
+  }
+
+  /**
+   * List assets in the archive.
+   *
+   * @returns ResourceList representing the query.
+   */
+  async searchAssets(
+    archive: ArchivePackage,
+    collectionId: string,
+    query: string,
+    range?: PageRange
+  ): Promise<Result<ResourceList<Asset>>> {
+    return archive.useDb(async () => {
+      const collection = await this.collectionService.getCollection(
+        archive,
+        collectionId
+      );
+      if (!collection) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      const title = collection.schema[0];
+
+      const entities = await archive.list(
+        AssetEntity,
+        {
+          collection: collectionId,
+          metadata: {
+            [title.id]: {
+              $like: `${query}%`
+            }
+          }
+        },
+        {
+          populate: ['mediaFiles'],
+          range
+        }
+      );
+
+      return ok({
+        ...entities,
+        items: await Promise.all(
+          entities.items.map(async (entity) =>
+            this.entityToAsset(archive, entity)
+          )
+        )
+      });
+    });
+  }
+
+  get(archive: ArchivePackage, asset: string) {
+    return archive
+      .get(AssetEntity, asset)
+      .then((asset) =>
+        asset ? this.entityToAsset(archive, asset) : undefined
+      );
   }
 
   private entityToAsset(archive: ArchivePackage, entity: AssetEntity): Asset {

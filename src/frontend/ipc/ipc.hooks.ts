@@ -87,6 +87,8 @@ export function useRPC() {
   );
 }
 
+export const SKIP_FETCH = Symbol('SKIP_FETCH');
+
 /**
  * Fetch a single object by type and id and re-fetch whenever a change event affecting it is received.
  *
@@ -96,7 +98,7 @@ export function useRPC() {
  */
 export function useGet<T extends Resource, Err>(
   resource: RpcInterface<Resource, T, Err>,
-  id: string
+  id: string | typeof SKIP_FETCH
 ): Result<T, Err> | undefined;
 /**
  * Fetch a singleton object by type and re-fetch whenever a change event affecting it is received.
@@ -109,7 +111,7 @@ export function useGet<T extends Resource, Err>(
 ): Result<T, Err> | undefined;
 export function useGet<T extends Resource, Err>(
   resource: RpcInterface<Resource | undefined, T, Err>,
-  id?: string
+  id?: string | typeof SKIP_FETCH
 ): Result<T, Err> | undefined {
   const rpc = useRPC();
 
@@ -118,6 +120,10 @@ export function useGet<T extends Resource, Err>(
 
   // Fetch the initial resource value
   useEffect(() => {
+    if (id === SKIP_FETCH) {
+      return;
+    }
+
     rpc(resource, id ? { id } : undefined).then((res) => {
       setCurrent(res);
     });
@@ -125,6 +131,9 @@ export function useGet<T extends Resource, Err>(
 
   // Listen for change events and re-fetch on change
   useEvent(ChangeEvent, ({ type, ids }) => {
+    if (id === SKIP_FETCH) {
+      return;
+    }
     if (type === resource.id && (!id || ids.includes(id))) {
       rpc(resource, id ? { id } : undefined).then((res) => {
         setCurrent(res);

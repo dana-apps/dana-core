@@ -2,11 +2,22 @@
 
 import { ChangeEvent, FC, useCallback } from 'react';
 import { Box, BoxProps, Field, Label, Text } from 'theme-ui';
+import AsyncSelect from 'react-select/async';
 import {
+  GetAsset,
+  GetCollection,
+  GetRootDatabaseCollection,
   SchemaProperty,
-  SchemaPropertyType
+  SchemaPropertyType,
+  SearchAsset
 } from '../../../common/asset.interfaces';
-import { never } from '../../../common/util/assert';
+import { assert, never } from '../../../common/util/assert';
+import {
+  SKIP_FETCH,
+  unwrapGetResult,
+  useGet,
+  useRPC
+} from '../../ipc/ipc.hooks';
 
 export interface SchemaFormFieldProps<T = unknown>
   extends Omit<BoxProps, 'value' | 'onChange' | 'property'> {
@@ -88,8 +99,6 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
 
 /**
  * Render a control for displaying and editing properties with the CONTROLLED_DATABASE schema type.
- *
- * Currently read-only.
  */
 export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
   property,
@@ -98,11 +107,58 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
   editing,
   ...props
 }) => {
+  assert(
+    property.type === SchemaPropertyType.CONTROLLED_DATABASE,
+    'Expected controlled db property'
+  );
+  const rpc = useRPC();
+  const collection = unwrapGetResult(
+    useGet(GetCollection, property.databaseId)
+  );
+  const referencedValue = useGet(GetAsset, value ?? SKIP_FETCH);
+  const titleKey = collection?.schema[0]?.id;
+
+  const promiseOptions = async (inputValue: string) => {
+    const assets = await rpc(
+      SearchAsset,
+      { collection: property.databaseId, query: inputValue },
+      { offset: 0, limit: 25 }
+    );
+
+    assert(assets.status === 'ok', 'Failed to load');
+    return assets.value.items;
+  };
+
+  if (editing) {
+    return (
+      <AsyncSelect
+        cacheOptions
+        defaultOptions
+        loadOptions={promiseOptions}
+        getOptionLabel={(opt) =>
+          titleKey ? String(opt.metadata[titleKey]) : ''
+        }
+        getOptionValue={(opt) => opt.id}
+        onChange={(x) => onChange(x?.id ?? undefined)}
+      />
+    );
+  }
+
+  if (referencedValue?.status !== 'ok' || !titleKey) {
+    return null;
+  }
+
   return (
     <Box {...props}>
       <Label>{property.label}</Label>
 
-      <Text>{value ?? <i>None</i>}</Text>
+      <Text>
+        {referencedValue.value ? (
+          String(referencedValue.value.metadata[titleKey])
+        ) : (
+          <i>None</i>
+        )}
+      </Text>
     </Box>
   );
 };
