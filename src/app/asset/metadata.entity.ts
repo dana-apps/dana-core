@@ -8,7 +8,7 @@ import {
   SchemaPropertyType
 } from '../../common/asset.interfaces';
 import { never } from '../../common/util/assert';
-import { Dict, MaybeAsync } from '../../common/util/types';
+import { MaybeAsync } from '../../common/util/types';
 import { AssetEntity } from './asset.entity';
 
 /**

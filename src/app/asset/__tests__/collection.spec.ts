@@ -1,9 +1,6 @@
-import {
-  ReferentialIntegrityError,
-  SchemaPropertyType
-} from '../../../common/asset.interfaces';
+import { SchemaPropertyType } from '../../../common/asset.interfaces';
 import { UnwrapPromise } from '../../../common/util/types';
-import { requireFailureType, requireSuccess } from '../../../test/result';
+import { requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { MediaFileService } from '../../media/media-file.service';
 import { AssetService } from '../asset.service';

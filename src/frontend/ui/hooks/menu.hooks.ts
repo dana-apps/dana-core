@@ -1,7 +1,7 @@
 import { uniqueId } from 'lodash';
-import { FC, MouseEventHandler, useCallback, useMemo, useRef } from 'react';
+import { MouseEventHandler, useCallback, useMemo, useRef } from 'react';
 import { ShowContextMenu } from '../../../common/ui.interfaces';
-import { useEvent, useRPC } from '../../ipc/ipc.hooks';
+import { useRPC } from '../../ipc/ipc.hooks';
 
 interface ContextMenuItem {
   id: string;
@@ -12,10 +12,18 @@ interface ContextMenuItem {
 type ContextMenuChoice = ContextMenuItem | '-';
 
 interface ContextMenuOpts {
+  /** Menu options */
   options: ContextMenuChoice[];
+
+  /** Event to bind to on the trigger elemeent */
   on?: 'click' | 'context';
 }
 
+/**
+ * Hook for displying a context menu.
+ *
+ * This currently works in electron environments and no-ops in others.
+ */
 export function useContextMenu({ options, on = 'context' }: ContextMenuOpts) {
   const menuId = useMemo(() => uniqueId('menu'), []);
   const rpc = useRPC();
