@@ -27,7 +27,8 @@ import {
   defaultSchemaProperty,
   GetRootAssetsCollection,
   GetRootDatabaseCollection,
-  GetSubcollections
+  GetSubcollections,
+  UpdateCollection
 } from '../../common/asset.interfaces';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
 
@@ -36,6 +37,7 @@ import { useErrorDisplay } from '../ui/hooks/error.hooks';
  */
 export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const imports = useListAll(ListIngestSession, () => ({}), []);
+  const rpc = useRPC();
   const assetRoot = unwrapGetResult(useGet(GetRootAssetsCollection));
 
   const databaseRoot = unwrapGetResult(useGet(GetRootDatabaseCollection));
@@ -46,6 +48,9 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   );
 
   const createMenu = useCreateMenu();
+  const renameCollection = async (id: string, title: string) => {
+    await rpc(UpdateCollection, { id, title });
+  };
 
   if (!assetRoot) {
     return null;
@@ -82,12 +87,13 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
 
             {/* Databases */}
             {renderIfPresent(databases, (databases) => (
-              <NavListSection title="Controlled Databases">
+              <NavListSection title="Databases">
                 {databases.map((db) => (
                   <NavListItem
                     key={db.id}
                     title={db.title}
                     path={`/collection/${db.id}`}
+                    onRename={(title) => renameCollection(db.id, title)}
                   />
                 ))}
               </NavListSection>

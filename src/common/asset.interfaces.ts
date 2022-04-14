@@ -186,6 +186,19 @@ export const CreateCollection = RpcInterface({
 });
 
 /**
+ * Updates a collection's properties.
+ */
+export const UpdateCollection = RpcInterface({
+  id: 'collection/update',
+  request: z.object({
+    id: z.string(),
+    title: z.string()
+  }),
+  response: Collection,
+  error: z.nativeEnum(FetchError)
+});
+
+/**
  * Update the schema of a collection.
  */
 export const UpdateCollectionSchema = RpcInterface({

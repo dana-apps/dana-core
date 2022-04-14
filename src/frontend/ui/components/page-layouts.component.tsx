@@ -2,10 +2,21 @@
 
 import 'react-reflex/styles.css';
 
-import { FC, ReactElement, ReactNode } from 'react';
+import {
+  FC,
+  FocusEvent,
+  FormEvent,
+  ReactElement,
+  ReactNode,
+  useCallback,
+  useRef,
+  useState
+} from 'react';
 import { Box, BoxProps, Flex, Heading } from 'theme-ui';
 import { ReflexContainer, ReflexElement, ReflexSplitter } from 'react-reflex';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useContextMenu } from '../hooks/menu.hooks';
+import { useOnClickOutside } from '../hooks/mouse.hooks';
 
 interface NavListSectionProps {
   /** Section header presented to user */
@@ -20,7 +31,7 @@ export const NavListSection: FC<NavListSectionProps> = ({
   children,
   ...props
 }) => (
-  <Box sx={{ pb: 3 }} {...props}>
+  <Box sx={{ pb: 5 }} {...props}>
     <Heading sx={{ p: 1, px: 2 }} variant="section" as="h3">
       {title}
     </Heading>
@@ -38,6 +49,15 @@ interface NavListItemProps {
 
   /** Status indicator shown on the item */
   status?: ReactNode;
+
+  /** Start the item in editing mode */
+  defaultEditing?: boolean;
+
+  /** If provided, allows the item to be renamed via the context menu */
+  onRename?: (name: string) => Promise<void> | void;
+
+  /** If provided, allows the item to be deleted via the context menu */
+  onDelete?: () => Promise<void>;
 }
 
 /**
@@ -46,38 +66,152 @@ interface NavListItemProps {
 export const NavListItem: FC<NavListItemProps> = ({
   path,
   title: label,
+  defaultEditing = false,
+  onRename,
+  onDelete,
   status,
   ...props
-}) => (
-  <NavLink
-    sx={{ color: 'inherit', textDecoration: 'inherit' }}
-    to={path}
-    {...props}
-  >
-    {({ isActive }) => (
-      <Flex
-        sx={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          bg: isActive ? 'highlight' : undefined,
-          p: 1,
-          px: 2,
-          fontSize: 1,
-          marginTop: '1px',
-          color: isActive ? 'highlightContrast' : undefined,
-          '&:hover': {
-            bg: isActive ? undefined : 'highlightHint'
-          }
-        }}
+}) => {
+  const isActive = useLocation().pathname === path;
+  const [editing, setEditing] = useState(defaultEditing);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const contextMenu = useContextMenu({
+    options: [
+      onRename && {
+        id: 'rename',
+        label: 'Rename',
+        action: () => {
+          setEditing(true);
+        }
+      },
+      onDelete && {
+        id: 'delete',
+        label: 'Delete',
+        action: onDelete
+      }
+    ]
+  });
+
+  const finishEditing = useCallback(
+    async (el: HTMLInputElement) => {
+      if (el && onRename && el.value.trim() && el.value.trim() !== label) {
+        await onRename(el.value);
+
+        // Ugly hack: Prevent old value from flickering back in
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      setEditing(false);
+    },
+    [label, onRename]
+  );
+
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLElement>) => {
+      event.preventDefault();
+      const el = event.currentTarget.querySelector<HTMLInputElement>(
+        'input[name="value"]'
+      );
+
+      if (el) {
+        finishEditing(el);
+      }
+    },
+    [finishEditing]
+  );
+
+  const handleBlur = useCallback(
+    async (event: FocusEvent<HTMLInputElement>) => {
+      finishEditing(event.currentTarget);
+    },
+    [finishEditing]
+  );
+
+  useOnClickOutside(wrapperRef, () => {
+    if (editing && wrapperRef.current) {
+      const input = wrapperRef.current.querySelector<HTMLInputElement>(
+        'input[name="value"]'
+      );
+      if (input) {
+        finishEditing(input);
+      }
+    }
+  });
+
+  const content = (
+    <Flex
+      {...contextMenu.triggerProps}
+      ref={wrapperRef}
+      tabIndex={0}
+      sx={{
+        outline:
+          !isActive && (editing || contextMenu.visible)
+            ? '2px solid var(--theme-ui-colors-muted)'
+            : undefined,
+        flexDirection: 'row',
+        alignItems: 'center',
+        bg: isActive ? 'highlight' : undefined,
+        p: 1,
+        px: 2,
+        fontSize: 1,
+        marginTop: '1px',
+        color: isActive ? 'highlightContrast' : undefined,
+        '&:hover': {
+          bg: isActive ? undefined : 'highlightHint'
+        }
+      }}
+      {...props}
+    >
+      {!editing && (
+        <span tabIndex={-1} sx={{ flex: 1 }}>
+          {label}
+        </span>
+      )}
+
+      {editing && (
+        <form onSubmit={handleSubmit}>
+          <input
+            ref={focusOnMount}
+            onBlur={handleBlur}
+            name="value"
+            sx={{
+              flex: 1,
+              p: 0,
+              border: 'none',
+              outline: 'none',
+              bg: 'transparent',
+              letterSpacing: 'inherit',
+              fontSize: 'inherit',
+              fontFamily: 'inherit',
+              fontWeight: 'inherit',
+              color: isActive ? 'highlightContrast' : 'text'
+            }}
+            defaultValue={label}
+          />
+        </form>
+      )}
+
+      {status}
+    </Flex>
+  );
+
+  if (editing) {
+    return (
+      <span sx={{ color: 'inherit', textDecoration: 'inherit' }} {...props}>
+        {content}
+      </span>
+    );
+  } else {
+    return (
+      <NavLink
+        sx={{ color: 'inherit', textDecoration: 'inherit' }}
+        to={path}
         {...props}
       >
-        <span sx={{ flex: 1 }}>{label}</span>
-
-        {status}
-      </Flex>
-    )}
-  </NavLink>
-);
+        {content}
+      </NavLink>
+    );
+  }
+};
 
 export interface ArchiveWindowLayoutProps {
   /** Top-level navigation view */
@@ -215,13 +349,19 @@ export const PrimaryDetailLayout: FC<
       {detail && (
         <ReflexElement
           sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
-          flex={0.5}
-          minSize={100}
-          maxSize={300}
+          flex={0.25}
+          minSize={320}
         >
           <Box>{detail}</Box>
         </ReflexElement>
       )}
     </ReflexContainer>
   );
+};
+
+const focusOnMount = (el: HTMLInputElement | null) => {
+  if (el) {
+    el.focus();
+    el.select();
+  }
 };

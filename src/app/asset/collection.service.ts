@@ -137,6 +137,36 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
   }
 
   /**
+   * Update properties of the collection other than its schema.
+   *
+   * @param archive Archive containing the collection.
+   * @param collectionId Id of the collection.
+   * @param props: New property values.
+   * @returns The updated collection value
+   */
+  updateCollection(
+    archive: ArchivePackage,
+    collectionId: string,
+    props: Pick<AssetCollectionEntity, 'title'>
+  ) {
+    return archive.useDbTransaction(async (db) => {
+      const collection = await db.findOne(AssetCollectionEntity, {
+        id: collectionId
+      });
+      if (!collection) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      Object.assign(collection, props);
+      db.persistAndFlush(collection);
+
+      this.emit('change', { updated: [collectionId] });
+
+      return ok(this.toCollectionValue(collection));
+    });
+  }
+
+  /**
    * Update the metadata schema for a collection.
    *
    * This validates the collection against the schema and fails if it does not pass.

@@ -1,6 +1,8 @@
 import { ThemeProvider } from 'theme-ui';
 import { theme } from '../src/frontend/ui/theme';
 import { FrontendConfigContext } from '../src/frontend/config';
+import { MockIpc } from '../src/frontend/ipc/mock-ipc';
+import { IpcContext } from '../src/frontend/ipc/ipc.hooks';
 
 export const parameters = {
   controls: {
@@ -17,12 +19,16 @@ const config = {
   documentId: 'doc'
 };
 
+const defaultIpc = new MockIpc();
+
 export const decorators = [
   (Story) => (
-    <FrontendConfigContext.Provider value={config}>
-      <ThemeProvider theme={theme}>
-        <Story />
-      </ThemeProvider>
-    </FrontendConfigContext.Provider>
+    <IpcContext.Provider value={{ ipc: defaultIpc }}>
+      <FrontendConfigContext.Provider value={config}>
+        <ThemeProvider theme={theme}>
+          <Story />
+        </ThemeProvider>
+      </FrontendConfigContext.Provider>
+    </IpcContext.Provider>
   )
 ];

@@ -14,8 +14,13 @@ import {
 } from '../page-layouts.component';
 
 export default {
-  title: 'Components/Page Layout'
+  title: 'Components/Page Layout',
+  argTypes: { onRename: { action: 'rename' } }
 };
+
+interface Params {
+  onRename: (...args: unknown[]) => void;
+}
 
 export const ScreenWithSidebar = () => {
   faker.seed(1);
@@ -38,6 +43,37 @@ export const ScreenWithSidebar = () => {
                   ))}
                 </NavListSection>
               ))}
+            </MemoryRouter>
+          </>
+        }
+        sidebarButtons={
+          <IconButton>
+            <Plus size={32} />
+          </IconButton>
+        }
+        main={<Box sx={{ p: 3 }}>Hello</Box>}
+      />
+    </Window>
+  );
+};
+
+export const ScreenWithSidebarEditable = ({ onRename }: Params) => {
+  faker.seed(1);
+
+  return (
+    <Window>
+      <ArchiveWindowLayout
+        sidebar={
+          <>
+            <MemoryRouter initialEntries={['/']}>
+              <NavListSection title={faker.word.adjective()}>
+                <NavListItem
+                  title={faker.word.noun()}
+                  path={`/`}
+                  defaultEditing
+                  onRename={onRename}
+                />
+              </NavListSection>
             </MemoryRouter>
           </>
         }

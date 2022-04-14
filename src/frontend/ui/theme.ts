@@ -100,9 +100,9 @@ export const theme: Theme = {
     section: {
       textTransform: 'uppercase',
       fontWeight: 700,
-      fontSize: 1,
-      color: 'muted',
-      letterSpacing: 1.05
+      fontSize: 0,
+      color: 'grey',
+      letterSpacing: 0.95
     }
   },
   images: {

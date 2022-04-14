@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from 'theme-ui';
 import {
   AggregatedValidationError,
@@ -30,6 +30,7 @@ export const SchemaScreen = () => {
 
   const collection = useGet(GetCollection, collectionId);
   const displayError = useErrorDisplay();
+  const navigate = useNavigate();
   const [state, setState] = useState<SchemaProperty[]>();
   const rpc = useRPC();
   const [hasEdits, setHasEdits] = useState(false);
@@ -45,6 +46,7 @@ export const SchemaScreen = () => {
       if (res.status === 'ok') {
         setHasEdits(false);
         setErrors(undefined);
+        navigate(-1);
         return;
       }
 
@@ -56,7 +58,7 @@ export const SchemaScreen = () => {
 
       setErrors(res.error);
     }
-  }, [collection, displayError, rpc, state]);
+  }, [collection, displayError, navigate, rpc, state]);
 
   useEffect(() => {
     if (collection && collection.status === 'ok') {

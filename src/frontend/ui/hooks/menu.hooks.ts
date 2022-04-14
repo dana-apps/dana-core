@@ -1,5 +1,11 @@
-import { uniqueId } from 'lodash';
-import { MouseEventHandler, useCallback, useMemo, useRef } from 'react';
+import { compact, uniqueId } from 'lodash';
+import {
+  MouseEventHandler,
+  useCallback,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { ShowContextMenu } from '../../../common/ui.interfaces';
 import { useRPC } from '../../ipc/ipc.hooks';
 
@@ -9,7 +15,7 @@ interface ContextMenuItem {
   action: () => void;
 }
 
-type ContextMenuChoice = ContextMenuItem | '-';
+type ContextMenuChoice = ContextMenuItem | '-' | undefined;
 
 interface ContextMenuOpts {
   /** Menu options */
@@ -27,26 +33,33 @@ interface ContextMenuOpts {
 export function useContextMenu({ options, on = 'context' }: ContextMenuOpts) {
   const menuId = useMemo(() => uniqueId('menu'), []);
   const rpc = useRPC();
+  const [visible, setVisible] = useState(false);
 
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
   const handleContextMenu = useCallback<MouseEventHandler<HTMLElement>>(
     async (event) => {
-      const options = optionsRef.current;
+      const options = compact(optionsRef.current);
+      if (options.length === 0) {
+        return;
+      }
+
       event.preventDefault();
-      const bounds = event.currentTarget.getBoundingClientRect();
+      setVisible(true);
 
       const res = await rpc(ShowContextMenu, {
         id: menuId,
-        x: bounds.x,
-        y: bounds.bottom,
+        x: event.clientX,
+        y: event.clientY,
         menuItems: options.map((opt) =>
           opt === '-'
             ? { id: '-', label: '-' }
             : { id: opt.id, label: opt.label }
         )
       });
+
+      setVisible(false);
 
       if (res.status === 'error') {
         return;
@@ -64,6 +77,7 @@ export function useContextMenu({ options, on = 'context' }: ContextMenuOpts) {
   );
 
   return {
+    visible,
     triggerProps: {
       [on === 'context' ? 'onContextMenu' : 'onClick']: handleContextMenu
     }
