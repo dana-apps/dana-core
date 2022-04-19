@@ -5,6 +5,7 @@ import { FC, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
   CollectionType,
+  GetCollection,
   SchemaProperty,
   SchemaPropertyType,
   UpdateAssetMetadata,
@@ -66,6 +67,45 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
   );
 };
 
+export const CreateMode: FC<Params> = ({ onUpdate }) => {
+  const [metadata, setMetadata] = useState<Dict>(() => {
+    faker.seed(1);
+    return {
+      someProperty: faker.lorem.words(3)
+    };
+  });
+
+  const ipc = useIpcFixture((change) => {
+    setMetadata(change.payload);
+    onUpdate(change);
+  });
+
+  return (
+    <IpcContext.Provider value={{ ipc }}>
+      <AssetDetail
+        sx={{
+          width: 300,
+          border: '1px solid black',
+          height: '100vh',
+          overflow: 'auto'
+        }}
+        asset={{
+          id: faker.datatype.uuid(),
+          media: MEDIA_FILES,
+          metadata: metadata
+        }}
+        collection={{
+          id: 'someCollection',
+          title: 'Some Collection',
+          type: CollectionType.ASSET_COLLECTION,
+          schema: SCHEMA
+        }}
+        action="create"
+      />
+    </IpcContext.Provider>
+  );
+};
+
 const useIpcFixture = (
   onChange: (change: UpdateAssetMetadataRequest) => void
 ) => {
@@ -84,6 +124,17 @@ const useIpcFixture = (
 
         onChangeRef.current(params);
         return ok();
+      }
+    });
+    ipc.handle({
+      type: GetCollection,
+      result: async (params) => {
+        return ok({
+          id: params.id,
+          title: 'Some Collection',
+          type: CollectionType.CONTROLLED_DATABASE,
+          schema: [{ type: SchemaPropertyType.FREE_TEXT, required: false }]
+        });
       }
     });
     return ipc;
@@ -113,10 +164,11 @@ const SCHEMA: SchemaProperty[] = [
     type: SchemaPropertyType.FREE_TEXT
   },
   {
-    id: 'someOtherProperty',
-    label: 'Some Other Property',
+    id: 'databaseRef',
+    label: 'Database Reference',
     required: false,
-    type: SchemaPropertyType.FREE_TEXT
+    type: SchemaPropertyType.CONTROLLED_DATABASE,
+    databaseId: 'testDb'
   }
 ];
 

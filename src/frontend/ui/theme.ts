@@ -82,6 +82,21 @@ export const theme: Theme = {
     label: {
       fontSize: 1,
       fontWeight: 600
+    },
+    select: {
+      boxSizing: 'border-box',
+      margin: 0,
+      minWidth: 0,
+      display: 'block',
+      width: '100%',
+      padding: '5px',
+      appearance: 'none',
+      fontSize: 'inherit',
+      lineHeight: 'inherit',
+      border: '1px solid',
+      borderRadius: '4px',
+      color: 'inherit',
+      backgroundColor: 'var(--theme-ui-colors-background)'
     }
   },
   text: {

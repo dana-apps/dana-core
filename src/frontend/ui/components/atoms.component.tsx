@@ -2,6 +2,7 @@
 
 import { compact } from 'lodash';
 import { Children, cloneElement, FC, ReactElement } from 'react';
+import AsyncSelect, { AsyncProps } from 'react-select/async';
 import { Icon, Check, ExclamationTriangleFill } from 'react-bootstrap-icons';
 import {
   Box,
@@ -12,8 +13,10 @@ import {
   IconButton,
   IconButtonProps,
   Spinner,
-  Text
+  Text,
+  useThemeUI
 } from 'theme-ui';
+import { CSSObjectWithLabel, GroupBase } from 'react-select';
 
 interface LoadingCellProps {
   /** Represents progress to display */
@@ -249,3 +252,39 @@ export const ValidationError: FC<ValidationErrorProps> = ({
     </Box>
   </Flex>
 );
+
+/**
+ * react-select component with project styles applied
+ */
+
+export function RelationSelect<
+  Option = unknown,
+  IsMulti extends boolean = false,
+  Group extends GroupBase<Option> = GroupBase<Option>
+>(props: AsyncProps<Option, IsMulti, Group>) {
+  const { theme } = useThemeUI();
+  console.log(theme.forms);
+  return (
+    <AsyncSelect
+      styles={{
+        control: (provided) => ({
+          ...provided,
+          ...(theme.forms?.select as CSSObjectWithLabel),
+          padding: 0,
+          display: 'flex',
+          '&:hover': {
+            borderColor: String(theme.forms?.borderColor || 'none')
+          }
+        }),
+        input: (provided) => ({
+          ...provided,
+          fontSize: 'inherit'
+        })
+      }}
+      placeholder="None"
+      cacheOptions
+      defaultOptions
+      {...props}
+    />
+  );
+}

@@ -2,7 +2,6 @@
 
 import { ChangeEvent, FC, useCallback } from 'react';
 import { Box, BoxProps, Field, Label, Text, Textarea } from 'theme-ui';
-import AsyncSelect from 'react-select/async';
 import {
   GetAsset,
   GetCollection,
@@ -18,6 +17,7 @@ import {
   useGet,
   useRPC
 } from '../../ipc/ipc.hooks';
+import { RelationSelect } from './atoms.component';
 
 export interface SchemaFormFieldProps<T = unknown>
   extends Omit<BoxProps, 'value' | 'onChange' | 'property'> {
@@ -133,9 +133,7 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
     return (
       <Box {...props}>
         <Label>{property.label}</Label>
-        <AsyncSelect
-          cacheOptions
-          defaultOptions
+        <RelationSelect
           loadOptions={promiseOptions}
           getOptionLabel={(opt) =>
             titleKey ? String(opt.metadata[titleKey]) : ''

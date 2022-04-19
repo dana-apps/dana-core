@@ -3,11 +3,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import faker from '@faker-js/faker';
 import { times } from 'lodash';
-import { useState } from 'react';
+import { PropsWithChildren, useState } from 'react';
 import {
+  CollectionType,
+  GetRootDatabaseCollection,
+  GetSubcollections,
   SchemaProperty,
   SchemaPropertyType
 } from '../../../../common/asset.interfaces';
+import { ok } from '../../../../common/util/error';
+import { IpcContext } from '../../../ipc/ipc.hooks';
+import { MockIpc } from '../../../ipc/mock-ipc';
 import { SchemaEditor } from '../schema-editor.component';
 
 export default {
@@ -20,6 +26,7 @@ export default {
 };
 
 export const WithProperties = () => {
+  const fixture = setup();
   faker.seed(10);
 
   const [state, setState] = useState<SchemaProperty[]>(() =>
@@ -32,11 +39,14 @@ export const WithProperties = () => {
   );
 
   return (
-    <SchemaEditor sx={{ width: '100%' }} value={state} onChange={setState} />
+    <fixture.context>
+      <SchemaEditor sx={{ width: '100%' }} value={state} onChange={setState} />
+    </fixture.context>
   );
 };
 
 export const WithErrors = () => {
+  const fixture = setup();
   faker.seed(10);
 
   const [state, setState] = useState<SchemaProperty[]>(() =>
@@ -59,11 +69,58 @@ export const WithErrors = () => {
   );
 
   return (
-    <SchemaEditor
-      sx={{ width: '100%' }}
-      errors={errors}
-      value={state}
-      onChange={setState}
-    />
+    <fixture.context>
+      <SchemaEditor
+        sx={{ width: '100%' }}
+        errors={errors}
+        value={state}
+        onChange={setState}
+      />
+    </fixture.context>
   );
 };
+
+function setup() {
+  const ipc = new MockIpc();
+  ipc.handle({
+    type: GetRootDatabaseCollection,
+    result: async () =>
+      ok({
+        id: '$db',
+        title: 'Root',
+        schema: [],
+        type: CollectionType.CONTROLLED_DATABASE
+      })
+  });
+
+  ipc.handle({
+    type: GetSubcollections,
+    result: async () => {
+      faker.seed(10);
+      return ok({
+        total: 10,
+        range: {
+          limit: 10,
+          offset: 0
+        },
+        items: times(10, () => {
+          return {
+            id: faker.datatype.uuid(),
+            title: faker.word.noun(),
+            type: CollectionType.CONTROLLED_DATABASE,
+            schema: []
+          };
+        })
+      });
+    }
+  });
+
+  return {
+    ipc,
+    context: (props: PropsWithChildren<unknown>) => (
+      <IpcContext.Provider value={{ ipc }}>
+        {props.children}
+      </IpcContext.Provider>
+    )
+  };
+}
