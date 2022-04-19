@@ -6,6 +6,7 @@ import { Box, BoxProps, Button, Flex, Grid, Image } from 'theme-ui';
 import {
   Asset,
   Collection,
+  CollectionType,
   CreateAsset,
   SchemaProperty,
   SingleValidationError,
@@ -25,13 +26,10 @@ interface MediaDetailProps extends BoxProps {
   /** Collection containing the asset */
   collection: Collection;
 
-  /** Schema of the collection containing the asset */
-  schema: SchemaProperty[];
-
   /** Initial tab to display. One of the labels of the detail tabs */
   initialTab?: string;
 
-  /**  */
+  /** Action to be performed on submit */
   action?: 'create' | 'update';
 
   onCancelCreate?: () => void;
@@ -45,14 +43,17 @@ interface MediaDetailProps extends BoxProps {
 export const AssetDetail: FC<MediaDetailProps> = ({
   asset,
   collection,
-  schema,
   action = 'update',
-  initialTab = action === 'create' ? 'Metadata' : undefined,
+  initialTab,
   onCancelCreate,
   onCreate,
   ...props
 }) => {
-  const [tabId, setTabId] = useState(initialTab);
+  const showMedia =
+    collection.type === CollectionType.ASSET_COLLECTION && action === 'update';
+  const [tabId, setTabId] = useState(
+    initialTab || (showMedia && 'Media') || undefined
+  );
   const [edits, setEdits] = useState<Dict | undefined>(
     action === 'create' ? {} : undefined
   );
@@ -133,27 +134,29 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     >
       <Tabs currentTab={tabId} onTabChange={setTabId}>
         {/* Media Panel */}
-        <IconTab label="Media" icon={CollectionIcon}>
-          <Flex
-            sx={{
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              overflow: 'auto',
-              flex: 1,
-              flexBasis: 0,
-              p: 3
-            }}
-          >
-            {asset.media.map((item) => (
-              <Image
-                sx={{ '&:not(:first-of-type)': { mt: 3 } }}
-                key={item.id}
-                src={item.rendition}
-              />
-            ))}
-          </Flex>
-        </IconTab>
+        {showMedia && (
+          <IconTab label="Media" icon={CollectionIcon}>
+            <Flex
+              sx={{
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                overflow: 'auto',
+                flex: 1,
+                flexBasis: 0,
+                p: 3
+              }}
+            >
+              {asset.media.map((item) => (
+                <Image
+                  sx={{ '&:not(:first-of-type)': { mt: 3 } }}
+                  key={item.id}
+                  src={item.rendition}
+                />
+              ))}
+            </Flex>
+          </IconTab>
+        )}
 
         {/* Metadata Panel */}
         <IconTab label="Metadata" icon={CardList}>
@@ -165,7 +168,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
                 p: 3
               }}
             >
-              {schema.map((property) => (
+              {collection.schema.map((property) => (
                 <Box key={property.id}>
                   <SchemaField
                     property={property}
@@ -183,8 +186,6 @@ export const AssetDetail: FC<MediaDetailProps> = ({
               ))}
             </Grid>
           </Box>
-
-          <span sx={{ flex: 1 }} />
         </IconTab>
       </Tabs>
 

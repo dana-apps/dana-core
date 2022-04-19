@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { PropsWithChildren } from 'react';
 import {
   Asset,
+  CollectionType,
   SchemaProperty,
   SchemaPropertyType,
   UpdateAssetMetadata
@@ -44,11 +45,7 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail
-          asset={asset}
-          schema={SCHEMA}
-          collection={fixture.collection}
-        />
+        <AssetDetail asset={asset} collection={fixture.collection} />
       </fixture.context>
     );
 
@@ -75,11 +72,7 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail
-          asset={asset}
-          schema={SCHEMA}
-          collection={fixture.collection}
-        />
+        <AssetDetail asset={asset} collection={fixture.collection} />
       </fixture.context>
     );
 
@@ -104,11 +97,7 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail
-          asset={asset}
-          schema={SCHEMA}
-          collection={fixture.collection}
-        />
+        <AssetDetail asset={asset} collection={fixture.collection} />
       </fixture.context>
     );
 
@@ -135,6 +124,7 @@ function setup() {
     collection: {
       id: 'someCollection',
       title: 'Some Collection',
+      type: CollectionType.CONTROLLED_DATABASE,
       schema: SCHEMA
     },
     givenThatTheUpdateSucceeds() {

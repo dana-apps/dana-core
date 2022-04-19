@@ -112,9 +112,6 @@ export const CollectionScreen: FC = () => {
     }
   }, [assets, selection]);
 
-  console.log(assets);
-  console.log(selection.current, selectedAsset);
-
   if (!assets || !collection) {
     return null;
   }
@@ -125,7 +122,6 @@ export const CollectionScreen: FC = () => {
       key={selectedAsset.id}
       collection={collection}
       asset={selectedAsset}
-      schema={collection.schema}
       action={selectedAsset.id === '$pending' ? 'create' : 'update'}
       onCancelCreate={onCancelCreateAsset}
       onCreate={onCreateAsset}

@@ -4,9 +4,11 @@ import { z } from 'zod';
 import {
   AggregatedValidationError,
   Collection,
+  CollectionType,
   SchemaProperty
 } from '../../common/asset.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
+import { assert } from '../../common/util/assert';
 import { DefaultMap } from '../../common/util/collection';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
@@ -29,6 +31,9 @@ import {
  * All other collections must be descendents of this.
  */
 export class CollectionService extends EventEmitter<CollectionEvents> {
+  private static ROOT_ASSET_ID = '$root';
+  private static ROOT_DB_ID = '$databases';
+
   /**
    * Return the root asset collection of the archive. Created if it does not yet exist.
    *
@@ -37,18 +42,21 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
    */
   async getRootAssetCollection(archive: ArchivePackage) {
     return archive.useDbTransaction(async (db) => {
-      let collection = await db.findOne(AssetCollectionEntity, '$root');
+      let collection = await db.findOne(
+        AssetCollectionEntity,
+        CollectionService.ROOT_ASSET_ID
+      );
 
       if (!collection) {
         collection = db.create(AssetCollectionEntity, {
-          id: '$root',
+          id: CollectionService.ROOT_ASSET_ID,
           title: 'Assets',
           schema: []
         });
         db.persist(collection);
       }
 
-      return this.toCollectionValue(collection);
+      return this.toCollectionValue(archive, collection);
     });
   }
 
@@ -60,18 +68,21 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
    */
   async getRootDatabaseCollection(archive: ArchivePackage) {
     return archive.useDbTransaction(async (db) => {
-      let collection = await db.findOne(AssetCollectionEntity, '$databases');
+      let collection = await db.findOne(
+        AssetCollectionEntity,
+        CollectionService.ROOT_DB_ID
+      );
 
       if (!collection) {
         collection = db.create(AssetCollectionEntity, {
-          id: '$databases',
+          id: CollectionService.ROOT_DB_ID,
           title: 'Databases',
           schema: []
         });
         db.persist(collection);
       }
 
-      return this.toCollectionValue(collection);
+      return this.toCollectionValue(archive, collection);
     });
   }
 
@@ -85,7 +96,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
   async getCollection(archive: ArchivePackage, collectionId: string) {
     return archive
       .get(AssetCollectionEntity, collectionId)
-      .then((entity) => entity && this.toCollectionValue(entity));
+      .then((entity) => entity && this.toCollectionValue(archive, entity));
   }
 
   /**
@@ -107,7 +118,9 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
 
     return {
       ...listedAssets,
-      items: listedAssets.items.map((item) => this.toCollectionValue(item))
+      items: await Promise.all(
+        listedAssets.items.map((item) => this.toCollectionValue(archive, item))
+      )
     };
   }
 
@@ -132,7 +145,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
       db.persistAndFlush(collection);
       this.emit('change', { created: [collection.id] });
 
-      return this.toCollectionValue(collection);
+      return this.toCollectionValue(archive, collection);
     });
   }
 
@@ -150,9 +163,13 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     props: Pick<AssetCollectionEntity, 'title'>
   ) {
     return archive.useDbTransaction(async (db) => {
-      const collection = await db.findOne(AssetCollectionEntity, {
-        id: collectionId
-      });
+      const collection = await db.findOne(
+        AssetCollectionEntity,
+        {
+          id: collectionId
+        },
+        { populate: ['parent'] }
+      );
       if (!collection) {
         return error(FetchError.DOES_NOT_EXIST);
       }
@@ -162,7 +179,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
 
       this.emit('change', { updated: [collectionId] });
 
-      return ok(this.toCollectionValue(collection));
+      return ok(await this.toCollectionValue(archive, collection));
     });
   }
 
@@ -344,12 +361,37 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     return z.object(Object.fromEntries(fieldValidators));
   }
 
-  private toCollectionValue(entity: AssetCollectionEntity): Collection {
+  private async toCollectionValue(
+    archive: ArchivePackage,
+    entity: AssetCollectionEntity
+  ): Promise<Collection> {
     return {
       id: entity.id,
       schema: entity.schema.map((e) => e.toJson()),
-      title: entity.title
+      title: entity.title,
+      type: await this.inferCollectionType(archive, entity)
     };
+  }
+
+  private inferCollectionType(
+    archive: ArchivePackage,
+    entity: AssetCollectionEntity | undefined
+  ) {
+    return archive.useDb(async (db): Promise<CollectionType> => {
+      while (entity) {
+        if (entity.id === CollectionService.ROOT_ASSET_ID) {
+          return CollectionType.ASSET_COLLECTION;
+        }
+        if (entity.id === CollectionService.ROOT_DB_ID) {
+          return CollectionType.CONTROLLED_DATABASE;
+        }
+
+        await db.populate(entity, ['parent']);
+        entity = entity.parent ?? undefined;
+      }
+
+      throw Error('Invalid collection: unknown collection root');
+    });
   }
 }
 

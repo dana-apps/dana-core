@@ -121,12 +121,18 @@ export const defaultSchemaProperty = (i: number): SchemaProperty => ({
   type: SchemaPropertyType.FREE_TEXT
 });
 
+export enum CollectionType {
+  ASSET_COLLECTION = 'ASSET_COLLECTION',
+  CONTROLLED_DATABASE = 'CONTROLLED_DATABASE'
+}
+
 /**
  * Common interface for a collection in the archive.
  */
 export const Collection = z.object({
   id: z.string(),
   title: z.string(),
+  type: z.nativeEnum(CollectionType),
   schema: z.array(SchemaProperty)
 });
 export type Collection = z.TypeOf<typeof Collection>;

@@ -1,5 +1,6 @@
 /** @jsxImportSource theme-ui */
 
+import { compact } from 'lodash';
 import { Children, cloneElement, FC, ReactElement } from 'react';
 import { Icon, Check, ExclamationTriangleFill } from 'react-bootstrap-icons';
 import {
@@ -126,7 +127,7 @@ export const ToolbarButton: FC<ToolbarButtonProps> = ({
 };
 
 interface TabsProps extends BoxProps {
-  children?: ReactElement<IconTab>[];
+  children?: (ReactElement<IconTabProps> | undefined | false)[];
 
   /** Label of the tab to display. If not provided, defaults to the first tab. */
   currentTab: string | undefined;
@@ -145,14 +146,21 @@ interface TabsProps extends BoxProps {
  */
 export const Tabs: FC<TabsProps> = ({
   children = [],
-  currentTab: tabId = children[0]?.props.label,
+  currentTab,
   onTabChange,
   ...props
 }) => {
+  const tabs = compact(children);
+  if (tabs.length <= 1) {
+    const tab = tabs[0]?.props.children;
+    return <>{tab}</>;
+  }
+
+  const tabId = currentTab ?? tabs[0]?.props.label;
   return (
     <>
       <Flex sx={{ flexDirection: 'row', borderBottom: 'primary' }} {...props}>
-        {Children.map(children, (child: ReactElement<IconTab>) =>
+        {Children.map(tabs, (child: ReactElement<IconTabProps>) =>
           cloneElement(child, {
             active: child.props.label === tabId,
             onClick: () => onTabChange(child.props.label)
@@ -160,12 +168,12 @@ export const Tabs: FC<TabsProps> = ({
         )}
       </Flex>
 
-      {children.find((child) => child.props.label === tabId)?.props.children}
+      {tabs.find((child) => child.props.label === tabId)?.props.children}
     </>
   );
 };
 
-interface IconTab extends IconButtonProps {
+interface IconTabProps extends IconButtonProps {
   /** Icon to render */
   icon: Icon;
 
@@ -179,7 +187,7 @@ interface IconTab extends IconButtonProps {
 /**
  * A tab button suitable for use with `Tabs` that renders a small icon, along with an accessibility label and tooltip.
  */
-export const IconTab: FC<IconTab> = ({
+export const IconTab: FC<IconTabProps> = ({
   icon: Icon,
   label,
   active,

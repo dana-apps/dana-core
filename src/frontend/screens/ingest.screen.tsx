@@ -65,7 +65,6 @@ export const ArchiveIngestScreen: FC = () => {
     selectedAsset && collection.status === 'ok' ? (
       <AssetDetail
         asset={selectedAsset}
-        schema={collection.value.schema}
         sx={{ width: '100%', height: '100%' }}
         collection={collection.value}
       />

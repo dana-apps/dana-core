@@ -4,6 +4,7 @@ import faker from '@faker-js/faker';
 import { FC, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
+  CollectionType,
   SchemaProperty,
   SchemaPropertyType,
   UpdateAssetMetadata,
@@ -53,10 +54,10 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
           media: MEDIA_FILES,
           metadata: metadata
         }}
-        schema={SCHEMA}
         collection={{
           id: 'someCollection',
           title: 'Some Collection',
+          type: CollectionType.ASSET_COLLECTION,
           schema: SCHEMA
         }}
         initialTab="Metadata"

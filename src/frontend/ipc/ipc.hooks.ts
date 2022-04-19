@@ -235,8 +235,6 @@ export function useList<T extends Resource, Q, Err>(
         if (q === 'skip') {
           return;
         }
-        console.log('refetch', visibleRange.current);
-
         setActive(true);
 
         try {
