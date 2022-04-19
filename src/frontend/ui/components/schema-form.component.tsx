@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { ChangeEvent, FC, useCallback } from 'react';
-import { Box, BoxProps, Field, Label, Text } from 'theme-ui';
+import { Box, BoxProps, Field, Label, Text, Textarea } from 'theme-ui';
 import AsyncSelect from 'react-select/async';
 import {
   GetAsset,
@@ -131,16 +131,19 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
 
   if (editing) {
     return (
-      <AsyncSelect
-        cacheOptions
-        defaultOptions
-        loadOptions={promiseOptions}
-        getOptionLabel={(opt) =>
-          titleKey ? String(opt.metadata[titleKey]) : ''
-        }
-        getOptionValue={(opt) => opt.id}
-        onChange={(x) => onChange(x?.id ?? undefined)}
-      />
+      <Box {...props}>
+        <Label>{property.label}</Label>
+        <AsyncSelect
+          cacheOptions
+          defaultOptions
+          loadOptions={promiseOptions}
+          getOptionLabel={(opt) =>
+            titleKey ? String(opt.metadata[titleKey]) : ''
+          }
+          getOptionValue={(opt) => opt.id}
+          onChange={(x) => onChange(x?.id ?? undefined)}
+        />
+      </Box>
     );
   }
 

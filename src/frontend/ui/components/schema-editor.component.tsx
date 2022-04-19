@@ -117,8 +117,8 @@ export const SchemaEditor: FC<SchemaEditorProps> = ({
           <Label>Database Reference</Label>
           <Select
             key={property.id}
-            value={property.type}
-            name="propertyType"
+            value={property.databaseId}
+            name="databaseId"
             onChange={changeCallback(
               property.id,
               (prev, event: ChangeEvent<HTMLSelectElement>) => {
