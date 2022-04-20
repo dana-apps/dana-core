@@ -1,6 +1,14 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, KeyboardEvent, useCallback, useMemo, useRef } from 'react';
+import {
+  FC,
+  forwardRef,
+  HTMLAttributes,
+  KeyboardEvent,
+  useCallback,
+  useMemo,
+  useRef
+} from 'react';
 import AutoSizer, { Size } from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
 import {
@@ -77,7 +85,12 @@ export function DataGrid<T extends Resource>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, columns, fontSize]);
 
-  const headerRef = useRef<HTMLDivElement | null>(null);
+  const columnOffsets = useMemo(
+    () =>
+      columnWidths?.reduce((prev, x) => [...prev, (last(prev) ?? 0) + x], [0]),
+    [columnWidths]
+  );
+
   const loaderRef = useRef<Loader | null>(null);
   const innerListRef = useRef<HTMLElement | null>();
   const outerListRef = useRef<HTMLElement | null>();
@@ -143,6 +156,60 @@ export function DataGrid<T extends Resource>({
     [data, selection]
   );
 
+  /** Wrapper element displaying column headings */
+  const Wrapper = useMemo(
+    () =>
+      forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
+        ({ children, style, ...props }, ref) => (
+          <>
+            <div
+              sx={{
+                top: 0,
+                width: '100%',
+                height: rowHeight,
+                position: 'sticky',
+                zIndex: 2,
+                fontWeight: 700,
+                bg: 'background'
+              }}
+            >
+              {columnWidths &&
+                columnOffsets &&
+                columns.map((col, i) => (
+                  <div
+                    key={col.id}
+                    sx={{
+                      position: 'absolute',
+                      top: '0',
+                      height: rowHeight,
+                      width: columnWidths[i],
+                      left: columnOffsets[i],
+                      borderRight: '1px solid var(--theme-ui-colors-border)',
+                      borderBottom: '1px solid var(--theme-ui-colors-border)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {col.label}
+                  </div>
+                ))}
+            </div>
+
+            <div
+              ref={ref}
+              style={{
+                ...style,
+                position: 'relative'
+              }}
+              {...props}
+            >
+              {children}
+            </div>
+          </>
+        )
+      ),
+    [columnOffsets, columnWidths, columns, rowHeight]
+  );
+
   return (
     <Box
       sx={{ fontSize: 0, position: 'relative', minHeight: 0, outline: 'none' }}
@@ -160,48 +227,8 @@ export function DataGrid<T extends Resource>({
             return null;
           }
 
-          const columnOffsets = columnWidths.reduce(
-            (prev: number[], x) => [...prev, (last(prev) ?? 0) + x],
-            []
-          );
-
-          const endPadding = width - (last(columnOffsets) ?? 0);
-
           return (
             <>
-              <div
-                ref={headerRef}
-                sx={{
-                  position: 'absolute',
-                  willChange: 'transform',
-                  left: 0,
-                  top: 0,
-                  width,
-                  height: rowHeight,
-                  borderBottom: '1px solid var(--theme-ui-colors-border)',
-                  zIndex: 2,
-                  fontWeight: 700
-                }}
-              >
-                {columns.map((col, i) => (
-                  <div
-                    key={col.id}
-                    sx={{
-                      width:
-                        columnWidths.length === 1 ? width : columnWidths[i],
-                      position: 'absolute',
-                      borderRight: '1px solid var(--theme-ui-colors-border)',
-                      left: columnOffsets[i - 1] ?? 0,
-                      textAlign: 'center',
-                      top: rowHeight / 2,
-                      transform: 'translateY(-50%)'
-                    }}
-                  >
-                    {col.label}
-                  </div>
-                ))}
-              </div>
-
               <Loader
                 ref={loaderRef}
                 isItemLoaded={data.isLoaded}
@@ -209,60 +236,43 @@ export function DataGrid<T extends Resource>({
                 itemCount={data.totalCount}
               >
                 {({ onItemsRendered, ref }) => (
-                  <div sx={{ position: 'absolute', top: rowHeight }}>
-                    <Grid<CellData<T>>
-                      ref={(grid) => {
-                        ref(grid);
-                        gridRef.current = grid;
-                      }}
-                      height={height - rowHeight}
-                      columnWidth={(i) => {
-                        if (i >= columns.length) {
-                          return endPadding;
-                        }
+                  <Grid<CellData<T>>
+                    ref={(grid) => {
+                      ref(grid);
+                      gridRef.current = grid;
+                    }}
+                    width={width}
+                    height={height}
+                    columnWidth={(i) => columnWidths[i]}
+                    rowCount={data.totalCount}
+                    columnCount={columns.length}
+                    rowHeight={() => rowHeight}
+                    itemData={dataVal}
+                    outerRef={outerListRef}
+                    innerRef={innerListRef}
+                    innerElementType={Wrapper}
+                    onItemsRendered={(props) => {
+                      data.setVisibleRange(
+                        props.overscanRowStartIndex,
+                        props.overscanRowStopIndex
+                      );
 
-                        return columnWidths.length === 1
-                          ? width
-                          : columnWidths[i];
-                      }}
-                      onScroll={({ scrollLeft }) => {
-                        if (headerRef.current) {
-                          headerRef.current.style.transform = `translateX(-${scrollLeft}px)`;
-                        }
-                      }}
-                      rowCount={data.totalCount}
-                      columnCount={
-                        endPadding >= 0 ? columns.length + 1 : columns.length
-                      }
-                      rowHeight={() => rowHeight}
-                      itemData={dataVal}
-                      outerRef={outerListRef}
-                      innerRef={innerListRef}
-                      onItemsRendered={(props) => {
-                        data.setVisibleRange(
-                          props.overscanRowStartIndex,
-                          props.overscanRowStopIndex
-                        );
+                      visibleRange.current = {
+                        offset: props.visibleRowStartIndex,
+                        limit:
+                          props.visibleRowStopIndex - props.visibleRowStartIndex
+                      };
 
-                        visibleRange.current = {
-                          offset: props.visibleRowStartIndex,
-                          limit:
-                            props.visibleRowStopIndex -
-                            props.visibleRowStartIndex
-                        };
-
-                        onItemsRendered({
-                          overscanStartIndex: props.overscanRowStartIndex,
-                          overscanStopIndex: props.overscanRowStopIndex,
-                          visibleStartIndex: props.visibleRowStartIndex,
-                          visibleStopIndex: props.visibleRowStopIndex
-                        });
-                      }}
-                      width={width}
-                    >
-                      {CellWrapper}
-                    </Grid>
-                  </div>
+                      onItemsRendered({
+                        overscanStartIndex: props.overscanRowStartIndex,
+                        overscanStopIndex: props.overscanRowStopIndex,
+                        visibleStartIndex: props.visibleRowStartIndex,
+                        visibleStopIndex: props.visibleRowStopIndex
+                      });
+                    }}
+                  >
+                    {CellWrapper}
+                  </Grid>
                 )}
               </Loader>
             </>
