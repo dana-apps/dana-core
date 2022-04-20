@@ -23,6 +23,13 @@ const SCHEMA: SchemaProperty[] = [
     type: SchemaPropertyType.FREE_TEXT,
     repeated: false,
     required: true
+  },
+  {
+    id: 'repeatedProperty',
+    label: 'Some Property',
+    type: SchemaPropertyType.FREE_TEXT,
+    repeated: true,
+    required: false
   }
 ];
 
@@ -40,8 +47,9 @@ describe(AssetService, () => {
         fixture.rootCollection.id,
         {
           metadata: {
-            requiredProperty: '1',
-            optionalProperty: '2',
+            requiredProperty: ['1'],
+            optionalProperty: ['2'],
+            repeatedProperty: ['3', '4'],
             unknownProperty: 'No'
           }
         }
@@ -65,8 +73,9 @@ describe(AssetService, () => {
         items: [
           expect.objectContaining({
             metadata: {
-              requiredProperty: '1',
-              optionalProperty: '2'
+              requiredProperty: ['1'],
+              optionalProperty: ['2'],
+              repeatedProperty: ['3', '4']
             }
           })
         ]
@@ -80,7 +89,7 @@ describe(AssetService, () => {
 
     await fixture.service.updateAsset(fixture.archive, asset.id, {
       metadata: {
-        requiredProperty: 'Replace'
+        requiredProperty: ['Replace']
       }
     });
 
@@ -100,7 +109,7 @@ describe(AssetService, () => {
         items: [
           expect.objectContaining({
             metadata: {
-              requiredProperty: 'Replace'
+              requiredProperty: ['Replace']
             }
           })
         ]
@@ -136,7 +145,7 @@ describe(AssetService, () => {
         fixture.rootCollection.id,
         {
           metadata: {
-            requiredProperty: '1'
+            requiredProperty: ['1']
           }
         }
       )

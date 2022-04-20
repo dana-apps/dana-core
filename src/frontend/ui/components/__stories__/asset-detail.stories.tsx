@@ -4,6 +4,12 @@ import faker from '@faker-js/faker';
 import { FC, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
+  assetMetadataFromRawValues,
+  someAsset,
+  someMetadata
+} from '../../../../app/asset/test-utils';
+import {
+  AssetMetadata,
   CollectionType,
   GetCollection,
   SchemaProperty,
@@ -30,15 +36,13 @@ interface Params {
 }
 
 export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
-  const [metadata, setMetadata] = useState<Dict>(() => {
+  const [metadata, setMetadata] = useState(() => {
     faker.seed(1);
-    return {
-      someProperty: faker.lorem.words(3)
-    };
+    return someMetadata(SCHEMA);
   });
 
   const ipc = useIpcFixture((change) => {
-    setMetadata(change.payload);
+    setMetadata(assetMetadataFromRawValues(change.payload));
     onUpdate(change);
   });
 
@@ -51,11 +55,7 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
           height: '100vh',
           overflow: 'auto'
         }}
-        asset={{
-          id: faker.datatype.uuid(),
-          media: MEDIA_FILES,
-          metadata: metadata
-        }}
+        asset={someAsset({ metadata })}
         collection={{
           id: 'someCollection',
           title: 'Some Collection',
@@ -69,15 +69,13 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
 };
 
 export const CreateMode: FC<Params> = ({ onUpdate }) => {
-  const [metadata, setMetadata] = useState<Dict>(() => {
+  const [metadata, setMetadata] = useState(() => {
     faker.seed(1);
-    return {
-      someProperty: faker.lorem.words(3)
-    };
+    return someMetadata(SCHEMA);
   });
 
   const ipc = useIpcFixture((change) => {
-    setMetadata(change.payload);
+    setMetadata(assetMetadataFromRawValues(change.payload));
     onUpdate(change);
   });
 
@@ -90,11 +88,10 @@ export const CreateMode: FC<Params> = ({ onUpdate }) => {
           height: '100vh',
           overflow: 'auto'
         }}
-        asset={{
-          id: faker.datatype.uuid(),
+        asset={someAsset({
           media: MEDIA_FILES,
-          metadata: metadata
-        }}
+          metadata
+        })}
         collection={{
           id: 'someCollection',
           title: 'Some Collection',

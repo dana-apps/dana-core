@@ -71,6 +71,7 @@ export const CollectionScreen: FC = () => {
   const newAsset = useCallback(() => {
     setPendingAsset({
       id: '$pending',
+      title: '[New Item]',
       media: [],
       metadata: {}
     });

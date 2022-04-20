@@ -410,7 +410,7 @@ interface CollectionEvents {
 }
 
 type ValidateItemsResult =
-  | { success: true; id: string; metadata: Dict }
+  | { success: true; id: string; metadata: Dict<unknown[]> }
   | { success: false; id: string; errors: Dict<string[]> };
 
 type CreateCollectionOpts = Pick<Collection, 'schema' | 'title'>;

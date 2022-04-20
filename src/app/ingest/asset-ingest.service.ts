@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3';
-import { compact } from 'lodash';
+import { compact, mapValues } from 'lodash';
 
 import { IngestPhase, IngestedAsset } from '../../common/ingest.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
@@ -136,7 +136,8 @@ export class AssetIngestService extends EventEmitter<Events> {
       ...res,
       items: res.items.map((entity) => ({
         id: entity.id,
-        metadata: entity.metadata,
+        title: entity.id,
+        metadata: mapValues(entity.metadata, (rawValue) => ({ rawValue })),
         phase: entity.phase,
         validationErrors: entity.validationErrors,
         media: compact(

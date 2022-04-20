@@ -36,3 +36,15 @@ export function compactDict<Key extends string, Val>(
     Object.entries(dict).filter((x) => x[1] !== undefined && x[1] !== null)
   ) as Dict<Val, Key>;
 }
+
+export function arrayify<T>(val: T | null | undefined | T[]): T[] {
+  if (val === undefined || val === null) {
+    return [];
+  }
+
+  if (Array.isArray(val)) {
+    return val;
+  }
+
+  return [val];
+}

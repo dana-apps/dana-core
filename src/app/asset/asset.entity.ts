@@ -39,7 +39,7 @@ export class AssetEntity {
    * Key-value metadata properties. Keys are the id of schema property
    */
   @Property({ type: 'json', nullable: false })
-  metadata: Dict = {};
+  metadata: Dict<unknown[]> = {};
 }
 
 /**

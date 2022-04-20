@@ -1,51 +1,43 @@
 /** @jsxImportSource theme-ui */
 
-import {
-  GetAsset,
-  GetCollection,
-  GetRootAssetsCollection,
-  GetRootDatabaseCollection,
-  SchemaPropertyType
-} from '../../../common/asset.interfaces';
-import { assert } from '../../../common/util/assert';
+import { GetAsset } from '../../../common/asset.interfaces';
 import { SKIP_FETCH, unwrapGetResult, useGet } from '../../ipc/ipc.hooks';
 import { ProgressIndicator, ProgressValue } from './atoms.component';
 import { DataGridCell } from './grid.component';
 
 /** Datagrid cell for free text */
-export const TextCell: DataGridCell<string> = ({ value }) => <>{value}</>;
+export const TextCell: DataGridCell<string> = ({ value }) => (
+  <>{value?.rawValue.join('; ')}</>
+);
 
 TextCell.width = (data, fontSize) =>
   Math.max(100, Math.min(600, data ? data.length * fontSize * 0.4 : 300));
 
 /** Datagrid cell for indicating progress */
-export const ProgressCell: DataGridCell<ProgressValue> = ({ value }) => (
-  <div sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-    <ProgressIndicator value={value} />
-  </div>
-);
+export const ProgressCell: DataGridCell<ProgressValue> = ({ value }) => {
+  const percentVal = value?.rawValue[0];
+
+  return (
+    <div
+      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+    >
+      <ProgressIndicator value={percentVal} />
+    </div>
+  );
+};
 
 ProgressCell.width = 36;
 
 /** Datagrid cell for database references */
-export const ReferenceCell: DataGridCell<string> = ({ value, property }) => {
-  const asset = unwrapGetResult(useGet(GetAsset, value ?? SKIP_FETCH));
-  const collection = unwrapGetResult(useGet(GetRootAssetsCollection));
-  const propertyValue = collection?.schema.find((x) => x.id === property);
+export const ReferenceCell: DataGridCell<string> = ({ value }) => {
+  const idReference = value?.rawValue[0];
+  const asset = unwrapGetResult(useGet(GetAsset, idReference ?? SKIP_FETCH));
 
-  const dbId =
-    propertyValue?.type == SchemaPropertyType.CONTROLLED_DATABASE
-      ? propertyValue.databaseId
-      : undefined;
-  const dbSchema = unwrapGetResult(useGet(GetCollection, dbId ?? SKIP_FETCH));
-
-  if (!dbSchema || !asset) {
+  if (!asset) {
     return null;
   }
 
-  const titleProp = dbSchema.schema[0]?.id;
-
-  return <>{asset.metadata[titleProp]}</>;
+  return <>{asset.title}</>;
 };
 
 ReferenceCell.width = (data, fontSize) =>

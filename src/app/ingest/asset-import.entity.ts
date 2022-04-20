@@ -59,7 +59,7 @@ export class AssetImportEntity {
 
   /** Raw metadata discovered for the asset */
   @Property({ type: 'json' })
-  metadata!: Record<string, unknown>;
+  metadata!: Record<string, unknown[]>;
 
   /** Any validation errors */
   @Property({ type: 'json', nullable: true })

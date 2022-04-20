@@ -30,6 +30,7 @@ import {
 } from '../../common/asset.interfaces';
 import { AssetService } from '../asset/asset.service';
 import { error, FetchError, ok } from '../../common/util/error';
+import { arrayify } from '../../common/util/collection';
 
 /**
  * Encapsulates an import operation.
@@ -353,7 +354,7 @@ export class AssetIngestOperation implements IngestSession {
       value
     );
 
-    return castedValue.status === 'error' ? value : castedValue.value;
+    return arrayify(castedValue.status === 'error' ? value : castedValue.value);
   }
 
   /**
@@ -386,6 +387,8 @@ export class AssetIngestOperation implements IngestSession {
   /**
    * Return a function that transforms imported metadata keys from their the human-readable label to the metadata
    * property id.
+   *
+   * We also coerce the values into arrays, as this is the format they are stored in.
    *
    * This is a distinct step from metadata validation – since metadata values are not stored by their human-readable id,
    * we need to transform imported metadata into the schema format before we validate it.

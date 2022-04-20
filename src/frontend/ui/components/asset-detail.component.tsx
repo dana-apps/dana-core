@@ -1,5 +1,6 @@
 /** @jsxImportSource theme-ui */
 
+import { mapValues } from 'lodash';
 import { FC, useCallback, useMemo, useState } from 'react';
 import { CardList, Collection as CollectionIcon } from 'react-bootstrap-icons';
 import {
@@ -14,6 +15,7 @@ import {
 } from 'theme-ui';
 import {
   Asset,
+  AssetMetadata,
   Collection,
   CollectionType,
   CreateAsset,
@@ -70,7 +72,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   const [tabId, setTabId] = useState(
     initialTab || (showMedia && 'Media') || undefined
   );
-  const [edits, setEdits] = useState<Dict | undefined>(
+  const [edits, setEdits] = useState<AssetMetadata | undefined>(
     action === 'create' ? {} : undefined
   );
   const rpc = useRPC();
@@ -93,7 +95,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   const updateAsset = useCallback(async () => {
     const res = await rpc(UpdateAssetMetadata, {
       assetId: asset.id,
-      payload: metadata
+      payload: mapValues(metadata, (item) => item.rawValue)
     });
     if (res.status === 'error') {
       if (res.error === FetchError.DOES_NOT_EXIST) {
@@ -112,7 +114,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   const createAsset = useCallback(async () => {
     const res = await rpc(CreateAsset, {
       collection: collection.id,
-      metadata
+      metadata: mapValues(metadata, (item) => item.rawValue)
     });
 
     if (res.status === 'error') {

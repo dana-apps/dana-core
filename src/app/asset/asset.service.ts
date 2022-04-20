@@ -1,5 +1,7 @@
 import { EventEmitter } from 'eventemitter3';
 import { Asset, SchemaProperty } from '../../common/asset.interfaces';
+import { mapValues } from 'lodash';
+import { Asset, SchemaPropertyType } from '../../common/asset.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, FetchError, ok, Result } from '../../common/util/error';
@@ -7,7 +9,7 @@ import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
-import { AssetEntity } from './asset.entity';
+import { AssetCollectionEntity, AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
 import { SchemaPropertyValue } from './metadata.entity';
 
@@ -47,9 +49,10 @@ export class AssetService extends EventEmitter<AssetEvents> {
     { metadata, media = [] }: CreateAssetOpts
   ) {
     const res = await archive.useDb(async (db) => {
+      const collection = await db.findOne(AssetCollectionEntity, collectionId);
       const asset = db.create(AssetEntity, {
         mediaFiles: [],
-        collection: collectionId,
+        collection,
         metadata: {}
       });
 
@@ -67,16 +70,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
       db.persist(asset);
 
-      return ok<Asset>({
-        id: asset.id,
-        metadata: asset.metadata,
-        media: media.map((m) => ({
-          id: m.id,
-          mimeType: m.mimeType,
-          rendition: this.mediaService.getRenditionUri(archive, m),
-          type: 'image'
-        }))
-      });
+      return ok<Asset>(await this.entityToAsset(archive, asset));
     });
 
     if (res.status === 'ok') {
@@ -110,7 +104,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
       const asset = await db.findOne(
         AssetEntity,
         { id: assetId },
-        { populate: ['collection'] }
+        { populate: ['collection', 'mediaFiles'] }
       );
       if (!asset) {
         return error(FetchError.DOES_NOT_EXIST);
@@ -186,7 +180,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
           collection: collectionId
         },
         {
-          populate: ['mediaFiles'],
+          populate: ['collection', 'mediaFiles'],
           range
         }
       );
@@ -244,7 +238,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
           }
         },
         {
-          populate: ['mediaFiles'],
+          populate: ['collection', 'mediaFiles'],
           range
         }
       );
@@ -262,7 +256,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
   get(archive: ArchivePackage, asset: string) {
     return archive
-      .get(AssetEntity, asset)
+      .useDb((db) =>
+        db.findOne(AssetEntity, asset, {
+          populate: ['collection', 'mediaFiles']
+        })
+      )
       .then((asset) =>
         asset ? this.entityToAsset(archive, asset) : undefined
       );
@@ -281,15 +279,30 @@ export class AssetService extends EventEmitter<AssetEvents> {
   }
 
   private entityToAsset(archive: ArchivePackage, entity: AssetEntity): Asset {
+    const titleField = entity.collection.schema.find(
+      (x) => x.type === SchemaPropertyType.FREE_TEXT
+    );
+    const titleValue = titleField
+      ? entity.metadata[titleField.id]?.[0]
+      : undefined;
+
     return {
       id: entity.id,
+      title: typeof titleValue === 'string' ? titleValue : entity.id,
       media: Array.from(entity.mediaFiles).map((file) => ({
         id: file.id,
         type: 'image',
         rendition: this.mediaService.getRenditionUri(archive, file),
         mimeType: file.mimeType
       })),
-      metadata: entity.metadata
+      metadata: Object.fromEntries(
+        entity.collection.schema.map((property) => [
+          property.id,
+          {
+            rawValue: entity.metadata[property.id] ?? []
+          }
+        ])
+      )
     };
   }
 }

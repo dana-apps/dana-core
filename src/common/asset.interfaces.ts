@@ -6,19 +6,33 @@ import { ResourceList } from './resource';
 import { FetchError } from './util/error';
 
 /**
+ * Represent a metadata property of an asset
+ **/
+const AssetMetadataItem = z.object({
+  rawValue: z.array(z.unknown())
+});
+export interface AssetMetadataItem<T = unknown> {
+  rawValue: T[];
+}
+
+/**
  * Represent a single asset.
  */
 export const Asset = z.object({
   /** Unique id of the asset */
   id: z.string(),
 
+  /** Title of the assset */
+  title: z.string(),
+
   /** Record of metadata associated with the asset */
-  metadata: z.record(z.unknown()),
+  metadata: z.record(AssetMetadataItem),
 
   /** All media files associated with the asset */
   media: z.array(Media)
 });
 export type Asset = z.TypeOf<typeof Asset>;
+export type AssetMetadata = Asset['metadata'];
 
 /**
  * Enum value for possible schema property types.
@@ -254,7 +268,7 @@ export const CreateAsset = RpcInterface({
   id: 'assets/create',
   request: z.object({
     collection: z.string(),
-    metadata: z.record(z.unknown())
+    metadata: z.record(z.array(z.unknown()))
   }),
   response: Asset,
   error: z.nativeEnum(FetchError)
@@ -282,7 +296,7 @@ export const UpdateAssetMetadata = RpcInterface({
   id: 'assets/update',
   request: z.object({
     assetId: z.string(),
-    payload: z.record(z.unknown())
+    payload: z.record(z.array(z.unknown()))
   }),
   response: z.object({}),
   error: z.nativeEnum(FetchError).or(SingleValidationError)

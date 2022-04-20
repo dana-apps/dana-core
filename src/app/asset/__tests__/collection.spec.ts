@@ -36,13 +36,13 @@ describe(CollectionService, () => {
         {
           id: 'myLab',
           metadata: {
-            dogtype: 'Labrador'
+            dogtype: ['Labrador']
           }
         },
         {
           id: 'myPoodle',
           metadata: {
-            dogtype: 'Poodle'
+            dogtype: ['Poodle']
           }
         },
         {
@@ -56,12 +56,12 @@ describe(CollectionService, () => {
       expect.arrayContaining([
         {
           id: 'myLab',
-          metadata: { dogtype: 'Labrador' },
+          metadata: { dogtype: ['Labrador'] },
           success: true
         },
         {
           id: 'myPoodle',
-          metadata: { dogtype: 'Poodle' },
+          metadata: { dogtype: ['Poodle'] },
           success: true
         },
         {
@@ -112,7 +112,7 @@ describe(CollectionService, () => {
 
     requireSuccess(
       await fixture.assets.updateAsset(fixture.archive, testAsset.id, {
-        metadata: { dogtype: 'Husky' }
+        metadata: { dogtype: ['Husky'] }
       })
     );
 
@@ -178,7 +178,7 @@ describe(CollectionService, () => {
       const dbRecord = requireSuccess(
         await fixture.assets.createAsset(fixture.archive, db.id, {
           metadata: {
-            title: 'My Database Record'
+            title: ['My Database Record']
           }
         })
       );
@@ -188,7 +188,7 @@ describe(CollectionService, () => {
         fixture.assetCollection.id,
         {
           metadata: {
-            dbRef: dbRecord.id
+            dbRef: [dbRecord.id]
           }
         }
       );

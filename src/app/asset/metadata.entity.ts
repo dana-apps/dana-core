@@ -94,12 +94,17 @@ export abstract class SchemaPropertyValue {
    * Return a zod validator object for this schema property.
    */
   async getValidator(context: CollectionContext) {
-    if (!this.required) {
-      const innerSchema = await this.getValueSchema(context);
-      return innerSchema.optional();
+    let schema = z.array(await this.getValueSchema(context));
+
+    if (!this.repeated) {
+      schema = schema.max(1);
     }
 
-    return this.getValueSchema(context);
+    if (this.required) {
+      return schema.min(1);
+    } else {
+      return schema.optional();
+    }
   }
 
   /**

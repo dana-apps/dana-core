@@ -13,7 +13,9 @@ import {
   useRef,
   useState
 } from 'react';
-import AutoSizer, { Size } from 'react-virtualized-auto-sizer';
+import { take } from 'streaming-iterables';
+import produce from 'immer';
+import AutoSizer from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
 import { ListChildComponentProps, FixedSizeList } from 'react-window';
 import { Box, BoxProps, ThemeUIStyleObject, useThemeUI } from 'theme-ui';
@@ -24,8 +26,7 @@ import { compact, last, max, noop, sum } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
-import { take } from 'streaming-iterables';
-import produce from 'immer';
+import { AssetMetadataItem } from '../../../common/asset.interfaces';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -258,7 +259,7 @@ export interface GridColumn<T extends Resource = Resource, Val = any> {
 
 /** Presentation component for a datagrid */
 export type DataGridCell<Val = unknown> = FC<{
-  value: Val;
+  value?: AssetMetadataItem<Val>;
   property: string;
 }> & {
   /**

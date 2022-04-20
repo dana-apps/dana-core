@@ -256,8 +256,8 @@ describe('AssetImportOperation', () => {
     expect(assets.items.map((item) => item.media)).toHaveLength(2);
     expect(assets.items).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ metadata: { p: 'value1' } }),
-        expect.objectContaining({ metadata: { p: 'value2' } })
+        expect.objectContaining({ metadata: { p: ['value1'] } }),
+        expect.objectContaining({ metadata: { p: ['value2'] } })
       ])
     );
 

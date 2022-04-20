@@ -3,19 +3,14 @@
 import { ChangeEvent, FC, useCallback } from 'react';
 import { Box, BoxProps, Field, Label, Text } from 'theme-ui';
 import {
+  AssetMetadataItem,
   GetAsset,
-  GetCollection,
   SchemaProperty,
   SchemaPropertyType,
   SearchAsset
 } from '../../../common/asset.interfaces';
 import { assert, never } from '../../../common/util/assert';
-import {
-  SKIP_FETCH,
-  unwrapGetResult,
-  useGet,
-  useRPC
-} from '../../ipc/ipc.hooks';
+import { SKIP_FETCH, useGet, useRPC } from '../../ipc/ipc.hooks';
 import { RelationSelect } from './atoms.component';
 
 export interface SchemaFormFieldProps<T = unknown>
@@ -23,11 +18,11 @@ export interface SchemaFormFieldProps<T = unknown>
   /** SchemaProperty instance defining the type of the property to display */
   property: SchemaProperty;
 
-  /** Current value (edited or ) of the property */
-  value: T | undefined;
+  /** Current value of the property */
+  value?: AssetMetadataItem<T>;
 
   /** Fired when the property is edited */
-  onChange: (change: T | undefined) => void;
+  onChange: (change: AssetMetadataItem<T>) => void;
 
   /** If true, the property will be displayed using an editable control */
   editing: boolean;
@@ -36,23 +31,28 @@ export interface SchemaFormFieldProps<T = unknown>
 /**
  * Render a control for displaying and editing a property value of arbitrary schema type
  */
-export const SchemaField: FC<SchemaFormFieldProps> = ({ value, ...props }) => {
+export const SchemaField: FC<SchemaFormFieldProps> = ({
+  value = { rawValue: [] },
+  ...props
+}) => {
   if (props.property.type === SchemaPropertyType.FREE_TEXT) {
-    const stringVal =
-      typeof value === 'string' || typeof value === 'undefined'
-        ? value
-        : undefined;
+    const stringVals = {
+      rawValue: value.rawValue.flatMap((val) =>
+        typeof val === 'string' ? [val] : []
+      )
+    };
 
-    return <FreeTextField {...props} value={stringVal} />;
+    return <FreeTextField {...props} value={stringVals} />;
   }
 
   if (props.property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
-    const stringVal =
-      typeof value === 'string' || typeof value === 'undefined'
-        ? value
-        : undefined;
+    const stringVals = {
+      rawValue: value.rawValue.flatMap((val) =>
+        typeof val === 'string' ? [val] : []
+      )
+    };
 
-    return <DatabaseReferenceField {...props} value={stringVal} />;
+    return <DatabaseReferenceField {...props} value={stringVals} />;
   }
 
   return never(props.property);
@@ -70,7 +70,9 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
 }) => {
   const handleChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      onChange(event.currentTarget.value || undefined);
+      onChange({
+        rawValue: event.currentTarget.value ? [event.currentTarget.value] : []
+      });
     },
     [onChange]
   );
@@ -80,18 +82,35 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
       <Field
         name={property.id}
         label={property.label}
-        value={value ?? ''}
+        value={value?.rawValue[0] ?? ''}
         onChange={handleChange}
         {...props}
       />
     );
   }
 
+  const getValue = () => {
+    if (!value || value.rawValue.length === 0) {
+      return <i>None</i>;
+    }
+    if (value.rawValue.length === 1) {
+      return value.rawValue[0];
+    }
+
+    return (
+      <ul>
+        {value.rawValue.map((item, i) => (
+          <li key={i}>{item}</li>
+        ))}
+      </ul>
+    );
+  };
+
   return (
     <Box {...props}>
       <Label>{property.label}</Label>
 
-      <Text>{value ?? <i>None</i>}</Text>
+      <Text>{getValue()}</Text>
     </Box>
   );
 };
@@ -111,11 +130,7 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
     'Expected controlled db property'
   );
   const rpc = useRPC();
-  const collection = unwrapGetResult(
-    useGet(GetCollection, property.databaseId)
-  );
-  const referencedValue = useGet(GetAsset, value ?? SKIP_FETCH);
-  const titleKey = collection?.schema[0]?.id;
+  const referencedValue = useGet(GetAsset, value?.rawValue[0] ?? SKIP_FETCH);
 
   const promiseOptions = async (inputValue: string) => {
     const assets = await rpc(
@@ -134,11 +149,13 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
         <Label>{property.label}</Label>
         <RelationSelect
           loadOptions={promiseOptions}
-          getOptionLabel={(opt) =>
-            titleKey ? String(opt.metadata[titleKey]) : ''
-          }
+          getOptionLabel={(opt) => opt.title}
           getOptionValue={(opt) => opt.id}
-          onChange={(x) => onChange(x?.id ?? undefined)}
+          onChange={(x) =>
+            onChange({
+              rawValue: x?.id ? [x.id] : []
+            })
+          }
         />
       </Box>
     );
@@ -146,7 +163,7 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
 
   // If we don't have a result for the referenced value (because it is invalid or not fetched yet)
   // then at least return the header
-  if (referencedValue?.status !== 'ok' || !titleKey) {
+  if (referencedValue?.status !== 'ok') {
     return (
       <Box {...props}>
         <Label>{property.label}</Label>
@@ -159,11 +176,7 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
       <Label>{property.label}</Label>
 
       <Text>
-        {referencedValue.value ? (
-          String(referencedValue.value.metadata[titleKey])
-        ) : (
-          <i>None</i>
-        )}
+        {referencedValue.value ? referencedValue.value.title : <i>None</i>}
       </Text>
     </Box>
   );

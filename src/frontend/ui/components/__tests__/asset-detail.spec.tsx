@@ -9,6 +9,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PropsWithChildren } from 'react';
+import { someAsset, someMetadata } from '../../../../app/asset/test-utils';
 import {
   Asset,
   CollectionType,
@@ -42,7 +43,9 @@ const SCHEMA: SchemaProperty[] = [
 describe(AssetDetail, () => {
   test('Editing an asset and saving changes submits a change request, then resets the editing state', async () => {
     const fixture = setup();
-    const asset = someAsset();
+    const asset = someAsset({
+      metadata: someMetadata(SCHEMA)
+    });
     const onUpdate = fixture.givenThatTheUpdateSucceeds();
 
     const tree = render(
@@ -68,7 +71,9 @@ describe(AssetDetail, () => {
 
   test('Editing an asset and canceling changes does not submit a change request and resets the editing state', async () => {
     const fixture = setup();
-    const asset = someAsset();
+    const asset = someAsset({
+      metadata: someMetadata(SCHEMA)
+    });
 
     const onUpdate = fixture.givenThatTheUpdateSucceeds();
 
@@ -91,7 +96,9 @@ describe(AssetDetail, () => {
 
   test('Validation errors are displayed to the user', async () => {
     const fixture = setup();
-    const asset = someAsset();
+    const asset = someAsset({
+      metadata: someMetadata(SCHEMA)
+    });
 
     fixture.givenThatTheUpdateFails({
       someProperty: ['Oops']
@@ -194,11 +201,3 @@ async function shouldDisplayReadonlyProperyValue(
 
   expect(propertyValue.innerHTML).toEqual(metadata[property.id]);
 }
-
-const someAsset = (): Asset => ({
-  id: 'myAsset',
-  media: [],
-  metadata: {
-    someProperty: 'Hi'
-  }
-});
