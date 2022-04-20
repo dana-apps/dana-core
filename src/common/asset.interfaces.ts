@@ -41,6 +41,9 @@ const BaseSchemaProperty = z.object({
   /** Is the property required? */
   required: z.boolean(),
 
+  /** Does the property support multiple occurances? */
+  repeated: z.boolean(),
+
   /** Underlying type of the property? */
   type: z.nativeEnum(SchemaPropertyType)
 });
@@ -118,6 +121,7 @@ export const defaultSchemaProperty = (i: number): SchemaProperty => ({
   id: v4(),
   label: `Property ${i}`,
   required: false,
+  repeated: false,
   type: SchemaPropertyType.FREE_TEXT
 });
 

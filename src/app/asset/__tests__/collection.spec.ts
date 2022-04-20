@@ -24,6 +24,7 @@ describe(CollectionService, () => {
         id: 'dogtype',
         label: 'Dog Type',
         required: true,
+        repeated: false,
         type: SchemaPropertyType.FREE_TEXT
       }
     ]);
@@ -82,6 +83,7 @@ describe(CollectionService, () => {
           id: 'dogtype',
           label: 'Dog Type',
           required: false,
+          repeated: false,
           type: SchemaPropertyType.FREE_TEXT
         }
       ])
@@ -101,6 +103,7 @@ describe(CollectionService, () => {
           id: 'dogtype',
           label: 'Dog Type',
           required: true,
+          repeated: false,
           type: SchemaPropertyType.FREE_TEXT
         }
       ]
@@ -121,6 +124,7 @@ describe(CollectionService, () => {
           id: 'dogtype',
           label: 'Dog Type',
           required: true,
+          repeated: false,
           type: SchemaPropertyType.FREE_TEXT
         }
       ]
@@ -142,6 +146,7 @@ describe(CollectionService, () => {
               id: 'title',
               label: 'Title',
               type: SchemaPropertyType.FREE_TEXT,
+              repeated: false,
               required: true
             }
           ]
@@ -157,6 +162,7 @@ describe(CollectionService, () => {
             label: 'Database Reference',
             type: SchemaPropertyType.CONTROLLED_DATABASE,
             databaseId: db.id,
+            repeated: false,
             required: true
           }
         ]

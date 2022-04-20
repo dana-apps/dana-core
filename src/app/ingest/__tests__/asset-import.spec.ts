@@ -37,6 +37,7 @@ describe('AssetImportOperation', () => {
         type: SchemaPropertyType.FREE_TEXT,
         id: 'internalPropertyId',
         label: 'property',
+        repeated: false,
         required: true
       }
     ]);
@@ -67,6 +68,7 @@ describe('AssetImportOperation', () => {
       {
         type: SchemaPropertyType.FREE_TEXT,
         id: 'missingProperty',
+        repeated: false,
         label: 'not there',
         required: true
       }
@@ -230,6 +232,7 @@ describe('AssetImportOperation', () => {
       {
         label: 'property',
         id: 'p',
+        repeated: false,
         type: SchemaPropertyType.FREE_TEXT,
         required: true
       }

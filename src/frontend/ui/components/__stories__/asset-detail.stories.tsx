@@ -162,12 +162,14 @@ const SCHEMA: SchemaProperty[] = [
     id: 'someProperty',
     label: 'Some Property',
     required: true,
+    repeated: false,
     type: SchemaPropertyType.FREE_TEXT
   },
   {
     id: 'databaseRef',
     label: 'Database Reference',
     required: false,
+    repeated: false,
     type: SchemaPropertyType.CONTROLLED_DATABASE,
     databaseId: 'testDb'
   }

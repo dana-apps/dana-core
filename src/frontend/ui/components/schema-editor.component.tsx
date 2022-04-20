@@ -230,23 +230,50 @@ export const SchemaEditor: FC<SchemaEditorProps> = ({
             {getExtraConfigProperties(item)}
           </Grid>
 
-          <Box sx={{ width: '100%', pt: 4 }}>
-            <Switch
-              sx={{
-                'input:checked ~ &': {
-                  backgroundColor: 'var(--theme-ui-colors-primary)'
-                }
-              }}
-              label="Required"
-              checked={item.required}
-              onChange={changeCallback(
-                item.id,
-                (prev, event: ChangeEvent<HTMLInputElement>) => {
-                  prev.required = event.currentTarget.checked;
-                }
-              )}
-            />
-          </Box>
+          <Flex
+            sx={{
+              width: '100%',
+              flexDirection: 'row',
+              pt: 5,
+              justifyContent: 'flex-start',
+              '> *': { mr: 6 }
+            }}
+          >
+            <Box>
+              <Switch
+                sx={{
+                  'input:checked ~ &': {
+                    backgroundColor: 'var(--theme-ui-colors-primary)'
+                  }
+                }}
+                label="Required"
+                checked={item.required}
+                onChange={changeCallback(
+                  item.id,
+                  (prev, event: ChangeEvent<HTMLInputElement>) => {
+                    prev.required = event.currentTarget.checked;
+                  }
+                )}
+              />
+            </Box>
+            <Box>
+              <Switch
+                sx={{
+                  'input:checked ~ &': {
+                    backgroundColor: 'var(--theme-ui-colors-primary)'
+                  }
+                }}
+                label="Repeated"
+                checked={item.repeated}
+                onChange={changeCallback(
+                  item.id,
+                  (prev, event: ChangeEvent<HTMLInputElement>) => {
+                    prev.repeated = event.currentTarget.checked;
+                  }
+                )}
+              />
+            </Box>
+          </Flex>
 
           <Box>
             {errors[item.id]?.length > 0 && (

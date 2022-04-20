@@ -45,6 +45,12 @@ export abstract class SchemaPropertyValue {
     }
   }
 
+  constructor() {
+    if (typeof this.repeated === 'undefined') {
+      this.repeated = false;
+    }
+  }
+
   /**
    * Id of the property. This will be the key used to record metadata values in an asset.
    */
@@ -67,7 +73,13 @@ export abstract class SchemaPropertyValue {
    * True if the property is required.
    */
   @Property({ type: 'boolean' })
-  required!: boolean;
+  required = false;
+
+  /**
+   * True if the property supports multiple occurances.
+   */
+  @Property({ type: 'boolean', default: true })
+  repeated!: boolean;
 
   /**
    * Override to define collections referenced by this property. Defaults to none.

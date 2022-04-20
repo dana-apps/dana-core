@@ -34,6 +34,7 @@ export const WithProperties = () => {
       id: String(i),
       label: faker.animal.dog(),
       required: faker.datatype.boolean(),
+      repeated: false,
       type: SchemaPropertyType.FREE_TEXT
     }))
   );
@@ -54,6 +55,7 @@ export const WithErrors = () => {
       id: String(i),
       label: faker.animal.dog(),
       required: faker.datatype.boolean(),
+      repeated: false,
       type: SchemaPropertyType.FREE_TEXT
     }))
   );

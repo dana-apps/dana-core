@@ -27,12 +27,14 @@ const SCHEMA: SchemaProperty[] = [
     id: 'someProperty',
     label: 'Some Property',
     required: true,
+    repeated: false,
     type: SchemaPropertyType.FREE_TEXT
   },
   {
     id: 'someOtherProperty',
     label: 'Some Other Property',
     required: false,
+    repeated: false,
     type: SchemaPropertyType.FREE_TEXT
   }
 ];

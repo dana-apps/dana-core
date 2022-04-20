@@ -14,12 +14,14 @@ const SCHEMA: SchemaProperty[] = [
     id: 'optionalProperty',
     label: 'Optional Property',
     type: SchemaPropertyType.FREE_TEXT,
+    repeated: false,
     required: false
   },
   {
     id: 'requiredProperty',
     label: 'Some Property',
     type: SchemaPropertyType.FREE_TEXT,
+    repeated: false,
     required: true
   }
 ];

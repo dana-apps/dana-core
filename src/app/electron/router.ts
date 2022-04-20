@@ -64,10 +64,15 @@ export class ElectronRouter {
           };
         }
 
-        return {
-          status: 'ok',
-          value: descriptor.response.parse(response.value)
-        };
+        try {
+          return {
+            status: 'ok',
+            value: descriptor.response.parse(response.value)
+          };
+        } catch (error) {
+          console.error('Error encoding response in', descriptor.id, error);
+          throw new Error('Unexpected response');
+        }
       }
     );
   }
