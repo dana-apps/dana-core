@@ -22,23 +22,28 @@ export const somePropertyFromASchema = (
   schema: SchemaProperty
 ): AssetMetadataItem => {
   if (schema.repeated) {
-    return {
-      rawValue: times(
+    return assetMetadataItem(
+      times(
         3,
         () => somePropertyFromASchema({ ...schema, repeated: false }).rawValue
       ).flat()
-    };
+    );
   }
 
   if (schema.type === SchemaPropertyType.FREE_TEXT) {
+    const val = faker.lorem.words(10);
     return {
-      rawValue: [faker.lorem.words(10)]
+      rawValue: [val],
+      presentationValue: [{ rawValue: val, label: val }]
     };
   }
 
   if (schema.type === SchemaPropertyType.CONTROLLED_DATABASE) {
+    const val = faker.datatype.uuid();
+
     return {
-      rawValue: [faker.datatype.uuid()]
+      rawValue: [val],
+      presentationValue: [{ label: faker.word.noun(), rawValue: val }]
     };
   }
 
@@ -50,6 +55,13 @@ export const someMetadata = (schema: SchemaProperty[]): AssetMetadata =>
     schema.map((property) => [property.id, somePropertyFromASchema(property)])
   );
 
-export const assetMetadataFromRawValues = (
-  rawValues: Dict<unknown[]>
-): AssetMetadata => mapValues(rawValues, (rawValue) => ({ rawValue }));
+export const assetMetadata = (rawValues: Dict<unknown[]>): AssetMetadata =>
+  mapValues(rawValues, assetMetadataItem);
+
+export const assetMetadataItem = (rawValue: unknown[]): AssetMetadataItem => ({
+  rawValue,
+  presentationValue: rawValue.map((val) => ({
+    rawValue: val,
+    label: String(val)
+  }))
+});

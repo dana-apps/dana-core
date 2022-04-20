@@ -1,16 +1,27 @@
 /** @jsxImportSource theme-ui */
 
-import { ChangeEvent, FC, useCallback } from 'react';
-import { Box, BoxProps, Field, Label, Text } from 'theme-ui';
+import produce, { Draft } from 'immer';
+import { compact } from 'lodash';
+import { ChangeEvent, FC, ReactElement, useCallback } from 'react';
+import { DashCircle, PlusCircle } from 'react-bootstrap-icons';
+import {
+  Box,
+  BoxProps,
+  Field,
+  Flex,
+  IconButton,
+  Input,
+  Label,
+  Text
+} from 'theme-ui';
 import {
   AssetMetadataItem,
-  GetAsset,
   SchemaProperty,
   SchemaPropertyType,
   SearchAsset
 } from '../../../common/asset.interfaces';
 import { assert, never } from '../../../common/util/assert';
-import { SKIP_FETCH, useGet, useRPC } from '../../ipc/ipc.hooks';
+import { useRPC } from '../../ipc/ipc.hooks';
 import { RelationSelect } from './atoms.component';
 
 export interface SchemaFormFieldProps<T = unknown>
@@ -36,23 +47,18 @@ export const SchemaField: FC<SchemaFormFieldProps> = ({
   ...props
 }) => {
   if (props.property.type === SchemaPropertyType.FREE_TEXT) {
-    const stringVals = {
-      rawValue: value.rawValue.flatMap((val) =>
-        typeof val === 'string' ? [val] : []
-      )
-    };
-
-    return <FreeTextField {...props} value={stringVals} />;
+    return (
+      <FreeTextField {...props} value={value as AssetMetadataItem<string>} />
+    );
   }
 
   if (props.property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
-    const stringVals = {
-      rawValue: value.rawValue.flatMap((val) =>
-        typeof val === 'string' ? [val] : []
-      )
-    };
-
-    return <DatabaseReferenceField {...props} value={stringVals} />;
+    return (
+      <DatabaseReferenceField
+        {...props}
+        value={value as AssetMetadataItem<string>}
+      />
+    );
   }
 
   return never(props.property);
@@ -69,50 +75,57 @@ export const FreeTextField: FC<SchemaFormFieldProps<string>> = ({
   ...props
 }) => {
   const handleChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
+    (change: (string | undefined)[]) => {
       onChange({
-        rawValue: event.currentTarget.value ? [event.currentTarget.value] : []
+        rawValue: change,
+        presentationValue: change.map((value) => ({
+          label: value ?? '',
+          rawValue: value
+        }))
       });
     },
     [onChange]
   );
 
   if (editing) {
+    if (property.repeated) {
+      return (
+        <RepeatedEditor
+          label={property.label}
+          value={value?.rawValue ?? []}
+          onChange={handleChange}
+        >
+          {({ value, onChange, ...props }, i) => (
+            <Input
+              value={value ?? ''}
+              data-testid={fieldEditTestId(property, i)}
+              onChange={(event) =>
+                onChange(event.currentTarget.value || undefined)
+              }
+              {...props}
+            />
+          )}
+        </RepeatedEditor>
+      );
+    }
+
     return (
       <Field
         name={property.id}
         label={property.label}
         value={value?.rawValue[0] ?? ''}
-        onChange={handleChange}
+        data-testid={fieldEditTestId(property)}
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          handleChange(
+            event.currentTarget.value ? [event.currentTarget.value] : []
+          )
+        }
         {...props}
       />
     );
   }
 
-  const getValue = () => {
-    if (!value || value.rawValue.length === 0) {
-      return <i>None</i>;
-    }
-    if (value.rawValue.length === 1) {
-      return value.rawValue[0];
-    }
-
-    return (
-      <ul>
-        {value.rawValue.map((item, i) => (
-          <li key={i}>{item}</li>
-        ))}
-      </ul>
-    );
-  };
-
-  return (
-    <Box {...props}>
-      <Label>{property.label}</Label>
-
-      <Text>{getValue()}</Text>
-    </Box>
-  );
+  return <ReadonlyDisplay property={property} value={value} />;
 };
 
 /**
@@ -130,7 +143,6 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
     'Expected controlled db property'
   );
   const rpc = useRPC();
-  const referencedValue = useGet(GetAsset, value?.rawValue[0] ?? SKIP_FETCH);
 
   const promiseOptions = async (inputValue: string) => {
     const assets = await rpc(
@@ -140,20 +152,50 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
     );
 
     assert(assets.status === 'ok', 'Failed to load');
-    return assets.value.items;
+    return assets.value.items.map((asset) => ({
+      rawValue: asset.id,
+      label: asset.title
+    }));
   };
 
   if (editing) {
+    if (property.repeated) {
+      return (
+        <Box {...props}>
+          <Label>{property.label}</Label>
+          <RelationSelect
+            isMulti
+            value={
+              value?.presentationValue ? compact(value?.presentationValue) : []
+            }
+            data-testid={fieldEditTestId(property)}
+            loadOptions={promiseOptions}
+            getOptionLabel={(opt) => opt?.label ?? ''}
+            getOptionValue={(opt) => opt.rawValue ?? ''}
+            onChange={(x) =>
+              onChange({
+                rawValue: compact(x.map((item) => item?.rawValue)),
+                presentationValue: x.slice()
+              })
+            }
+          />
+        </Box>
+      );
+    }
+
     return (
       <Box {...props}>
         <Label>{property.label}</Label>
         <RelationSelect
           loadOptions={promiseOptions}
-          getOptionLabel={(opt) => opt.title}
-          getOptionValue={(opt) => opt.id}
+          value={value?.presentationValue[0]}
+          data-testid={fieldEditTestId(property)}
+          getOptionLabel={(opt) => opt?.label ?? ''}
+          getOptionValue={(opt) => opt?.rawValue ?? ''}
           onChange={(x) =>
             onChange({
-              rawValue: x?.id ? [x.id] : []
+              rawValue: x?.rawValue ? [x.rawValue] : [],
+              presentationValue: x ? [x] : []
             })
           }
         />
@@ -161,23 +203,124 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
     );
   }
 
-  // If we don't have a result for the referenced value (because it is invalid or not fetched yet)
-  // then at least return the header
-  if (referencedValue?.status !== 'ok') {
+  return <ReadonlyDisplay property={property} value={value} />;
+};
+
+interface RepeatedEditorProps<T> {
+  label: string;
+  value: (T | undefined)[];
+  onChange: (x: (T | undefined)[]) => void;
+  children: (
+    props: {
+      value: T | undefined;
+      onChange: (value: T | undefined) => void;
+    },
+    i: number
+  ) => ReactElement;
+}
+
+/**
+ * Adapt an editor component to support multiple entries
+ */
+function RepeatedEditor<T>(props: RepeatedEditorProps<T>) {
+  const value = props.value.length === 0 ? [undefined] : props.value;
+
+  const deleteItem = (i: number) => {
+    const next = produce(value, (draft) => {
+      draft.splice(i, 1);
+    });
+    props.onChange(next);
+  };
+
+  const addItem = () => {
+    props.onChange([...value, undefined]);
+  };
+
+  return (
+    <Box>
+      <Label>{props.label}</Label>
+
+      {value.map((value, i) => (
+        <Flex
+          key={i}
+          sx={{
+            flexDirection: 'row',
+            pr: 2,
+            pb: 2
+          }}
+        >
+          <Box sx={{ flex: 1, mr: 3 }}>
+            {props.children(
+              {
+                value,
+                onChange: (change) => {
+                  const next = produce(props.value, (draft) => {
+                    draft[i] = change as Draft<T> | undefined;
+                  });
+
+                  props.onChange(next);
+                }
+              },
+              i
+            )}
+          </Box>
+
+          <IconButton onClick={() => deleteItem(i)}>
+            <DashCircle />
+          </IconButton>
+        </Flex>
+      ))}
+
+      <Flex sx={{ flexDirection: 'row', justifyContent: 'center' }}>
+        <IconButton onClick={addItem}>
+          <PlusCircle />
+        </IconButton>
+      </Flex>
+    </Box>
+  );
+}
+
+const ReadonlyDisplay: FC<{
+  value?: AssetMetadataItem;
+  property: SchemaProperty;
+}> = ({ value, property, ...props }) => {
+  const getValue = () => {
+    if (!value || value.rawValue.length === 0) {
+      return <i data-testid={fieldDisplayTestId(property)}>None</i>;
+    }
+
+    if (!property.repeated) {
+      return (
+        <span data-testid={fieldDisplayTestId(property)}>
+          {value.presentationValue[0]?.label ?? <i>None</i>}
+        </span>
+      );
+    }
+
     return (
-      <Box {...props}>
-        <Label>{property.label}</Label>
-      </Box>
+      <ul sx={{ my: 0, pl: 5 }}>
+        {value.presentationValue.map((item, i) => (
+          <li data-testid={fieldDisplayTestId(property, i)} key={i}>
+            {item?.label}
+          </li>
+        ))}
+      </ul>
     );
-  }
+  };
 
   return (
     <Box {...props}>
       <Label>{property.label}</Label>
 
-      <Text>
-        {referencedValue.value ? referencedValue.value.title : <i>None</i>}
-      </Text>
+      <Text>{getValue()}</Text>
     </Box>
   );
 };
+
+export function fieldDisplayTestId(property: SchemaProperty, i: number = 0) {
+  return `metadata-display-${property.id}@${i}`;
+}
+
+export function fieldEditTestId(property: SchemaProperty, i: number = 0) {
+  return `metadata-edit-${property.id}@${i}`;
+}

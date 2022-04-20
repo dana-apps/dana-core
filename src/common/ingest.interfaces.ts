@@ -127,7 +127,7 @@ export const UpdateIngestedMetadata = RpcInterface({
   request: z.object({
     assetId: z.string(),
     sessionId: z.string(),
-    metadata: z.record(z.unknown())
+    metadata: z.record(z.array(z.unknown()))
   }),
   response: z.object({})
 });

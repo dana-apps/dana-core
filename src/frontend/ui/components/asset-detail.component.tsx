@@ -139,7 +139,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
 
     const res = await rpc(UpdateIngestedMetadata, {
       assetId: asset.id,
-      metadata,
+      metadata: mapValues(metadata, (md) => md.rawValue),
       sessionId
     });
 

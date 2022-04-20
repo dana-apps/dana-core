@@ -9,10 +9,14 @@ import { FetchError } from './util/error';
  * Represent a metadata property of an asset
  **/
 const AssetMetadataItem = z.object({
-  rawValue: z.array(z.unknown())
+  rawValue: z.array(z.unknown().optional()),
+  presentationValue: z.array(
+    z.object({ rawValue: z.unknown().optional(), label: z.string() })
+  )
 });
 export interface AssetMetadataItem<T = unknown> {
-  rawValue: T[];
+  rawValue: (T | undefined)[];
+  presentationValue: { rawValue?: T; label: string }[];
 }
 
 /**

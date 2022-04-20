@@ -137,7 +137,13 @@ export class AssetIngestService extends EventEmitter<Events> {
       items: res.items.map((entity) => ({
         id: entity.id,
         title: entity.id,
-        metadata: mapValues(entity.metadata, (rawValue) => ({ rawValue })),
+        metadata: mapValues(entity.metadata, (rawValue) => ({
+          rawValue,
+          presentationValue: rawValue.map((x) => ({
+            label: String(x),
+            rawValue: x
+          }))
+        })),
         phase: entity.phase,
         validationErrors: entity.validationErrors,
         media: compact(

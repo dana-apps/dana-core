@@ -542,7 +542,7 @@ export class AssetIngestOperation implements IngestSession {
    * @param metadata Dictionary mapping property ids to metadata values
    * @returns Result indicating whether the edit is valid or invalid.
    */
-  async updateImportedAsset(assetId: string, metadata: Dict) {
+  async updateImportedAsset(assetId: string, metadata: Dict<unknown[]>) {
     const res = await this.archive.useDb(async (db) => {
       const asset = await db.findOne(AssetImportEntity, assetId);
       if (!asset) {

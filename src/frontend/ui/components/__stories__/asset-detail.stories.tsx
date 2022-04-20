@@ -4,12 +4,11 @@ import faker from '@faker-js/faker';
 import { FC, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import {
-  assetMetadataFromRawValues,
+  assetMetadata,
   someAsset,
   someMetadata
 } from '../../../../app/asset/test-utils';
 import {
-  AssetMetadata,
   CollectionType,
   GetCollection,
   SchemaProperty,
@@ -21,7 +20,6 @@ import { Media } from '../../../../common/media.interfaces';
 import { never } from '../../../../common/util/assert';
 import { compactDict } from '../../../../common/util/collection';
 import { error, ok } from '../../../../common/util/error';
-import { Dict } from '../../../../common/util/types';
 import { IpcContext } from '../../../ipc/ipc.hooks';
 import { MockIpc } from '../../../ipc/mock-ipc';
 import { AssetDetail } from '../asset-detail.component';
@@ -42,7 +40,7 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
   });
 
   const ipc = useIpcFixture((change) => {
-    setMetadata(assetMetadataFromRawValues(change.payload));
+    setMetadata(assetMetadata(change.payload));
     onUpdate(change);
   });
 
@@ -75,7 +73,7 @@ export const CreateMode: FC<Params> = ({ onUpdate }) => {
   });
 
   const ipc = useIpcFixture((change) => {
-    setMetadata(assetMetadataFromRawValues(change.payload));
+    setMetadata(assetMetadata(change.payload));
     onUpdate(change);
   });
 
@@ -187,7 +185,9 @@ const Validator = z.object(
 
       return [
         property.id,
-        property.required ? validator : validator.optional()
+        property.required
+          ? z.array(validator).min(1)
+          : z.array(validator).optional()
       ];
     })
   )

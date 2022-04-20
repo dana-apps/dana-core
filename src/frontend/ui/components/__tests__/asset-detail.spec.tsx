@@ -11,7 +11,8 @@ import userEvent from '@testing-library/user-event';
 import { PropsWithChildren } from 'react';
 import { someAsset, someMetadata } from '../../../../app/asset/test-utils';
 import {
-  Asset,
+  AssetMetadata,
+  AssetMetadataItem,
   CollectionType,
   SchemaProperty,
   SchemaPropertyType,
@@ -22,6 +23,7 @@ import { Dict } from '../../../../common/util/types';
 import { IpcContext } from '../../../ipc/ipc.hooks';
 import { MockIpc } from '../../../ipc/mock-ipc';
 import { AssetDetail } from '../asset-detail.component';
+import { fieldDisplayTestId } from '../schema-form.component';
 
 const SCHEMA: SchemaProperty[] = [
   {
@@ -64,7 +66,7 @@ describe(AssetDetail, () => {
 
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        payload: expect.objectContaining({ someProperty: 'New Value' })
+        payload: expect.objectContaining({ someProperty: ['New Value'] })
       })
     );
   });
@@ -85,7 +87,7 @@ describe(AssetDetail, () => {
 
     await beginEditing(tree);
     await editMetadataFields(tree, {
-      'Some Property': 'New Value'
+      'Some Property': ['New Value']
     });
     await requestCancel(tree);
     await waitForEditModeToEnd(tree);
@@ -194,10 +196,11 @@ async function waitForEditModeToEnd(tree: RenderResult) {
 async function shouldDisplayReadonlyProperyValue(
   tree: RenderResult,
   property: SchemaProperty,
-  metadata: Dict
+  metadata: AssetMetadata
 ) {
-  const propertyValue = tree.getByText(property.label)
-    .nextSibling as HTMLElement;
+  metadata[property.id].presentationValue.forEach((md, i) => {
+    const propertyValue = tree.getByTestId(fieldDisplayTestId(property, i));
 
-  expect(propertyValue.innerHTML).toEqual(metadata[property.id]);
+    expect(propertyValue.innerHTML).toEqual(md.label);
+  });
 }

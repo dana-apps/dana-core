@@ -113,6 +113,6 @@ export class AssetCollectionEntity {
       !!titleProperty &&
       this.schema.every((x) => !x.required || x.id === titleProperty.id);
 
-    return canBeLabelRecord ? { [titleProperty.id]: title } : undefined;
+    return canBeLabelRecord ? { [titleProperty.id]: [title] } : undefined;
   }
 }

@@ -2,12 +2,13 @@ import { Embeddable, Property } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import {
+  AssetMetadataItem,
   ControlledDatabaseSchemaProperty,
   ScalarSchemaProperty,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
-import { never } from '../../common/util/assert';
+import { assert, never } from '../../common/util/assert';
 import { error, FetchError, ok, Result } from '../../common/util/error';
 import { MaybeAsync } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
@@ -88,6 +89,22 @@ export abstract class SchemaPropertyValue {
    */
   getReferencedCollection(): string | undefined {
     return undefined;
+  }
+
+  /**
+   * Override to provide a display value for the
+   */
+  async convertToMetadataItems(
+    context: AssetContext,
+    value: unknown[]
+  ): Promise<AssetMetadataItem> {
+    return {
+      rawValue: value,
+      presentationValue: value.map((rawValue) => ({
+        rawValue,
+        label: String(rawValue)
+      }))
+    };
   }
 
   /**
@@ -264,6 +281,28 @@ export class ControlledDatabaseSchemaPropertyValue
 
   getReferencedCollection(): string | undefined {
     return this.databaseId;
+  }
+
+  async convertToMetadataItems(
+    { assets, archive }: AssetContext,
+    value: unknown[]
+  ): Promise<AssetMetadataItem> {
+    assert(
+      value.every((x) => typeof x === 'string'),
+      'Expected array of asset ids'
+    );
+
+    const items = await assets.getMultiple(archive, value as string[], {
+      shallow: true
+    });
+
+    return {
+      rawValue: value,
+      presentationValue: items.map((x) => ({
+        rawValue: x.id,
+        label: x.title
+      }))
+    };
   }
 }
 

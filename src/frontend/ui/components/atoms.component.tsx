@@ -263,7 +263,7 @@ export function RelationSelect<
   Group extends GroupBase<Option> = GroupBase<Option>
 >(props: AsyncProps<Option, IsMulti, Group>) {
   const { theme } = useThemeUI();
-  console.log(theme.forms);
+
   return (
     <AsyncSelect
       styles={{
