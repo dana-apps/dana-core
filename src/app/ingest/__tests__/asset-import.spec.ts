@@ -6,12 +6,15 @@ import {
 } from '../../../common/asset.interfaces';
 
 import { IngestPhase } from '../../../common/ingest.interfaces';
+import { error, ok, Result } from '../../../common/util/error';
+import { MaybeAsync } from '../../../common/util/types';
 import { collectEvents, waitUntilEvent } from '../../../test/event';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { AssetsChangedEvent, AssetService } from '../../asset/asset.service';
 import { CollectionService } from '../../asset/collection.service';
 import { MediaFile } from '../../media/media-file.entity';
 import { MediaFileService } from '../../media/media-file.service';
+import { ArchivePackage } from '../../package/archive-package';
 import {
   AssetImportEntity,
   FileImport,
@@ -346,6 +349,68 @@ describe('AssetImportOperation', () => {
 
     await fixtureStatusEvents.received();
     expect(session.valid).toBeTruthy();
+  });
+
+  test('Properties are casted to the expected type', async () => {
+    const fixture = await setup();
+    await fixture.collectionService.updateCollectionSchema(
+      fixture.archive,
+      fixture.rootCollection.id,
+      [
+        {
+          label: 'property',
+          id: 'property',
+          type: SchemaPropertyType.FREE_TEXT,
+          required: true
+        }
+      ]
+    );
+
+    fixture.assetService.castOrCreateProperty = (_, _property, value) => {
+      if (typeof value === 'string') {
+        return ok(value.toUpperCase());
+      }
+
+      return ok(value);
+    };
+
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
+    const assets = await fixture.importService.listSessionAssets(
+      fixture.archive,
+      session.id
+    );
+
+    expect(assets.items.map((item) => item.metadata.property)).toContain(
+      'VALUE1'
+    );
+  });
+
+  test('Where a property cannot be casted, the literal imported value is preserved', async () => {
+    const fixture = await setup();
+    await fixture.collectionService.updateCollectionSchema(
+      fixture.archive,
+      fixture.rootCollection.id,
+      [
+        {
+          label: 'property',
+          id: 'property',
+          type: SchemaPropertyType.FREE_TEXT,
+          required: true
+        }
+      ]
+    );
+
+    fixture.assetService.castOrCreateProperty = () => error('Cannot be casted');
+
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
+    const assets = await fixture.importService.listSessionAssets(
+      fixture.archive,
+      session.id
+    );
+
+    expect(assets.items.map((item) => item.metadata.property)).toContain(
+      'value1'
+    );
   });
 });
 

@@ -151,6 +151,138 @@ describe(AssetService, () => {
       })
     });
   });
+
+  describe('casting properties', () => {
+    describe('string properties', () => {
+      test('non-strings are converted to strings', async () => {
+        const fixture = await setup();
+        const [property] = await fixture.givenTheSchema([
+          {
+            type: SchemaPropertyType.FREE_TEXT,
+            id: 'dbRecord',
+            label: 'Label',
+            required: false
+          }
+        ]);
+
+        const res = requireSuccess(
+          await fixture.service.castOrCreateProperty(
+            fixture.archive,
+            property,
+            123
+          )
+        );
+        expect(res).toEqual('123');
+      });
+
+      test('blank values are treated as nulls', async () => {
+        const fixture = await setup();
+        const [property] = await fixture.givenTheSchema([
+          {
+            type: SchemaPropertyType.FREE_TEXT,
+            id: 'dbRecord',
+            label: 'Label',
+            required: false
+          }
+        ]);
+
+        const res = requireSuccess(
+          await fixture.service.castOrCreateProperty(
+            fixture.archive,
+            property,
+            ' '
+          )
+        );
+        expect(res).toBeUndefined();
+      });
+    });
+
+    describe('database references', () => {
+      test('existing controlled database entries are referenced by label', async () => {
+        const fixture = await setup();
+        const db = await fixture.givenALabelRecordDatabase();
+        const [property] = await fixture.givenTheSchema([
+          {
+            type: SchemaPropertyType.CONTROLLED_DATABASE,
+            databaseId: db.id,
+            id: 'dbRecord',
+            label: 'Label',
+            required: true
+          }
+        ]);
+
+        const referencedAsset = requireSuccess(
+          await fixture.service.createAsset(fixture.archive, db.id, {
+            metadata: { title: 'Value' }
+          })
+        );
+
+        const res = requireSuccess(
+          await fixture.service.castOrCreateProperty(
+            fixture.archive,
+            property,
+            'Value'
+          )
+        );
+        const dbAssets = await fixture.service.listAssets(
+          fixture.archive,
+          db.id
+        );
+        expect(dbAssets.total).toBe(1);
+        expect(res).toEqual(referencedAsset.id);
+      });
+    });
+
+    test('where the target database supports it, controlled database entries are created on demand', async () => {
+      const fixture = await setup();
+      const db = await fixture.givenALabelRecordDatabase();
+      const [property] = await fixture.givenTheSchema([
+        {
+          type: SchemaPropertyType.CONTROLLED_DATABASE,
+          databaseId: db.id,
+          id: 'dbRecord',
+          label: 'Label',
+          required: true
+        }
+      ]);
+
+      const res = requireSuccess(
+        await fixture.service.castOrCreateProperty(
+          fixture.archive,
+          property,
+          'Value'
+        )
+      );
+      const dbAssets = await fixture.service.listAssets(fixture.archive, db.id);
+      expect(dbAssets.total).toBe(1);
+      expect(res).toEqual(dbAssets.items[0].id);
+    });
+
+    test('blank values are treated as nulls', async () => {
+      const fixture = await setup();
+      const db = await fixture.givenALabelRecordDatabase();
+      const [property] = await fixture.givenTheSchema([
+        {
+          type: SchemaPropertyType.CONTROLLED_DATABASE,
+          databaseId: db.id,
+          id: 'dbRecord',
+          label: 'Label',
+          required: true
+        }
+      ]);
+
+      const res = requireSuccess(
+        await fixture.service.castOrCreateProperty(
+          fixture.archive,
+          property,
+          ' '
+        )
+      );
+      const dbAssets = await fixture.service.listAssets(fixture.archive, db.id);
+      expect(dbAssets.total).toBe(0);
+      expect(res).toBeUndefined();
+    });
+  });
 });
 
 async function setup() {
@@ -163,6 +295,9 @@ async function setup() {
   const rootCollection = await collectionService.getRootAssetCollection(
     archive
   );
+  const rootDbCollection = await collectionService.getRootDatabaseCollection(
+    archive
+  );
   await collectionService.updateCollectionSchema(
     archive,
     rootCollection.id,
@@ -170,6 +305,33 @@ async function setup() {
   );
 
   return {
+    givenTheSchema: async (schema: SchemaProperty[]) => {
+      await collectionService.updateCollectionSchema(
+        archive,
+        rootCollection.id,
+        schema
+      );
+      return schema;
+    },
+    givenAControlledDatabaseWithSchema: (schema: SchemaProperty[]) => {
+      return collectionService.createCollection(archive, rootDbCollection.id, {
+        title: 'Some Database',
+        schema
+      });
+    },
+    givenALabelRecordDatabase: () => {
+      return collectionService.createCollection(archive, rootDbCollection.id, {
+        title: 'Some Database',
+        schema: [
+          {
+            id: 'title',
+            type: SchemaPropertyType.FREE_TEXT,
+            label: 'Title',
+            required: true
+          }
+        ]
+      });
+    },
     archive,
     collectionService,
     rootCollection,

@@ -8,8 +8,12 @@ import {
   SchemaPropertyType
 } from '../../common/asset.interfaces';
 import { never } from '../../common/util/assert';
+import { error, FetchError, ok, Result } from '../../common/util/error';
 import { MaybeAsync } from '../../common/util/types';
-import { AssetEntity } from './asset.entity';
+import { ArchivePackage } from '../package/archive-package';
+import { AssetCollectionEntity, AssetEntity } from './asset.entity';
+import { AssetService } from './asset.service';
+import { CollectionService } from './collection.service';
 
 /**
  * Base class for schema property values.
@@ -77,7 +81,7 @@ export abstract class SchemaPropertyValue {
   /**
    * Return a zod validator object for this schema property.
    */
-  async getValidator(context: SchemaValidationContext) {
+  async getValidator(context: CollectionContext) {
     if (!this.required) {
       const innerSchema = await this.getValueSchema(context);
       return innerSchema.optional();
@@ -91,8 +95,33 @@ export abstract class SchemaPropertyValue {
    * not to other ones such as `required`.
    */
   protected abstract getValueSchema(
-    context: SchemaValidationContext
+    context: CollectionContext
   ): MaybeAsync<z.Schema<unknown>>;
+
+  /**
+   * Coerce a value of unknown type to one that is valid according to this schema.
+   * Implementations of this should not have side-effects.
+   *
+   * @param value A value of unknown type that should be coersce to one valid according to this property.
+   * @param context Application context for casting the value.
+   * @returns A result value that either contains the coersced value, or an error if coerscion is not possible.
+   */
+  abstract castValue(
+    value: unknown,
+    context: AssetContext
+  ): MaybeAsync<Result<unknown>>;
+
+  /**
+   * Coerce a value of unknown type to one that is valid according to this schema.
+   * This variant calls through to `castValue` by default but may be overridden to have side-effects.
+   *
+   * @param value A value of unknown type that should be coersce to one valid according to this property.
+   * @param context Application context for casting the value.
+   * @returns A result value that either contains the coersced value, or an error if coerscion is not possible.
+   */
+  castOrCreateValue(value: unknown, context: AssetContext) {
+    return this.castValue(value, context);
+  }
 
   /**
    * Cast to a SchemaProperty instance suitable for returning over APIs
@@ -112,6 +141,10 @@ export class FreeTextSchemaPropertyValue
 
   protected getValueSchema() {
     return z.string();
+  }
+
+  castValue(value: unknown) {
+    return ok(toOptionalString(value));
   }
 
   toJson() {
@@ -139,9 +172,11 @@ export class ControlledDatabaseSchemaPropertyValue
    * @param param0
    * @returns
    */
-  protected getValueSchema({ getRecord }: SchemaValidationContext) {
+  protected getValueSchema({ archive }: CollectionContext) {
     return z.string().superRefine(async (refId, ctx) => {
-      const referencedItem = await getRecord(this.databaseId, refId);
+      const referencedItem = await archive.useDb((db) =>
+        db.count(AssetEntity, { collection: this.databaseId, id: refId })
+      );
 
       if (!referencedItem) {
         ctx.addIssue({
@@ -150,6 +185,60 @@ export class ControlledDatabaseSchemaPropertyValue
         });
       }
     });
+  }
+
+  async castValue(value: unknown, { archive, assets }: AssetContext) {
+    const title = toOptionalString(value);
+    if (!title) {
+      return ok(undefined);
+    }
+
+    const res = await assets.searchAssets(archive, this.databaseId, {
+      query: title,
+      exact: true
+    });
+
+    return res.status === 'ok' && res.value.total >= 1
+      ? ok(res.value.items[0])
+      : error(FetchError.DOES_NOT_EXIST);
+  }
+
+  async castOrCreateValue(value: unknown, context: AssetContext) {
+    const existingValueRes = await this.castValue(value, context);
+    if (existingValueRes.status === 'ok') {
+      return ok(existingValueRes.value?.id);
+    }
+
+    const collection = await context.archive.get(
+      AssetCollectionEntity,
+      this.databaseId
+    );
+
+    if (!collection) {
+      return error(FetchError.DOES_NOT_EXIST);
+    }
+
+    const stringValue = toOptionalString(value);
+    const metadata = stringValue
+      ? collection.getLabelRecordMetadata(stringValue)
+      : undefined;
+
+    if (!metadata) {
+      return error(FetchError.DOES_NOT_EXIST);
+    }
+
+    const res = await context.assets.createAsset(
+      context.archive,
+      this.databaseId,
+      {
+        metadata
+      }
+    );
+    if (res.status === 'error') {
+      return res;
+    }
+
+    return ok(res.value.id);
   }
 
   toJson() {
@@ -162,11 +251,27 @@ export class ControlledDatabaseSchemaPropertyValue
 }
 
 /**
- * Context passed to the getValidator()
+ * Context passed to the cast and validation hooks
  */
-export interface SchemaValidationContext {
-  getRecord(
-    collectionId: string,
-    itemId: string
-  ): Promise<AssetEntity | undefined>;
+export interface CollectionContext {
+  archive: ArchivePackage;
+  collections: CollectionService;
+}
+
+/**
+ * Context passed to the cast and validation hooks
+ */
+export interface AssetContext {
+  archive: ArchivePackage;
+  assets: AssetService;
+  collections: CollectionService;
+}
+
+function toOptionalString(value: unknown) {
+  if (typeof value === 'undefined' || value === null) {
+    return undefined;
+  }
+
+  const stringValue = String(value);
+  return stringValue.trim().length === 0 ? undefined : stringValue;
 }

@@ -46,7 +46,7 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
     return await assetService.searchAssets(
       archive,
       request.collection,
-      request.query,
+      { query: request.query },
       range
     );
   });

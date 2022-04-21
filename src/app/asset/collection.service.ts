@@ -8,16 +8,12 @@ import {
   SchemaProperty
 } from '../../common/asset.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
-import { assert } from '../../common/util/assert';
 import { DefaultMap } from '../../common/util/collection';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
-import { AssetCollectionEntity, AssetEntity } from './asset.entity';
-import {
-  SchemaPropertyValue,
-  SchemaValidationContext
-} from './metadata.entity';
+import { AssetCollectionEntity } from './asset.entity';
+import { SchemaPropertyValue } from './metadata.entity';
 
 /**
  * Manages collections of records and associates them with a schema.
@@ -279,6 +275,17 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     return this.validateItemsForSchema(archive, collection.schema, items);
   }
 
+  async validateMetaedataForCollection(
+    archive: ArchivePackage,
+    collectionId: string,
+    metadata: Dict
+  ) {
+    const [res] = await this.validateItemsForCollection(archive, collectionId, [
+      { id: '', metadata }
+    ]);
+    return res.success;
+  }
+
   /**
    * Validate a that a proposed addition into the archive is valid according to a schema.
    *
@@ -330,6 +337,12 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     yield await collection.assets.loadItems();
   }
 
+  async getTitleProperty(archive: ArchivePackage, collectionId: string) {
+    return archive
+      .get(AssetCollectionEntity, collectionId)
+      .then((x) => x?.getTitleProperty());
+  }
+
   /**
    * Given a schema definition, return a zod validator to validate entries against.
    *
@@ -340,21 +353,12 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     archive: ArchivePackage,
     schema: SchemaPropertyValue[]
   ) {
-    const context: SchemaValidationContext = {
-      getRecord: (collectionId, itemId) => {
-        return archive.useDb(async (db) => {
-          const asset = await db.findOne(AssetEntity, {
-            collection: collectionId,
-            id: itemId
-          });
-          return asset ?? undefined;
-        });
-      }
-    };
-
     const fieldValidators = await Promise.all(
       schema.map(async (property) => {
-        const validator = await property.getValidator(context);
+        const validator = await property.getValidator({
+          archive,
+          collections: this
+        });
         return [property.id, validator];
       })
     );

@@ -8,6 +8,7 @@ import {
   Property
 } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
+import { SchemaPropertyType } from '../../common/asset.interfaces';
 import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 import { SchemaPropertyValue } from './metadata.entity';
@@ -83,4 +84,35 @@ export class AssetCollectionEntity {
    */
   @Embedded(() => SchemaPropertyValue, { array: true })
   schema: SchemaPropertyValue[] = [];
+
+  /**
+   * Return the schema property that is used
+   *
+   * This is currently defined as the first free text property in the schema. It may in future change to something more
+   * explicit.
+   *
+   * @returns The scehma property used as the label for the asset, or undefined if no suitable property exists.
+   */
+  getTitleProperty() {
+    return this.schema.find((x) => (x.type = SchemaPropertyType.FREE_TEXT));
+  }
+
+  /**
+   * If this collection can hold 'label records', return the metadata for a label record given a string value to be the
+   * label.
+   *
+   * A 'label record' is a record where the only required property (if any) is its title property. These can be created
+   * easily from a string value.
+   *
+   * @param title The title property for the label record
+   * @returns A Dict of metadata for creating/updating a label record.
+   */
+  getLabelRecordMetadata(title: string) {
+    const titleProperty = this.getTitleProperty();
+    const canBeLabelRecord =
+      !!titleProperty &&
+      this.schema.every((x) => !x.required || x.id === titleProperty.id);
+
+    return canBeLabelRecord ? { [titleProperty.id]: title } : undefined;
+  }
 }

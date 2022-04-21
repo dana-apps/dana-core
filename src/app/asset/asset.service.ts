@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventemitter3';
-import { Asset } from '../../common/asset.interfaces';
+import { Asset, SchemaProperty } from '../../common/asset.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, FetchError, ok, Result } from '../../common/util/error';
@@ -9,6 +9,7 @@ import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
+import { SchemaPropertyValue } from './metadata.entity';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -209,7 +210,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async searchAssets(
     archive: ArchivePackage,
     collectionId: string,
-    query: string,
+    { query, exact }: { query: string; exact?: boolean },
     range?: PageRange
   ): Promise<Result<ResourceList<Asset>>> {
     return archive.useDb(async () => {
@@ -221,16 +222,25 @@ export class AssetService extends EventEmitter<AssetEvents> {
         return error(FetchError.DOES_NOT_EXIST);
       }
 
-      const title = collection.schema[0];
+      const title = await this.collectionService.getTitleProperty(
+        archive,
+        collectionId
+      );
+
+      if (!title) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
 
       const entities = await archive.list(
         AssetEntity,
         {
           collection: collectionId,
           metadata: {
-            [title.id]: {
-              $like: `${query}%`
-            }
+            [title.id]: exact
+              ? query
+              : {
+                  $like: `${query}%`
+                }
           }
         },
         {
@@ -256,6 +266,18 @@ export class AssetService extends EventEmitter<AssetEvents> {
       .then((asset) =>
         asset ? this.entityToAsset(archive, asset) : undefined
       );
+  }
+
+  castOrCreateProperty(
+    archive: ArchivePackage,
+    property: SchemaProperty,
+    value: unknown
+  ) {
+    return SchemaPropertyValue.fromJson(property).castOrCreateValue(value, {
+      archive,
+      assets: this,
+      collections: this.collectionService
+    });
   }
 
   private entityToAsset(archive: ArchivePackage, entity: AssetEntity): Asset {

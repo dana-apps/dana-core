@@ -24,7 +24,11 @@ import {
 import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { CollectionService } from '../asset/collection.service';
-import { SchemaProperty } from '../../common/asset.interfaces';
+import {
+  SchemaProperty,
+  SchemaPropertyType
+} from '../../common/asset.interfaces';
+import { AssetService } from '../asset/asset.service';
 import { error, FetchError, ok } from '../../common/util/error';
 
 /**
@@ -60,7 +64,8 @@ export class AssetIngestOperation implements IngestSession {
     readonly session: ImportSessionEntity,
     private ingestService: AssetIngestService,
     private mediaService: MediaFileService,
-    private collectionService: CollectionService
+    private collectionService: CollectionService,
+    private assetService: AssetService
   ) {}
 
   /**
@@ -285,7 +290,7 @@ export class AssetIngestOperation implements IngestSession {
       this.archive
     );
     const convertToSchema = this.getMetadataConverter(collection.schema);
-    metadata = convertToSchema(metadata);
+    metadata = await convertToSchema(metadata);
 
     await this.archive.useDbTransaction(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
@@ -341,6 +346,16 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
   }
 
+  async convertTypeForImport(property: SchemaProperty, value: unknown) {
+    const castedValue = await this.assetService.castOrCreateProperty(
+      this.archive,
+      property,
+      value
+    );
+
+    return castedValue.status === 'error' ? value : castedValue.value;
+  }
+
   /**
    * Revalidate all metadata in the import session and update their (and the session's) validation state.
    */
@@ -380,15 +395,23 @@ export class AssetIngestOperation implements IngestSession {
    */
   getMetadataConverter(schema: SchemaProperty[]) {
     const byLabel = Object.fromEntries(
-      schema.map((item) => [item.label, item.id])
+      schema.map((property) => [property.label.toLowerCase(), property])
     );
 
-    return (metadata: Dict) => {
-      const entries = Object.entries(metadata).flatMap(([label, val]) => {
-        const id = byLabel[label];
-        return id ? [[id, val]] : [];
-      });
-      return Object.fromEntries(entries);
+    return async (metadata: Dict) => {
+      const entries = await Promise.all(
+        Object.entries(metadata).map(async ([label, val]) => {
+          const property = byLabel[label.toLowerCase()];
+          if (!property) {
+            return undefined;
+          }
+
+          const preparedValue = await this.convertTypeForImport(property, val);
+          return [property.id, preparedValue];
+        })
+      );
+
+      return Object.fromEntries(compact(entries));
     };
   }
 

@@ -10,8 +10,10 @@ export type ErrorResult<Err> = { status: 'error'; error: Err };
 /** Convenience for creating an OkResult */
 export function ok(): OkResult<object>;
 export function ok<T>(value: T): OkResult<T>;
-export function ok(value: unknown = {}): OkResult<unknown> {
-  return { status: 'ok', value };
+export function ok(value?: unknown): OkResult<unknown> {
+  return arguments.length === 1
+    ? { status: 'ok', value }
+    : { status: 'ok', value: {} };
 }
 
 /** Convenience for creating an ErrorResult */
@@ -36,6 +38,10 @@ export function okIfExists<T>(
     status: 'ok',
     value
   };
+}
+
+export function mapResult<T, U>(res: Result<T>, fn: (x: T) => U): Result<U> {
+  return res.status === 'ok' ? ok(fn(res.value)) : res;
 }
 
 export enum FetchError {
