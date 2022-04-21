@@ -527,9 +527,10 @@ export class AssetIngestOperation implements IngestSession {
       }
 
       db.persist(asset);
-      await this.revalidate();
       return ok();
     });
+
+    await this.revalidate();
 
     this.ingestService.emit('edit', {
       archive: this.archive,

@@ -124,7 +124,7 @@ function useCompleteImport(sessionId: string) {
       return;
     }
 
-    const collection = await rpc(GetRootAssetsCollection, {});
+    const collection = await rpc(GetRootAssetsCollection, undefined);
 
     navigate(
       collection.status === 'ok' ? `/collection/${collection.value.id}` : '/'
