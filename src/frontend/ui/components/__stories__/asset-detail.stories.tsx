@@ -142,13 +142,15 @@ const MEDIA_FILES: Media[] = [
     id: '1',
     type: 'image',
     mimeType: 'image/png',
-    rendition: require('./media/a.png')
+    rendition: require('./media/a.png'),
+    fileSize: 100
   },
   {
     id: '2',
     type: 'image',
     mimeType: 'image/jpeg',
-    rendition: require('./media/b.jpg')
+    rendition: require('./media/b.jpg'),
+    fileSize: 100
   }
 ];
 

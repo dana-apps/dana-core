@@ -378,12 +378,10 @@ export class AssetService extends EventEmitter<AssetEvents> {
         title: typeof titleValue === 'string' ? titleValue : entity.id,
         media: shallow
           ? []
-          : Array.from(entity.mediaFiles).map((file) => ({
-              id: file.id,
-              type: 'image',
-              rendition: this.mediaService.getRenditionUri(archive, file),
-              mimeType: file.mimeType
-            })),
+          : await this.mediaService.getMedia(
+              archive,
+              entity.mediaFiles.getIdentifiers()
+            ),
         metadata: shallow
           ? {}
           : Object.fromEntries(

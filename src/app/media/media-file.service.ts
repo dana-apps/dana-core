@@ -1,11 +1,12 @@
 import { createReadStream } from 'fs';
-import { copyFile, unlink } from 'fs/promises';
+import { copyFile, stat, unlink } from 'fs/promises';
 import mime from 'mime';
 import path from 'path';
 import sharp, { FormatEnum } from 'sharp';
 import { Logger } from 'tslog';
 
 import { FileImportResult, IngestError } from '../../common/ingest.interfaces';
+import { Media } from '../../common/media.interfaces';
 import { error, ok } from '../../common/util/error';
 import { ArchivePackage } from '../package/archive-package';
 import { hashStream } from '../util/stream-utils';
@@ -62,6 +63,22 @@ export class MediaFileService {
    */
   getFile(archive: ArchivePackage, id: string) {
     return archive.get(MediaFile, id);
+  }
+
+  /**
+   * Get the media identified by a list of ids.
+   *
+   * @param archive Archive the file is stored in
+   * @param ids Ids of the files
+   * @returns Metadata about the file and its renditions
+   */
+  getMedia(archive: ArchivePackage, ids: string[]) {
+    return archive.useDb(async (db) => {
+      const files = await db.find(MediaFile, { id: { $in: ids } });
+      return Promise.all(
+        files.map((file) => this.entityToValue(archive, file))
+      );
+    });
   }
 
   /**
@@ -204,5 +221,19 @@ export class MediaFileService {
    */
   private getRenditionSlug(mediaFile: MediaFile, ext: string) {
     return mediaFile.id + '.rendition' + '.' + ext;
+  }
+
+  private async entityToValue(
+    archive: ArchivePackage,
+    entity: MediaFile
+  ): Promise<Media> {
+    const stats = await stat(this.getMediaPath(archive, entity));
+
+    return {
+      ...entity,
+      type: 'image',
+      rendition: this.getRenditionUri(archive, entity),
+      fileSize: stats.size
+    };
   }
 }
