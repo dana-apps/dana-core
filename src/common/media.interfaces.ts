@@ -7,7 +7,8 @@ export const ImageMedia = z.object({
   id: z.string(),
   type: z.literal('image'),
   rendition: z.string(),
-  mimeType: z.string()
+  mimeType: z.string(),
+  fileSize: z.number()
 });
 
 /**

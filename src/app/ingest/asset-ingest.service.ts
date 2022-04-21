@@ -134,23 +134,18 @@ export class AssetIngestService extends EventEmitter<Events> {
 
     return {
       ...res,
-      items: res.items.map((entity) => ({
-        id: entity.id,
-        metadata: entity.metadata,
-        phase: entity.phase,
-        validationErrors: entity.validationErrors,
-        media: compact(
-          entity.files.getItems().map(
-            ({ media }) =>
-              media && {
-                id: media.id,
-                mimeType: media.mimeType,
-                rendition: this.mediaService.getRenditionUri(archive, media),
-                type: 'image'
-              }
+      items: await Promise.all(
+        res.items.map(async (entity) => ({
+          id: entity.id,
+          metadata: entity.metadata,
+          phase: entity.phase,
+          validationErrors: entity.validationErrors,
+          media: await this.mediaService.getMedia(
+            archive,
+            entity.files.getIdentifiers()
           )
-        )
-      }))
+        }))
+      )
     };
   }
 
