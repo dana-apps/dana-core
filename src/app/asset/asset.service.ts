@@ -192,7 +192,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
         }
       );
 
-      return {
+      const result = {
         ...entities,
         items: await Promise.all(
           entities.items.map(async (entity) =>
@@ -200,6 +200,8 @@ export class AssetService extends EventEmitter<AssetEvents> {
           )
         )
       };
+
+      return result;
     });
   }
 

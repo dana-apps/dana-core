@@ -94,18 +94,10 @@ export abstract class SchemaPropertyValue {
   /**
    * Override to provide a display value for the
    */
-  async convertToMetadataItems(
+  abstract convertToMetadataItems(
     context: AssetContext,
     value: unknown[]
-  ): Promise<AssetMetadataItem> {
-    return {
-      rawValue: value,
-      presentationValue: value.map((rawValue) => ({
-        rawValue,
-        label: String(rawValue)
-      }))
-    };
-  }
+  ): Promise<AssetMetadataItem>;
 
   /**
    * Return a zod validator object for this schema property.
@@ -183,6 +175,19 @@ export class FreeTextSchemaPropertyValue
 
   toJson() {
     return this;
+  }
+
+  async convertToMetadataItems(
+    context: AssetContext,
+    value: unknown[]
+  ): Promise<AssetMetadataItem<unknown>> {
+    return {
+      rawValue: value,
+      presentationValue: value.map((rawValue) => ({
+        rawValue,
+        label: String(rawValue)
+      }))
+    };
   }
 }
 
