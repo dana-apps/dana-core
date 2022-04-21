@@ -124,7 +124,11 @@ function useCompleteImport(sessionId: string) {
       return;
     }
 
-    navigate(`/collection`);
+    const collection = await rpc(GetRootAssetsCollection, {});
+
+    navigate(
+      collection.status === 'ok' ? `/collection/${collection.value.id}` : '/'
+    );
 
     return;
   }, [navigate, rpc, sessionId]);
