@@ -1,13 +1,7 @@
 import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
 import { platform } from 'os';
 import path from 'path';
-import {
-  autoUpdater,
-  AppUpdater,
-  MacUpdater,
-  NsisUpdater,
-  AppImageUpdater
-} from 'electron-updater';
+import { autoUpdater } from 'electron-updater';
 
 import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
@@ -22,6 +16,7 @@ import { initIngest } from '../ingest/ingest.init';
 import { initMedia } from '../media/media.init';
 import { ArchivePackage } from '../package/archive-package';
 import { Logger } from 'tslog';
+import { stat } from 'fs/promises';
 
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
@@ -118,10 +113,19 @@ async function main() {
 
     // Open any autoloaded archives
     const settings = await getUserConfig();
+
     for (const [location, opts] of Object.entries(settings.autoload)) {
+      try {
+        await stat(location);
+      } catch {
+        await updateUserConfig((prev) => {
+          delete prev.autoload[location];
+        });
+      }
+
       if (opts.autoload) {
+        await app.archiveService.openArchive(location);
         hasAutoloaded = true;
-        app.archiveService.openArchive(location);
       }
     }
 
@@ -142,7 +146,8 @@ async function main() {
     const window = await createFrontendWindow({
       title: 'New Archive',
       config: {},
-      router: app.router
+      router: app.router,
+      size: 'small'
     });
 
     window.on('close', () => {

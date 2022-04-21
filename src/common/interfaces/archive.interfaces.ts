@@ -15,7 +15,7 @@ export enum ArchiveOpeningError {
  */
 export const OpenArchive = RpcInterface({
   id: 'create-archive',
-  request: z.object({}),
+  request: z.object({ create: z.boolean().optional() }),
   response: z.object({}),
   error: z.nativeEnum(ArchiveOpeningError)
 });

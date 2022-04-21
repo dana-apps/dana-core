@@ -31,6 +31,8 @@ interface CreateFrontendWindow {
   /** Config object passed to frontend */
   config: Omit<FrontendConfig, 'platform' | 'windowId'>;
 
+  size?: 'small' | 'regular';
+
   /** Resolve `media:` url schemes to an absolute path */
   resolveMedia?: MediaResolveFn;
 
@@ -44,6 +46,7 @@ type MediaResolveFn = (uri: string) => string;
 export async function createFrontendWindow({
   title,
   config,
+  size = 'regular',
   resolveMedia,
   router
 }: CreateFrontendWindow) {
@@ -54,14 +57,32 @@ export async function createFrontendWindow({
     title
   };
 
+  const getSize = () => {
+    if (size === 'regular') {
+      return {
+        height: 950,
+        width: 1100,
+        minWidth: 280,
+        minHeight: 155
+      };
+    }
+
+    if (size === 'small') {
+      return {
+        height: 300,
+        width: 300,
+        minWidth: 300,
+        minHeight: 300,
+        resizable: false,
+        minimizable: false,
+        maximizable: false
+      };
+    }
+  };
+
   const partition = initUrlSchemePartition(resolveMedia);
   const frontendWindow = new BrowserWindow({
     title,
-
-    height: 950,
-    width: 1100,
-    minWidth: 280,
-    minHeight: 155,
 
     // Prevent flash of empty content by waiting until we've rendered before showing
     paintWhenInitiallyHidden: true,
@@ -86,7 +107,9 @@ export async function createFrontendWindow({
       webSecurity: true,
       partition,
       preload: getResourcePath('preload/browser-preload.js')
-    }
+    },
+
+    ...getSize()
   });
 
   const emitState = (state: MaximizationState) => {
