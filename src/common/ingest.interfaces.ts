@@ -120,6 +120,25 @@ export const ListIngestSession = RpcInterface({
 });
 
 /**
+ * List all ingest sessions in an archive.
+ **/
+export const UpdateIngestedMetadata = RpcInterface({
+  id: 'ingest/edit-metadata',
+  request: z.object({
+    assetId: z.string(),
+    sessionId: z.string(),
+    metadata: z.record(z.unknown())
+  }),
+  response: z.object({})
+});
+export type UpdateIngestedMetadataRequest = RequestType<
+  typeof UpdateIngestedMetadata
+>;
+export type UpdateIngestedMetadataResponse = ResponseType<
+  typeof UpdateIngestedMetadata
+>;
+
+/**
  * Complete the ingest session.
  *
  * Moves the assets in the ingest session `sessionId` into the main database and deletes the session.

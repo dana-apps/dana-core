@@ -324,6 +324,7 @@ export const PrimaryDetailLayout: FC<
   return (
     <ReflexContainer
       sx={{
+        minHeight: 0,
         '&.reflex-container.vertical > .reflex-splitter': {
           borderRight: '1px solid var(--theme-ui-colors-border)',
           borderLeft: 'none',
@@ -348,7 +349,11 @@ export const PrimaryDetailLayout: FC<
 
       {detail && (
         <ReflexElement
-          sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative'
+          }}
           flex={0.25}
           minSize={320}
         >

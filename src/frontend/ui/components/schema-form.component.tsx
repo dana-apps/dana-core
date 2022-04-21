@@ -146,7 +146,11 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
   }
 
   if (referencedValue?.status !== 'ok' || !titleKey) {
-    return null;
+    return (
+      <Box {...props}>
+        <Label>{property.label}</Label>
+      </Box>
+    );
   }
 
   return (

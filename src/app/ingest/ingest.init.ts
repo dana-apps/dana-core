@@ -6,10 +6,11 @@ import {
   ListIngestAssets,
   ListIngestSession,
   StartIngest,
-  StartIngestError
+  StartIngestError,
+  UpdateIngestedMetadata
 } from '../../common/ingest.interfaces';
 import { ChangeEvent } from '../../common/resource';
-import { error, ok, okIfExists } from '../../common/util/error';
+import { error, FetchError, ok, okIfExists } from '../../common/util/error';
 import { AssetService } from '../asset/asset.service';
 import { CollectionService } from '../asset/collection.service';
 import type { ElectronRouter } from '../electron/router';
@@ -64,6 +65,25 @@ export async function initIngest(
     );
   });
 
+  // Notify the frontend about state changes
+  assetIngest.on('edit', ({ archive, session, assetIds }) => {
+    router.emit(
+      ChangeEvent,
+      { type: ListIngestAssets.id, ids: assetIds },
+      archive.id
+    );
+    router.emit(
+      ChangeEvent,
+      { type: ListIngestSession.id, ids: [] },
+      archive.id
+    );
+    router.emit(
+      ChangeEvent,
+      { type: GetIngestSession.id, ids: session ? [session.id] : [] },
+      archive.id
+    );
+  });
+
   router.bindArchiveRpc(StartIngest, async (archive, { basePath }) => {
     if (!basePath) {
       // Electron's types are wrong – it's fine for this to be undefined
@@ -97,6 +117,18 @@ export async function initIngest(
     const session = assetIngest.getSession(archive, id);
     return okIfExists(session);
   });
+
+  router.bindArchiveRpc(
+    UpdateIngestedMetadata,
+    async (archive, { assetId, sessionId, metadata }) => {
+      const session = assetIngest.getSession(archive, sessionId);
+      if (!session) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      return session.updateImportedAsset(assetId, metadata);
+    }
+  );
 
   router.bindArchiveRpc(CommitIngestSession, async (archive, { sessionId }) => {
     await assetIngest.commitSession(archive, sessionId);

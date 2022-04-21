@@ -2,7 +2,16 @@
 
 import { FC, useCallback, useMemo, useState } from 'react';
 import { CardList, Collection as CollectionIcon } from 'react-bootstrap-icons';
-import { Box, BoxProps, Button, Flex, Grid, Image } from 'theme-ui';
+import {
+  Box,
+  BoxProps,
+  Button,
+  Flex,
+  Grid,
+  Image,
+  Label,
+  Text
+} from 'theme-ui';
 import {
   Asset,
   Collection,
@@ -12,6 +21,7 @@ import {
   SingleValidationError,
   UpdateAssetMetadata
 } from '../../../common/asset.interfaces';
+import { UpdateIngestedMetadata } from '../../../common/ingest.interfaces';
 import { FetchError } from '../../../common/util/error';
 import { Dict } from '../../../common/util/types';
 import { useRPC } from '../../ipc/ipc.hooks';
@@ -30,9 +40,13 @@ interface MediaDetailProps extends BoxProps {
   initialTab?: string;
 
   /** Action to be performed on submit */
-  action?: 'create' | 'update';
+  action?: 'create' | 'update' | 'import';
+
+  errors?: SingleValidationError;
 
   onCancelCreate?: () => void;
+
+  sessionId?: string;
 
   onCreate?: (asset: Asset) => void;
 }
@@ -46,6 +60,8 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   action = 'update',
   initialTab,
   onCancelCreate,
+  sessionId,
+  errors: additionalErrors,
   onCreate,
   ...props
 }) => {
@@ -109,9 +125,35 @@ export const AssetDetail: FC<MediaDetailProps> = ({
       setEditErrors(res.error);
     } else {
       setEdits(undefined);
-      onCreate?.(res.value);
+      setEditErrors(undefined);
     }
-  }, [collection.id, displayError, metadata, onCreate, rpc]);
+  }, [collection.id, displayError, metadata, rpc]);
+
+  /** Update the metadata for an imported asset */
+  const updateIngestedAsset = useCallback(async () => {
+    if (!sessionId) {
+      return;
+    }
+
+    const res = await rpc(UpdateIngestedMetadata, {
+      assetId: asset.id,
+      metadata,
+      sessionId
+    });
+
+    if (res.status === 'error') {
+      if (res.error === FetchError.DOES_NOT_EXIST) {
+        return displayError(
+          `Something unexpected happened. We weren't able to update this record.`
+        );
+      }
+
+      setEditErrors(res.error);
+    } else {
+      setEdits(undefined);
+      setEditErrors(undefined);
+    }
+  }, [asset.id, displayError, metadata, rpc, sessionId]);
 
   const handleCancelEditing = useCallback(() => {
     setEdits(undefined);
@@ -122,13 +164,24 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     }
   }, [action, onCancelCreate]);
 
-  const handleSave = action === 'create' ? createAsset : updateAsset;
+  const handleSave =
+    action === 'create'
+      ? createAsset
+      : action === 'import'
+      ? updateIngestedAsset
+      : updateAsset;
+
+  const assetErrors = (editErrors || additionalErrors) && {
+    ...additionalErrors,
+    ...editErrors
+  };
 
   return (
     <Flex
       sx={{
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minHeight: 0
       }}
       {...props}
     >
@@ -168,6 +221,13 @@ export const AssetDetail: FC<MediaDetailProps> = ({
                 p: 3
               }}
             >
+              {action === 'update' && (
+                <Box>
+                  <Label>Record ID</Label>
+                  <Text sx={{ userSelect: 'all' }}>{asset.id}</Text>
+                </Box>
+              )}
+
               {collection.schema.map((property) => (
                 <Box key={property.id}>
                   <SchemaField
@@ -179,8 +239,8 @@ export const AssetDetail: FC<MediaDetailProps> = ({
                     }
                   />
 
-                  {editErrors?.[property.id] && (
-                    <ValidationError errors={editErrors?.[property.id]} />
+                  {assetErrors?.[property.id] && (
+                    <ValidationError errors={assetErrors?.[property.id]} />
                   )}
                 </Box>
               ))}

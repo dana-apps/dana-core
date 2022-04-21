@@ -288,6 +288,7 @@ export class AssetIngestService extends EventEmitter<Events> {
 interface Events {
   status: [ImportStateChanged];
   importRunCompleted: [AssetIngestOperation];
+  edit: [ImportStateChanged];
 }
 
 /**

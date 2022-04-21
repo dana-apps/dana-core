@@ -4,7 +4,7 @@ import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
 import { Logger } from 'tslog';
-import { compact } from 'lodash';
+import { compact, keyBy } from 'lodash';
 import { ObjectQuery } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
 
@@ -25,6 +25,7 @@ import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { CollectionService } from '../asset/collection.service';
 import { SchemaProperty } from '../../common/asset.interfaces';
+import { error, FetchError, ok } from '../../common/util/error';
 
 /**
  * Encapsulates an import operation.
@@ -154,6 +155,8 @@ export class AssetIngestOperation implements IngestSession {
       if (this.session.phase === IngestPhase.READ_FILES) {
         await this.readMediaFiles();
       }
+
+      await this.revalidate();
     } finally {
       this._active = false;
       this.ingestService.emit('importRunCompleted', this);
@@ -335,6 +338,30 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
   }
 
+  private async revalidate() {
+    await this.archive.useDb(async (db) => {
+      const assets = await db.find(AssetImportEntity, {});
+      const collection = await this.collectionService.getRootAssetCollection(
+        this.archive
+      );
+      const validation =
+        await this.collectionService.validateItemsForCollection(
+          this.archive,
+          collection.id,
+          assets
+        );
+      const assetsById = keyBy(assets, 'id');
+
+      for (const a of validation) {
+        assetsById[a.id].validationErrors = a.success ? undefined : a.errors;
+      }
+
+      this.session.valid = validation.every((v) => v.success);
+      db.persist(assets);
+      db.persist(this.session);
+    });
+  }
+
   /**
    * Return a function that transforms imported metadata keys from their the human-readable label to the metadata
    * property id.
@@ -471,6 +498,46 @@ export class AssetIngestOperation implements IngestSession {
       .createQueryBuilder(FileImport)
       .join('asset', 'asset')
       .where({ asset: { session_id: this.session.id }, ...where });
+  }
+
+  async updateImportedAsset(assetId: string, metadata: Dict) {
+    const res = await this.archive.useDb(async (db) => {
+      const asset = await db.findOne(AssetImportEntity, assetId);
+      if (!asset) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      const collection = await this.collectionService.getRootAssetCollection(
+        this.archive
+      );
+
+      asset.metadata = metadata;
+
+      const [validationResult] =
+        await this.collectionService.validateItemsForCollection(
+          this.archive,
+          collection.id,
+          [{ id: asset.id, metadata: metadata ?? asset?.metadata }]
+        );
+
+      if (!validationResult.success) {
+        asset.validationErrors = validationResult.errors;
+      } else {
+        asset.validationErrors = undefined;
+      }
+
+      db.persist(asset);
+      await this.revalidate();
+      return ok();
+    });
+
+    this.ingestService.emit('edit', {
+      archive: this.archive,
+      assetIds: [assetId],
+      session: this
+    });
+
+    return res;
   }
 
   /**

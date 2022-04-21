@@ -67,6 +67,9 @@ export const ArchiveIngestScreen: FC = () => {
         asset={selectedAsset}
         sx={{ width: '100%', height: '100%' }}
         collection={collection.value}
+        errors={selectedAsset.validationErrors ?? undefined}
+        sessionId={sessionId}
+        action="import"
       />
     ) : undefined;
 
