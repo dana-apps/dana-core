@@ -66,16 +66,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
       db.persist(asset);
 
-      return ok<Asset>({
-        id: asset.id,
-        metadata: asset.metadata,
-        media: media.map((m) => ({
-          id: m.id,
-          mimeType: m.mimeType,
-          rendition: this.mediaService.getRenditionUri(archive, m),
-          type: 'image'
-        }))
-      });
+      return ok<Asset>(await this.entityToAsset(archive, asset));
     });
 
     if (res.status === 'ok') {
@@ -128,7 +119,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
       }
 
       db.persist(asset);
-      return ok(this.entityToAsset(archive, asset));
+      return ok(await this.entityToAsset(archive, asset));
     });
 
     if (res.status === 'ok') {
@@ -258,15 +249,16 @@ export class AssetService extends EventEmitter<AssetEvents> {
       );
   }
 
-  private entityToAsset(archive: ArchivePackage, entity: AssetEntity): Asset {
+  private async entityToAsset(
+    archive: ArchivePackage,
+    entity: AssetEntity
+  ): Promise<Asset> {
     return {
       id: entity.id,
-      media: Array.from(entity.mediaFiles).map((file) => ({
-        id: file.id,
-        type: 'image',
-        rendition: this.mediaService.getRenditionUri(archive, file),
-        mimeType: file.mimeType
-      })),
+      media: await this.mediaService.getMedia(
+        archive,
+        entity.mediaFiles.getIdentifiers()
+      ),
       metadata: entity.metadata
     };
   }

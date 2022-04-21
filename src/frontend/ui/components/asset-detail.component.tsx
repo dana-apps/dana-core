@@ -2,7 +2,7 @@
 
 import { FC, useCallback, useMemo, useState } from 'react';
 import { CardList, Collection as CollectionIcon } from 'react-bootstrap-icons';
-import { Box, BoxProps, Button, Flex, Grid, Image } from 'theme-ui';
+import { Box, BoxProps, Button, Flex, Grid, Image, Text } from 'theme-ui';
 import {
   Asset,
   Collection,
@@ -148,11 +148,16 @@ export const AssetDetail: FC<MediaDetailProps> = ({
               }}
             >
               {asset.media.map((item) => (
-                <Image
-                  sx={{ '&:not(:first-of-type)': { mt: 3 } }}
-                  key={item.id}
-                  src={item.rendition}
-                />
+                <Box sx={{ '&:not(:first-of-type)': { mt: 3 } }}>
+                  <Image key={item.id} src={item.rendition} />
+                  <Text sx={{ fontSize: 1 }}>
+                    <MimeType mime={item.mimeType} />
+
+                    <Text sx={{ float: 'right' }}>
+                      {megabytes(item.fileSize)}MB
+                    </Text>
+                  </Text>{' '}
+                </Box>
               ))}
             </Flex>
           </IconTab>
@@ -217,5 +222,21 @@ export const AssetDetail: FC<MediaDetailProps> = ({
         )}
       </Flex>
     </Flex>
+  );
+};
+
+const megabytes = (bytes: number, precision = 2) => {
+  const mb = bytes / 1024 / 1024;
+  const factor = 10 ** precision;
+
+  return Math.floor(mb * factor) / factor;
+};
+
+const MimeType: FC<{ mime: string }> = ({ mime }) => {
+  const [type, format] = mime.split('/');
+  return (
+    <>
+      {format.toUpperCase()} {type}
+    </>
   );
 };
