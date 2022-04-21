@@ -262,7 +262,8 @@ export class AssetIngestService extends EventEmitter<Events> {
       state,
       this,
       this.mediaService,
-      this.collectionService
+      this.collectionService,
+      this.assetService
     );
 
     activeSessions.sessions.set(session.id, session);
