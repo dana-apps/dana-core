@@ -79,6 +79,11 @@ export async function initIngest(
     );
     router.emit(
       ChangeEvent,
+      { type: GetIngestSession.id, ids: [] },
+      archive.id
+    );
+    router.emit(
+      ChangeEvent,
       { type: GetIngestSession.id, ids: session ? [session.id] : [] },
       archive.id
     );

@@ -236,6 +236,7 @@ export function useList<T extends Resource, Q, Err>(
           return;
         }
         setActive(true);
+        console.log('refetch', visibleRange.current, firstLoad.current);
 
         try {
           await fetchRange(visibleRange.current, { clearCache: true });
@@ -263,6 +264,7 @@ export function useList<T extends Resource, Q, Err>(
     // This means pushing the responsibility for firing a change event onto the backend if there are queries
     // that may be invalidated by edits to other types of objects in the database.
     if (type === resource.id) {
+      console.log('change', type);
       refetchAll();
     }
   });
