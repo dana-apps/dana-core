@@ -28,6 +28,7 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
         flexDirection: 'column',
         width: '100vw',
         height: '100vh',
+        border: '1px solid --theme-ui-colors-border',
 
         userSelect: 'none',
         WebkitAppRegion: 'drag',
