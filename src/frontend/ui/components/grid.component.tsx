@@ -401,8 +401,11 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
                       e.clientX;
                   }}
                   onDrag={(e) => {
-                    if (e.clientX >= 0) {
-                      onResize(i, dragWidth.current + e.clientX);
+                    const newSize = dragWidth.current + e.clientX;
+
+                    // Why does the final dragend report a clientwidth of 0?
+                    if (e.clientX > 0 && newSize >= 36) {
+                      onResize(i, newSize);
                     }
                   }}
                 ></div>
