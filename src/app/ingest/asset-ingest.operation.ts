@@ -252,7 +252,7 @@ export class AssetIngestOperation implements IngestSession {
   async readMetadataSheet(sheetPath: string) {
     this.log.info('Reading metadata sheet', sheetPath);
 
-    const workbook = xlsx.readFile(sheetPath);
+    const workbook = xlsx.readFile(sheetPath, { codepage: 65001 });
     const relativePath = path.relative(this.metadataPath, sheetPath);
 
     for (const [sheetName, sheet] of Object.entries(workbook.Sheets)) {
