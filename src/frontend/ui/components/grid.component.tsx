@@ -309,7 +309,7 @@ function CellWrapper<T extends Resource>({
   const { current: selection, setSelection } = SelectionContext.useContainer();
   const colData = cursor.get(rowIndex);
   const column = columns[columnIndex];
-  const plainBg = rowIndex % 2 === 0 ? 'background' : 'foreground';
+  const plainBg = rowIndex % 2 === 1 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
 
   const sx: ThemeUIStyleObject = {
