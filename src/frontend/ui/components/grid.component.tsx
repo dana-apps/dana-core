@@ -72,8 +72,6 @@ export function DataGrid<T extends Resource>({
       return;
     }
 
-    console.log('set column sizes');
-
     setColumnSizes((prev) => {
       if (prev) {
         return prev;
@@ -187,6 +185,13 @@ export function DataGrid<T extends Resource>({
       <AutoSizer
         onResize={(size) => {
           viewSize.current = size;
+
+          // Resize the trailing grid item
+          if (columns.length === 1) {
+            gridRef?.current?.resetAfterColumnIndex(0);
+          } else {
+            gridRef?.current?.resetAfterColumnIndex(columns.length);
+          }
         }}
       >
         {({ height, width }) => {
@@ -226,9 +231,22 @@ export function DataGrid<T extends Resource>({
                     }}
                     width={width}
                     height={height}
-                    columnWidth={(i) => columnSizes[i]}
+                    columnWidth={(i) => {
+                      if (columns.length === 1) {
+                        return width;
+                      }
+
+                      if (i < columns.length) {
+                        return columnSizes[i];
+                      }
+
+                      const lastOffset = last(columnOffsets);
+                      return lastOffset ? width - lastOffset : 0;
+                    }}
                     rowCount={data.totalCount}
-                    columnCount={columns.length}
+                    columnCount={
+                      columns.length > 1 ? columns.length + 1 : columns.length
+                    }
                     rowHeight={() => rowHeight}
                     itemData={dataVal}
                     outerRef={outerListRef}
@@ -374,9 +392,12 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
                   textOverflow: 'ellipsis',
                   top: '0',
                   height: rowHeight,
-                  width: columnSizes[i],
+                  width: columns.length === 1 ? '100%' : columnSizes[i],
                   left: columnOffsets[i],
-                  borderRight: '1px solid var(--theme-ui-colors-border)',
+                  borderRight:
+                    columns.length === 1
+                      ? 'none'
+                      : '1px solid var(--theme-ui-colors-border)',
                   borderBottom: '1px solid var(--theme-ui-colors-border)',
                   textAlign: 'center'
                 }}
