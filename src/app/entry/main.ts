@@ -1,7 +1,13 @@
 import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
 import { platform } from 'os';
 import path from 'path';
-import { autoUpdater } from 'electron-updater';
+import {
+  autoUpdater,
+  AppUpdater,
+  MacUpdater,
+  NsisUpdater,
+  AppImageUpdater
+} from 'electron-updater';
 
 import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
@@ -15,10 +21,12 @@ import { createFrontendWindow, initWindows } from '../electron/window';
 import { initIngest } from '../ingest/ingest.init';
 import { initMedia } from '../media/media.init';
 import { ArchivePackage } from '../package/archive-package';
+import { Logger } from 'tslog';
 
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
   const app = await initApp();
+  const log = new Logger({ name: 'App' });
 
   await initUpdates();
   await initWindows(app.router);
@@ -182,7 +190,32 @@ async function main() {
   }
 
   async function initUpdates() {
-    await autoUpdater.checkForUpdatesAndNotify();
+    const Updater = (() => {
+      if (platform() === 'darwin') {
+        return MacUpdater;
+      }
+      if (platform() === 'win32') {
+        return NsisUpdater;
+      }
+      if (platform() === 'linux') {
+        return AppImageUpdater;
+      }
+    })();
+
+    if (!Updater) {
+      return;
+    }
+
+    const updater = new Updater({
+      provider: 'github',
+      releaseType: 'prerelease'
+    });
+
+    try {
+      await updater.checkForUpdatesAndNotify();
+    } catch (error) {
+      log.error('Auto-update failed with error', error);
+    }
   }
 }
 
