@@ -209,7 +209,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async searchAssets(
     archive: ArchivePackage,
     collectionId: string,
-    query: string,
+    { query, exact }: { query: string; exact?: boolean },
     range?: PageRange
   ): Promise<Result<ResourceList<Asset>>> {
     return archive.useDb(async () => {
@@ -228,9 +228,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
         {
           collection: collectionId,
           metadata: {
-            [title.id]: {
-              $like: `${query}%`
-            }
+            [title.id]: exact
+              ? query
+              : {
+                  $like: `${query}%`
+                }
           }
         },
         {

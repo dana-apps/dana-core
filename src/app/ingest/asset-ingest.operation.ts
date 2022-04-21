@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
-import { z } from 'zod';
+import { record, z } from 'zod';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
 import { Logger } from 'tslog';
@@ -24,7 +24,11 @@ import {
 import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { CollectionService } from '../asset/collection.service';
-import { SchemaProperty } from '../../common/asset.interfaces';
+import {
+  SchemaProperty,
+  SchemaPropertyType
+} from '../../common/asset.interfaces';
+import { AssetService } from '../asset/asset.service';
 
 /**
  * Encapsulates an import operation.
@@ -59,7 +63,8 @@ export class AssetIngestOperation implements IngestSession {
     readonly session: ImportSessionEntity,
     private ingestService: AssetIngestService,
     private mediaService: MediaFileService,
-    private collectionService: CollectionService
+    private collectionService: CollectionService,
+    private assetService: AssetService
   ) {}
 
   /**
@@ -279,7 +284,7 @@ export class AssetIngestOperation implements IngestSession {
       this.archive
     );
     const convertToSchema = this.getMetadataConverter(collection.schema);
-    metadata = convertToSchema(metadata);
+    metadata = await convertToSchema(metadata);
 
     await this.archive.useDbTransaction(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
@@ -335,6 +340,106 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
   }
 
+  async convertTypeForImport(property: SchemaProperty, value: unknown) {
+    if (value === null || value === undefined || value === '') {
+      return undefined;
+    }
+
+    if (property.type === SchemaPropertyType.FREE_TEXT) {
+      return String(value);
+    }
+
+    if (property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
+      const stringVal = String(value);
+      if (stringVal.trim() === '') {
+        return undefined;
+      }
+
+      // First, try treating as a record record id
+      const getRecord = await this.assetService.get(this.archive, stringVal);
+      if (getRecord) {
+        this.log.debug('Matched import record', value, 'to', getRecord.id);
+        return getRecord.id;
+      }
+
+      const db = await this.collectionService.getCollection(
+        this.archive,
+        property.databaseId
+      );
+      if (!db) {
+        this.log.debug(
+          'Cannot create controlled database record for',
+          value,
+          ' - unrecognized related database'
+        );
+        return value;
+      }
+
+      const titleAttr = db.schema.find(
+        (attr) => attr.type === SchemaPropertyType.FREE_TEXT
+      );
+      if (!titleAttr) {
+        this.log.debug(
+          'Cannot create controlled database record for',
+          value,
+          ' - no title property in related database'
+        );
+        return value;
+      }
+
+      const queryRecord = await this.assetService.searchAssets(
+        this.archive,
+        property.databaseId,
+        { query: stringVal, exact: true }
+      );
+
+      if (queryRecord.status === 'ok') {
+        if (queryRecord.value.total >= 1) {
+          const recordVal = queryRecord.value.items[0];
+          this.log.debug('Matched import record', value, 'to', recordVal.id);
+
+          return recordVal.id;
+        }
+      }
+
+      const canCreate = db.schema.every(
+        (property) => !property.required || property.id === titleAttr.id
+      );
+      if (!canCreate) {
+        this.log.debug(
+          'Cannot create controlled database record for',
+          value,
+          ' - required properies in target database'
+        );
+        return value;
+      }
+
+      const created = await this.assetService.createAsset(
+        this.archive,
+        property.databaseId,
+        { metadata: { [titleAttr.id]: stringVal } }
+      );
+
+      if (created.status !== 'ok') {
+        this.log.debug(
+          'Cannot create controlled database record for',
+          value,
+          ' - create asset failed with error',
+          created.error
+        );
+        return value;
+      }
+
+      this.log.debug(
+        'Created related value for reference',
+        value,
+        '-',
+        created.value.id
+      );
+      return created.value.id;
+    }
+  }
+
   /**
    * Return a function that transforms imported metadata keys from their the human-readable label to the metadata
    * property id.
@@ -347,15 +452,23 @@ export class AssetIngestOperation implements IngestSession {
    */
   getMetadataConverter(schema: SchemaProperty[]) {
     const byLabel = Object.fromEntries(
-      schema.map((item) => [item.label, item.id])
+      schema.map((property) => [property.label.toLowerCase(), property])
     );
 
-    return (metadata: Dict) => {
-      const entries = Object.entries(metadata).flatMap(([label, val]) => {
-        const id = byLabel[label];
-        return id ? [[id, val]] : [];
-      });
-      return Object.fromEntries(entries);
+    return async (metadata: Dict) => {
+      const entries = await Promise.all(
+        Object.entries(metadata).map(async ([label, val]) => {
+          const property = byLabel[label.toLowerCase()];
+          if (!property) {
+            return undefined;
+          }
+
+          const preparedValue = await this.convertTypeForImport(property, val);
+          return [property.id, preparedValue];
+        })
+      );
+
+      return Object.fromEntries(compact(entries));
     };
   }
 
