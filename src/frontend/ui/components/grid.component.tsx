@@ -1,21 +1,34 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, KeyboardEvent, useCallback, useMemo, useRef } from 'react';
+import {
+  createContext,
+  FC,
+  forwardRef,
+  HTMLAttributes,
+  KeyboardEvent,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import AutoSizer, { Size } from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
 import {
   GridChildComponentProps,
   VariableSizeGrid as Grid
 } from 'react-window';
-import { Box, BoxProps, useThemeUI } from 'theme-ui';
+import { Box, BoxProps, ThemeUIStyleObject, useThemeUI } from 'theme-ui';
 
 import { Resource } from '../../../common/resource';
 import { iterateListCursor, ListCursor } from '../../ipc/ipc.hooks';
-import { compact, last, max } from 'lodash';
+import { compact, last, max, noop } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
 import { take } from 'streaming-iterables';
+import produce from 'immer';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -52,32 +65,47 @@ export function DataGrid<T extends Resource>({
   );
 
   // Calculate widths for each of the columns based on an initial sample of the data
-  const columnWidths = useMemo(() => {
+  const [columnSizes, setColumnSizes] = useState<number[]>();
+
+  useEffect(() => {
     if (!data) {
       return;
     }
 
-    const dataSample = compact(Array.from(take(25, iterateListCursor(data))));
+    console.log('set column sizes');
 
-    return columns.map((col) => {
-      const { width } = col.cell;
-      if (typeof width === 'undefined') {
-        return 100;
+    setColumnSizes((prev) => {
+      if (prev) {
+        return prev;
       }
 
-      if (typeof width === 'function') {
-        return (
-          max(dataSample.map((x) => width(col.getData(x), fontSize))) ?? 100
-        );
-      }
+      const dataSample = compact(Array.from(take(25, iterateListCursor(data))));
 
-      return width;
+      return columns.map((col) => {
+        const { width } = col.cell;
+        if (typeof width === 'undefined') {
+          return 100;
+        }
+
+        if (typeof width === 'function') {
+          return (
+            max(dataSample.map((x) => width(col.getData(x), fontSize))) ?? 100
+          );
+        }
+
+        return width;
+      });
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!data, columns, fontSize]);
 
-  const headerRef = useRef<HTMLDivElement | null>(null);
+  const columnOffsets = useMemo(
+    () =>
+      columnSizes?.reduce((prev, x) => [...prev, (last(prev) ?? 0) + x], [0]),
+    [columnSizes]
+  );
+
   const loaderRef = useRef<Loader | null>(null);
   const innerListRef = useRef<HTMLElement | null>();
   const outerListRef = useRef<HTMLElement | null>();
@@ -143,6 +171,12 @@ export function DataGrid<T extends Resource>({
     [data, selection]
   );
 
+  useEffect(() => {
+    if (columnSizes) {
+      gridRef.current?.resetAfterColumnIndex(0, true);
+    }
+  }, [columnSizes]);
+
   return (
     <Box
       sx={{ fontSize: 0, position: 'relative', minHeight: 0, outline: 'none' }}
@@ -156,116 +190,75 @@ export function DataGrid<T extends Resource>({
         }}
       >
         {({ height, width }) => {
-          if (!columnWidths) {
+          if (!columnSizes) {
             return null;
           }
 
-          const columnOffsets = columnWidths.reduce(
-            (prev: number[], x) => [...prev, (last(prev) ?? 0) + x],
-            []
-          );
-
-          const endPadding = width - (last(columnOffsets) ?? 0);
-
           return (
-            <>
-              <div
-                ref={headerRef}
-                sx={{
-                  position: 'absolute',
-                  willChange: 'transform',
-                  left: 0,
-                  top: 0,
-                  width,
-                  height: rowHeight,
-                  borderBottom: '1px solid var(--theme-ui-colors-border)',
-                  zIndex: 2,
-                  fontWeight: 700
-                }}
-              >
-                {columns.map((col, i) => (
-                  <div
-                    key={col.id}
-                    sx={{
-                      width:
-                        columnWidths.length === 1 ? width : columnWidths[i],
-                      position: 'absolute',
-                      borderRight: '1px solid var(--theme-ui-colors-border)',
-                      left: columnOffsets[i - 1] ?? 0,
-                      textAlign: 'center',
-                      top: rowHeight / 2,
-                      transform: 'translateY(-50%)'
+            <Loader
+              ref={loaderRef}
+              isItemLoaded={data.isLoaded}
+              loadMoreItems={data.fetchMore}
+              itemCount={data.totalCount}
+            >
+              {({ onItemsRendered, ref }) => (
+                <GridContext.Provider
+                  value={{
+                    columns: columns as GridColumn<Resource>[],
+                    rowHeight,
+                    columnOffsets,
+                    columnSizes,
+                    onResize: (i, val) => {
+                      setColumnSizes(
+                        produce((draft) => {
+                          if (draft) {
+                            draft[i] = val;
+                          }
+                        })
+                      );
+                    }
+                  }}
+                >
+                  <Grid<CellData<T>>
+                    ref={(grid) => {
+                      ref(grid);
+                      gridRef.current = grid;
+                    }}
+                    width={width}
+                    height={height}
+                    columnWidth={(i) => columnSizes[i]}
+                    rowCount={data.totalCount}
+                    columnCount={columns.length}
+                    rowHeight={() => rowHeight}
+                    itemData={dataVal}
+                    outerRef={outerListRef}
+                    innerRef={innerListRef}
+                    innerElementType={GridWrapper}
+                    onItemsRendered={(props) => {
+                      data.setVisibleRange(
+                        props.overscanRowStartIndex,
+                        props.overscanRowStopIndex
+                      );
+
+                      visibleRange.current = {
+                        offset: props.visibleRowStartIndex,
+                        limit:
+                          props.visibleRowStopIndex - props.visibleRowStartIndex
+                      };
+
+                      onItemsRendered({
+                        overscanStartIndex: props.overscanRowStartIndex,
+                        overscanStopIndex: props.overscanRowStopIndex,
+                        visibleStartIndex: props.visibleRowStartIndex,
+                        visibleStopIndex: props.visibleRowStopIndex
+                      });
                     }}
                   >
-                    {col.label}
-                  </div>
-                ))}
-              </div>
-
-              <Loader
-                ref={loaderRef}
-                isItemLoaded={data.isLoaded}
-                loadMoreItems={data.fetchMore}
-                itemCount={data.totalCount}
-              >
-                {({ onItemsRendered, ref }) => (
-                  <div sx={{ position: 'absolute', top: rowHeight }}>
-                    <Grid<CellData<T>>
-                      ref={(grid) => {
-                        ref(grid);
-                        gridRef.current = grid;
-                      }}
-                      height={height - rowHeight}
-                      columnWidth={(i) => {
-                        if (i >= columns.length) {
-                          return endPadding;
-                        }
-
-                        return columnWidths.length === 1
-                          ? width
-                          : columnWidths[i];
-                      }}
-                      onScroll={({ scrollLeft }) => {
-                        if (headerRef.current) {
-                          headerRef.current.style.transform = `translateX(-${scrollLeft}px)`;
-                        }
-                      }}
-                      rowCount={data.totalCount}
-                      columnCount={
-                        endPadding >= 0 ? columns.length + 1 : columns.length
-                      }
-                      rowHeight={() => rowHeight}
-                      itemData={dataVal}
-                      outerRef={outerListRef}
-                      innerRef={innerListRef}
-                      onItemsRendered={(props) => {
-                        data.setVisibleRange(
-                          props.overscanRowStartIndex,
-                          props.overscanRowStopIndex
-                        );
-
-                        visibleRange.current = {
-                          offset: props.visibleRowStartIndex,
-                          limit:
-                            props.visibleRowStopIndex -
-                            props.visibleRowStartIndex
-                        };
-
-                        onItemsRendered({
-                          overscanStartIndex: props.overscanRowStartIndex,
-                          overscanStopIndex: props.overscanRowStopIndex,
-                          visibleStartIndex: props.visibleRowStartIndex,
-                          visibleStopIndex: props.visibleRowStopIndex
-                        });
-                      }}
-                      width={width}
-                    >
-                      {CellWrapper}
-                    </Grid>
-                  </div>
-                )}
-              </Loader>
-            </>
+                    {CellWrapper}
+                  </Grid>
+                </GridContext.Provider>
+              )}
+            </Loader>
           );
         }}
       </AutoSizer>
@@ -319,13 +312,15 @@ function CellWrapper<T extends Resource>({
   const plainBg = rowIndex % 2 === 0 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
 
-  const sx = {
+  const sx: ThemeUIStyleObject = {
     bg: selected ? 'primary' : plainBg,
     color: selected ? 'primaryContrast' : undefined,
     overflow: 'hidden',
     py: 1,
     px: 2,
     height: '100%',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
     '&:not:first-of-type': {
       borderLeft: '1px solid var(--theme-ui-colors-border)'
     }
@@ -347,3 +342,99 @@ interface CellData<T extends Resource> {
   cursor: ListCursor<T>;
   columns: GridColumn<T>[];
 }
+
+const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
+  function GridWrapper({ children, style, ...props }, ref) {
+    const { columns, columnSizes, columnOffsets, rowHeight, onResize } =
+      useContext(GridContext);
+
+    const dragWidth = useRef(0);
+
+    return (
+      (columnSizes && columnOffsets && (
+        <>
+          <div
+            sx={{
+              top: 0,
+              width: '100%',
+              height: rowHeight,
+              position: 'sticky',
+              zIndex: 2,
+              fontWeight: 700,
+              bg: 'background'
+            }}
+          >
+            {columns.map((col, i) => (
+              <div
+                key={col.id}
+                sx={{
+                  position: 'absolute',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  top: '0',
+                  height: rowHeight,
+                  width: columnSizes[i],
+                  left: columnOffsets[i],
+                  borderRight: '1px solid var(--theme-ui-colors-border)',
+                  borderBottom: '1px solid var(--theme-ui-colors-border)',
+                  textAlign: 'center'
+                }}
+              >
+                {col.label}
+
+                <div
+                  sx={{
+                    right: 0,
+                    top: 0,
+                    height: '100%',
+                    width: 3,
+                    zIndex: 10,
+                    position: 'absolute',
+                    cursor: 'ew-resize',
+                    pointerEvents: 'all'
+                  }}
+                  draggable
+                  onMouseDown={(e) => {
+                    dragWidth.current =
+                      (e.currentTarget.parentElement?.clientWidth ?? 0) -
+                      e.clientX;
+                  }}
+                  onDrag={(e) => {
+                    if (e.clientX >= 0) {
+                      onResize(i, dragWidth.current + e.clientX);
+                    }
+                  }}
+                ></div>
+              </div>
+            ))}
+          </div>
+
+          <div
+            ref={ref}
+            style={{
+              ...style,
+              position: 'relative'
+            }}
+            {...props}
+          >
+            {children}
+          </div>
+        </>
+      )) ||
+      null
+    );
+  }
+);
+
+const GridContext = createContext<{
+  columns: GridColumn<Resource>[];
+  onResize: (index: number, size: number) => void;
+  columnSizes?: number[];
+  columnOffsets?: number[];
+  rowHeight: number;
+}>({
+  onResize: noop,
+  columns: [],
+  rowHeight: 0
+});
