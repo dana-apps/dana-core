@@ -22,7 +22,7 @@ const DEFAULT_FRONTEND_ENTRYPOINT = FRONTEND_BUNDLE_DIR
 
 /** Enable developer tools */
 export const SHOW_DEVTOOLS =
-  process.env['SHOW_DEVTOOLS'] || isDev ? true : false;
+  process.env['SHOW_DEVTOOLS'] || ((isDev ? true : false) && false);
 
 /** Override frontend source URL */
 export const FRONTEND_ENTRYPOINT =
