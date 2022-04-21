@@ -190,29 +190,10 @@ async function main() {
   }
 
   async function initUpdates() {
-    const Updater = (() => {
-      if (platform() === 'darwin') {
-        return MacUpdater;
-      }
-      if (platform() === 'win32') {
-        return NsisUpdater;
-      }
-      if (platform() === 'linux') {
-        return AppImageUpdater;
-      }
-    })();
-
-    if (!Updater) {
-      return;
-    }
-
-    const updater = new Updater({
-      provider: 'github',
-      releaseType: 'prerelease'
-    });
+    autoUpdater.allowPrerelease = true;
 
     try {
-      await updater.checkForUpdatesAndNotify();
+      await autoUpdater.checkForUpdatesAndNotify();
     } catch (error) {
       log.error('Auto-update failed with error', error);
     }
