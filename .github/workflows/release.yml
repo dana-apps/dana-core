@@ -36,6 +36,9 @@ jobs:
       - name: Run tests
         run: yarn test
 
+      - name: Configure release
+        run: node scripts/prerelease
+
       - name: Typecheck
         run: yarn tsc --noemit
 
