@@ -3,30 +3,10 @@ import isDev from 'electron-is-dev';
 import { mkdir } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import { readJson, writeJson } from '../util/json-utils';
+import { readJsonSync, writeJson } from '../util/json-utils';
 
 const CONFIG_DIR = path.join(app.getPath('userData'), 'danacore');
-
-/**
- * Absolute path of built frontend bundle (if we're running in production).
- * Note that `__dirname` here is that of the built electron process bundle, not this source file
- **/
-export const FRONTEND_BUNDLE_DIR = isDev
-  ? undefined
-  : path.join(__dirname, '..', 'renderer');
-
-/** Default frontend entrypoint (if not overriden through environment) */
-const DEFAULT_FRONTEND_ENTRYPOINT = FRONTEND_BUNDLE_DIR
-  ? 'app://app/desktop.html'
-  : 'http://localhost:3000/desktop.html';
-
-/** Enable developer tools */
-export const SHOW_DEVTOOLS =
-  process.env['SHOW_DEVTOOLS'] || ((isDev ? true : false) && false);
-
-/** Override frontend source URL */
-export const FRONTEND_ENTRYPOINT =
-  process.env['FRONTEND_SOURCE_URL'] ?? DEFAULT_FRONTEND_ENTRYPOINT;
+const CONFIG_FILE = path.join(CONFIG_DIR, 'settings.json');
 
 /**
  * Schema for the user's config file.
@@ -37,9 +17,14 @@ const UserConfig = z.object({
     z.object({
       autoload: z.boolean()
     })
-  )
+  ),
+  flags: z.record(z.unknown()).optional()
 });
 export type UserConfig = z.TypeOf<typeof UserConfig>;
+
+let config = readJsonSync(CONFIG_FILE, UserConfig, {
+  autoload: {}
+});
 
 /**
  * Load and return the saved user config, or return the default configuration if none previously saved.
@@ -47,18 +32,16 @@ export type UserConfig = z.TypeOf<typeof UserConfig>;
  * @returns Config object for the current user.
  */
 export async function getUserConfig() {
-  await mkdir(CONFIG_DIR, { recursive: true });
-  return readJson(path.join(CONFIG_DIR, 'settings.json'), UserConfig, {
-    autoload: {}
-  });
+  return config;
 }
 
 /**
  * Save configuration for the current user.
  */
 export async function writeUserConfig(val: UserConfig) {
+  config = val;
   await mkdir(CONFIG_DIR, { recursive: true });
-  return writeJson(path.join(CONFIG_DIR, 'settings.json'), UserConfig, val);
+  return writeJson(CONFIG_FILE, UserConfig, val);
 }
 
 /**
@@ -74,3 +57,50 @@ export async function updateUserConfig(updater: (val: UserConfig) => void) {
 
   return config;
 }
+
+const parseRuntimeFlag = (key: string, defaultValue = false) => {
+  const flag = parseRuntimeConfig(key, String(defaultValue));
+  return JSON.parse(flag);
+};
+
+const parseRuntimeConfig = (key: string, defaultValue: string) => {
+  let value = process.env[key];
+  if (typeof value === 'undefined') {
+    const configValue = config.flags?.[key];
+
+    if (typeof configValue !== 'undefined') {
+      value = String(config.flags?.[key]);
+    }
+  }
+
+  if (typeof value === 'undefined') {
+    return defaultValue;
+  }
+
+  return value;
+};
+
+/**
+ * Absolute path of built frontend bundle (if we're running in production).
+ * Note that `__dirname` here is that of the built electron process bundle, not this source file
+ **/
+export const FRONTEND_BUNDLE_DIR = isDev
+  ? undefined
+  : path.join(__dirname, '..', 'renderer');
+
+/** Default frontend entrypoint (if not overriden through environment) */
+const DEFAULT_FRONTEND_ENTRYPOINT = FRONTEND_BUNDLE_DIR
+  ? 'app://app/desktop.html'
+  : 'http://localhost:3000/desktop.html';
+
+/** Enable developer tools */
+export const SHOW_DEVTOOLS = parseRuntimeFlag('SHOW_DEVTOOLS', isDev);
+
+/** Enable developer tools */
+export const HIDE_UNTIL_RENDER = parseRuntimeFlag('HIDE_UNTIL_RENDER', !isDev);
+
+/** Override frontend source URL */
+export const FRONTEND_ENTRYPOINT = parseRuntimeConfig(
+  'FRONTEND_ENTRYPOINT',
+  DEFAULT_FRONTEND_ENTRYPOINT
+);

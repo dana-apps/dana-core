@@ -19,6 +19,7 @@ import { getFrontendPlatform } from '../util/platform';
 import {
   FRONTEND_BUNDLE_DIR,
   FRONTEND_ENTRYPOINT,
+  HIDE_UNTIL_RENDER,
   SHOW_DEVTOOLS
 } from './config';
 import { getResourcePath } from './resources';
@@ -85,8 +86,12 @@ export async function createFrontendWindow({
     title,
 
     // Prevent flash of empty content by waiting until we've rendered before showing
-    paintWhenInitiallyHidden: true,
-    show: false,
+    ...(HIDE_UNTIL_RENDER
+      ? {
+          paintWhenInitiallyHidden: true,
+          show: false
+        }
+      : {}),
 
     // Show a frameless window so that we can render our own chrome
     frame: false,
