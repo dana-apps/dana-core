@@ -31,12 +31,14 @@ import {
   UpdateCollection
 } from '../../common/asset.interfaces';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
+import { useFrontendConfig } from '../config';
 
 /**
  * The wrapper component for an archive window. Shows the screen's top-level navigation and renders the active route.
  */
 export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const imports = useListAll(ListIngestSession, () => ({}), []);
+  const config = useFrontendConfig();
   const rpc = useRPC();
   const assetRoot = unwrapGetResult(useGet(GetRootAssetsCollection));
 
@@ -114,10 +116,24 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
             sx={{
               py: 5,
               px: 4,
-              bg: 'gray1'
+              bg: 'gray1',
+              position: 'relative'
             }}
           >
             <Text sx={{ fontWeight: 600 }}>{title}</Text>
+            <Text
+              sx={{
+                position: 'absolute',
+                right: 0,
+                bottom: 0,
+                fontSize: 0,
+                textAlign: 'right',
+                p: 1,
+                px: 3
+              }}
+            >
+              v{config.version} ({config.releaseDate.replace(/T\d\d.*/, '')})
+            </Text>
           </WindowDragArea>
 
           <Outlet />

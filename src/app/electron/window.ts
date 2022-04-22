@@ -1,4 +1,12 @@
-import { app, BrowserWindow, ipcMain, Menu, protocol, session } from 'electron';
+import {
+  app,
+  autoUpdater,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  protocol,
+  session
+} from 'electron';
 import { uniqueId } from 'lodash';
 import { platform } from 'os';
 import path from 'path';
@@ -22,6 +30,7 @@ import {
   HIDE_UNTIL_RENDER,
   SHOW_DEVTOOLS
 } from './config';
+import { RELEASE_DATE } from './release';
 import { getResourcePath } from './resources';
 import { ElectronRouter } from './router';
 
@@ -30,7 +39,10 @@ interface CreateFrontendWindow {
   title: string;
 
   /** Config object passed to frontend */
-  config: Omit<FrontendConfig, 'platform' | 'windowId'>;
+  config: Omit<
+    FrontendConfig,
+    'platform' | 'windowId' | 'version' | 'releaseDate'
+  >;
 
   size?: 'small' | 'regular';
 
@@ -55,7 +67,9 @@ export async function createFrontendWindow({
     ...config,
     windowId: uniqueId(),
     platform: getFrontendPlatform(),
-    title
+    title,
+    version: app.getVersion(),
+    releaseDate: RELEASE_DATE
   };
 
   const getSize = () => {

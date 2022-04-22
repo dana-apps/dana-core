@@ -3,6 +3,7 @@ import isDev from 'electron-is-dev';
 import { mkdir } from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
+
 import { readJsonSync, writeJson } from '../util/json-utils';
 
 const CONFIG_DIR = path.join(app.getPath('userData'), 'danacore');

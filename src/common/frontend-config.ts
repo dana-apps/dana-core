@@ -11,6 +11,12 @@ export interface FrontendConfig {
 
   /** Title of the window */
   title?: string;
+
+  /** App version */
+  version: string;
+
+  /** App release date */
+  releaseDate: string;
 }
 
 export type FrontendPlatform = 'linuxish' | 'mac' | 'windows' | 'web';
