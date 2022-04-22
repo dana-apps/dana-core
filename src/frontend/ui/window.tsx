@@ -28,7 +28,11 @@ export const Window: FC<HTMLAttributes<unknown>> = ({ children, ...props }) => {
         flexDirection: 'column',
         width: '100vw',
         height: '100vh',
-        border: '1px solid --theme-ui-colors-border',
+        overflow: 'hidden',
+        border:
+          platform === 'windows' || platform === 'linuxish'
+            ? '1px solid var(--theme-ui-colors-border)'
+            : 'none',
 
         userSelect: 'none',
         WebkitAppRegion: 'drag',
