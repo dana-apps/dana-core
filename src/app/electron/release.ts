@@ -1,1 +1,1 @@
-export const RELEASE_DATE = "2022-04-22T10:12:09.278Z"
+export const RELEASE_DATE = 'Development';
