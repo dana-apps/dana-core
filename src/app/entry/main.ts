@@ -66,7 +66,7 @@ async function main() {
     // When an archive document is opened, add it to the autoload array.
     app.archiveService.on('opened', async ({ archive }) => {
       updateUserConfig((config) => {
-        config.autoload[archive.location] = { autoload: false }; // Hard set to false for now -- Cade
+        config.autoload[archive.location] = { autoload: false }; // Hard set to false for now -- Cade.
       });
     });
   }
