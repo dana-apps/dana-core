@@ -15,10 +15,7 @@ import {
 } from 'react';
 import AutoSizer, { Size } from 'react-virtualized-auto-sizer';
 import Loader from 'react-window-infinite-loader';
-import {
-  GridChildComponentProps,
-  VariableSizeGrid as Grid
-} from 'react-window';
+import { ListChildComponentProps, FixedSizeList } from 'react-window';
 import { Box, BoxProps, ThemeUIStyleObject, useThemeUI } from 'theme-ui';
 
 import { Resource } from '../../../common/resource';
@@ -64,9 +61,9 @@ export function DataGrid<T extends Resource>({
     [data, columns]
   );
 
-  // Calculate widths for each of the columns based on an initial sample of the data
   const [columnSizes, setColumnSizes] = useState<number[]>();
 
+  // Calculate widths for each of the columns based on an initial sample of the data
   useEffect(() => {
     if (!data) {
       return;
@@ -107,9 +104,8 @@ export function DataGrid<T extends Resource>({
   const loaderRef = useRef<Loader | null>(null);
   const innerListRef = useRef<HTMLElement | null>();
   const outerListRef = useRef<HTMLElement | null>();
-  const viewSize = useRef<Size>();
   const visibleRange = useRef<PageRange>({ offset: 0, limit: 0 });
-  const gridRef = useRef<Grid | null>(null);
+  const listref = useRef<FixedSizeList | null>(null);
 
   useEventEmitter(data.events, 'change', () => {
     loaderRef.current?.resetloadMoreItemsCache(true);
@@ -129,9 +125,7 @@ export function DataGrid<T extends Resource>({
         if (next) {
           selection.setSelection(next.id);
 
-          gridRef.current?.scrollToItem({
-            rowIndex: index - 1
-          });
+          listref.current?.scrollToItem(index - 1);
         }
       } else if (event.key === 'ArrowDown') {
         const index = findIndex() + 1;
@@ -140,40 +134,26 @@ export function DataGrid<T extends Resource>({
         if (next) {
           selection.setSelection(next.id);
 
-          gridRef.current?.scrollToItem({
-            rowIndex: index + 1
-          });
+          listref.current?.scrollToItem(index + 1);
         }
       } else if (event.key === 'PageUp') {
-        gridRef.current?.scrollToItem({
-          rowIndex: visibleRange.current.offset - visibleRange.current.limit,
-          align: 'start'
-        });
+        listref.current?.scrollToItem(
+          visibleRange.current.offset - visibleRange.current.limit,
+          'start'
+        );
       } else if (event.key === 'PageDown') {
-        gridRef.current?.scrollToItem({
-          rowIndex: visibleRange.current.offset + visibleRange.current.limit,
-          align: 'start'
-        });
+        listref.current?.scrollToItem(
+          visibleRange.current.offset + visibleRange.current.limit,
+          'start'
+        );
       } else if (event.key === 'Home') {
-        gridRef.current?.scrollToItem({
-          rowIndex: 0,
-          align: 'start'
-        });
+        listref.current?.scrollToItem(0, 'start');
       } else if (event.key === 'End') {
-        gridRef.current?.scrollToItem({
-          rowIndex: data.totalCount - 1,
-          align: 'end'
-        });
+        listref.current?.scrollToItem(data.totalCount - 1, 'end');
       }
     },
     [data, selection]
   );
-
-  useEffect(() => {
-    if (columnSizes) {
-      gridRef.current?.resetAfterColumnIndex(0, true);
-    }
-  }, [columnSizes]);
 
   return (
     <Box
@@ -182,18 +162,7 @@ export function DataGrid<T extends Resource>({
       onKeyDown={handleKeyDown}
       {...props}
     >
-      <AutoSizer
-        onResize={(size) => {
-          viewSize.current = size;
-
-          // Resize the trailing grid item
-          if (columns.length === 1) {
-            gridRef?.current?.resetAfterColumnIndex(0);
-          } else {
-            gridRef?.current?.resetAfterColumnIndex(columns.length);
-          }
-        }}
-      >
+      <AutoSizer>
         {({ height, width }) => {
           if (!columnSizes) {
             return null;
@@ -224,56 +193,40 @@ export function DataGrid<T extends Resource>({
                     }
                   }}
                 >
-                  <Grid<CellData<T>>
+                  <FixedSizeList<CellData<T>>
                     ref={(grid) => {
                       ref(grid);
-                      gridRef.current = grid;
+                      listref.current = grid;
                     }}
                     width={width}
                     height={height}
-                    columnWidth={(i) => {
-                      if (columns.length === 1) {
-                        return width;
-                      }
-
-                      if (i < columns.length) {
-                        return columnSizes[i];
-                      }
-
-                      const lastOffset = last(columnOffsets);
-                      return lastOffset ? width - lastOffset : 0;
-                    }}
-                    rowCount={data.totalCount}
-                    columnCount={
-                      columns.length > 1 ? columns.length + 1 : columns.length
-                    }
-                    rowHeight={() => rowHeight}
+                    itemCount={data.totalCount}
+                    itemSize={rowHeight}
                     itemData={dataVal}
                     outerRef={outerListRef}
                     innerRef={innerListRef}
                     innerElementType={GridWrapper}
                     onItemsRendered={(props) => {
                       data.setVisibleRange(
-                        props.overscanRowStartIndex,
-                        props.overscanRowStopIndex
+                        props.overscanStartIndex,
+                        props.overscanStopIndex
                       );
 
                       visibleRange.current = {
-                        offset: props.visibleRowStartIndex,
-                        limit:
-                          props.visibleRowStopIndex - props.visibleRowStartIndex
+                        offset: props.visibleStartIndex,
+                        limit: props.visibleStopIndex - props.visibleStartIndex
                       };
 
                       onItemsRendered({
-                        overscanStartIndex: props.overscanRowStartIndex,
-                        overscanStopIndex: props.overscanRowStopIndex,
-                        visibleStartIndex: props.visibleRowStartIndex,
-                        visibleStopIndex: props.visibleRowStopIndex
+                        overscanStartIndex: props.overscanStartIndex,
+                        overscanStopIndex: props.overscanStopIndex,
+                        visibleStartIndex: props.visibleStartIndex,
+                        visibleStopIndex: props.visibleStopIndex
                       });
                     }}
                   >
-                    {CellWrapper}
-                  </Grid>
+                    {Row}
+                  </FixedSizeList>
                 </GridContext.Provider>
               )}
             </Loader>
@@ -318,39 +271,50 @@ export type DataGridCell<Val = unknown> = FC<{
 /**
  * Internal. Extract cell data from context and render using the cell component.
  */
-function CellWrapper<T extends Resource>({
+function Row<T extends Resource>({
   data: { cursor, columns },
   style,
-  columnIndex,
-  rowIndex
-}: GridChildComponentProps<CellData<T>>) {
+  index
+}: ListChildComponentProps<CellData<T>>) {
   const { current: selection, setSelection } = SelectionContext.useContainer();
-  const colData = cursor.get(rowIndex);
-  const column = columns[columnIndex];
-  const plainBg = rowIndex % 2 === 1 ? 'background' : 'foreground';
+  const { columnSizes } = useContext(GridContext);
+  const colData = cursor.get(index);
+  const plainBg = index % 2 === 1 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
 
   const sx: ThemeUIStyleObject = {
+    display: 'flex',
+    flexDirection: 'row',
     bg: selected ? 'primary' : plainBg,
     color: selected ? 'primaryContrast' : undefined,
-    overflow: 'hidden',
-    py: 1,
-    px: 2,
-    height: '100%',
-    whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis',
-    '&:not:first-of-type': {
-      borderLeft: '1px solid var(--theme-ui-colors-border)'
-    }
+    position: 'relative'
   };
 
-  if (!colData || !column) {
+  if (!colData || !columnSizes) {
     return <div sx={sx} style={style} />;
   }
 
   return (
     <div sx={sx} style={style} onClick={() => setSelection(colData.id)}>
-      <column.cell value={column.getData(colData)} property={column.id} />
+      {columns.map((column, i) => (
+        <div
+          key={column.id}
+          sx={{
+            overflow: 'hidden',
+            py: 1,
+            px: 2,
+            height: '100%',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            '&:not:first-of-type': {
+              borderLeft: '1px solid var(--theme-ui-colors-border)'
+            }
+          }}
+          style={{ width: columnSizes[i] }}
+        >
+          <column.cell value={column.getData(colData)} property={column.id} />
+        </div>
+      ))}
     </div>
   );
 }
