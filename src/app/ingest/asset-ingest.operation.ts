@@ -144,6 +144,8 @@ export class AssetIngestOperation implements IngestSession {
       return;
     }
 
+    this.collectionService.on('change', this.handleCollectionChanged);
+
     this._active = true;
 
     this.log.info('Starting session');
@@ -169,6 +171,7 @@ export class AssetIngestOperation implements IngestSession {
    * Abort any pending tasks for the ingest operation.
    **/
   async teardown() {
+    this.collectionService.off('change', this.handleCollectionChanged);
     this._active = false;
   }
 
@@ -566,6 +569,11 @@ export class AssetIngestOperation implements IngestSession {
       session: this
     });
   }
+
+  private handleCollectionChanged = async () => {
+    await this.revalidate();
+    this.emitStatus();
+  };
 }
 
 /**

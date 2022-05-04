@@ -283,6 +283,8 @@ describe('AssetImportOperation', () => {
       fixture.archive,
       session.id
     );
+
+    const sessionsEmittingEdit = fixture.editEvents((e) => e.session);
     for (const asset of assets.items) {
       await session.updateImportedAsset(asset.id, {
         ...asset.metadata,
@@ -296,6 +298,51 @@ describe('AssetImportOperation', () => {
     );
 
     expect(assets.items.every((a) => !a.validationErrors)).toBeTruthy();
+    expect(session.valid).toBeTruthy();
+    expect(sessionsEmittingEdit).toContain(session);
+  });
+
+  test('updating the schema revalidates the assets in the import session', async () => {
+    const fixture = await setup();
+    await fixture.givenACollectionMetadataSchema([
+      {
+        label: 'property',
+        id: 'p',
+        type: SchemaPropertyType.FREE_TEXT,
+        required: true
+      },
+      {
+        label: 'extraProperty',
+        id: 'extra',
+        type: SchemaPropertyType.FREE_TEXT,
+        required: true
+      }
+    ]);
+
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
+    expect(session.valid).toBeFalsy();
+
+    const fixtureStatusEvents = fixture.statusEvents((e) => e);
+    await fixture.collectionService.updateCollectionSchema(
+      fixture.archive,
+      fixture.rootCollection.id,
+      [
+        {
+          label: 'property',
+          id: 'p',
+          type: SchemaPropertyType.FREE_TEXT,
+          required: true
+        },
+        {
+          label: 'extraProperty',
+          id: 'extra',
+          type: SchemaPropertyType.FREE_TEXT,
+          required: false
+        }
+      ]
+    );
+
+    await fixtureStatusEvents.received();
     expect(session.valid).toBeTruthy();
   });
 });
@@ -331,6 +378,9 @@ const setup = async () => {
     },
     statusEvents: <T>(fn: (event: ImportStateChanged) => T) => {
       return collectEvents(importService, 'status', fn);
+    },
+    editEvents: <T>(fn: (event: ImportStateChanged) => T) => {
+      return collectEvents(importService, 'edit', fn);
     },
     givenThatAnImportSessionHasRunSuccessfuly: async (
       example: string = BASIC_EXAMPLE
