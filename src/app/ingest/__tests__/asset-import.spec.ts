@@ -23,7 +23,9 @@ import {
 } from '../asset-ingest.service';
 
 describe('AssetImportOperation', () => {
-  jest.setTimeout(15000);
+  if (!process.env.NO_OVERRIDE_TIMEOUTS) {
+    jest.setTimeout(15000);
+  }
 
   test('imports assets', async () => {
     const fixture = await setup();
@@ -255,6 +257,46 @@ describe('AssetImportOperation', () => {
 
     // Emits change events for each created assets
     expect(assetEvents.flatMap((event) => event.created)).toHaveLength(2);
+  });
+
+  test('updating assets in a session changes their metadata and revalidates the import', async () => {
+    const fixture = await setup();
+    await fixture.givenACollectionMetadataSchema([
+      {
+        label: 'property',
+        id: 'p',
+        type: SchemaPropertyType.FREE_TEXT,
+        required: true
+      },
+      {
+        label: 'extraProperty',
+        id: 'extra',
+        type: SchemaPropertyType.FREE_TEXT,
+        required: true
+      }
+    ]);
+
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
+    expect(session.valid).toBeFalsy();
+
+    let assets = await fixture.importService.listSessionAssets(
+      fixture.archive,
+      session.id
+    );
+    for (const asset of assets.items) {
+      await session.updateImportedAsset(asset.id, {
+        ...asset.metadata,
+        extra: 'Some Value'
+      });
+    }
+
+    assets = await fixture.importService.listSessionAssets(
+      fixture.archive,
+      session.id
+    );
+
+    expect(assets.items.every((a) => !a.validationErrors)).toBeTruthy();
+    expect(session.valid).toBeTruthy();
   });
 });
 

@@ -19,7 +19,11 @@
 
   "forwardPorts": [6080, 5901, 5858, 9223],
 
-  "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"],
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "Orta.vscode-jest"
+  ],
 
   "postCreateCommand": "yarn install",
 

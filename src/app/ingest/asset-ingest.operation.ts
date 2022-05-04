@@ -338,6 +338,9 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
   }
 
+  /**
+   * Revalidate all metadata in the import session and update their (and the session's) validation state.
+   */
   private async revalidate() {
     await this.archive.useDb(async (db) => {
       const assets = await db.find(AssetImportEntity, {});
@@ -500,6 +503,16 @@ export class AssetIngestOperation implements IngestSession {
       .where({ asset: { session_id: this.session.id }, ...where });
   }
 
+  /**
+   * Update the metadata for an imported asset.
+   *
+   * Unlike the update method for assets in the archive proper, this allows edits that are invalid according to the
+   * schema.
+   *
+   * @param assetId ID of the asset to update metadata for.
+   * @param metadata Dictionary mapping property ids to metadata values
+   * @returns Result indicating whether the edit is valid or invalid.
+   */
   async updateImportedAsset(assetId: string, metadata: Dict) {
     const res = await this.archive.useDb(async (db) => {
       const asset = await db.findOne(AssetImportEntity, assetId);
@@ -527,9 +540,10 @@ export class AssetIngestOperation implements IngestSession {
       }
 
       db.persist(asset);
-      await this.revalidate();
       return ok();
     });
+
+    await this.revalidate();
 
     this.ingestService.emit('edit', {
       archive: this.archive,

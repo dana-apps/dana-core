@@ -1,11 +1,10 @@
 /** @jsxImportSource theme-ui */
 
 import { ChangeEvent, FC, useCallback } from 'react';
-import { Box, BoxProps, Field, Label, Text, Textarea } from 'theme-ui';
+import { Box, BoxProps, Field, Label, Text } from 'theme-ui';
 import {
   GetAsset,
   GetCollection,
-  GetRootDatabaseCollection,
   SchemaProperty,
   SchemaPropertyType,
   SearchAsset
@@ -145,6 +144,8 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
     );
   }
 
+  // If we don't have a result for the referenced value (because it is invalid or not fetched yet)
+  // then at least return the header
   if (referencedValue?.status !== 'ok' || !titleKey) {
     return (
       <Box {...props}>

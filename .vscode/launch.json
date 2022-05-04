@@ -32,6 +32,9 @@
       "disableOptimisticBPs": true,
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "yarn",
+      "env": {
+        "NO_OVERRIDE_TIMEOUTS": "true"
+      },
       "args": [
         "jest",
         "--runInBand",
