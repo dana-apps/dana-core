@@ -33,7 +33,7 @@ export function waitUntilEvent(
 export function collectEvents<Event>(
   emitter: EventEmitter<Dict>,
   event: string
-): Event[];
+): { events: Event[]; received(): Promise<void> };
 
 /**
  * Return a mutable array that gathers events fired on an eventemitter.
@@ -47,7 +47,7 @@ export function collectEvents<Event, T>(
   emitter: EventEmitter<Dict>,
   event: string,
   fn: (event: Event) => T
-): T[] & { received(): Promise<void> };
+): { events: T[]; received(): Promise<void> };
 export function collectEvents(
   emitter: EventEmitter<Dict>,
   event: string,
@@ -65,7 +65,8 @@ export function collectEvents(
     onReceived = resolve;
   });
 
-  return Object.assign(events, {
+  return {
+    events,
     received: () =>
       Promise.race([
         new Promise<void>((_, reject) => {
@@ -75,5 +76,5 @@ export function collectEvents(
         }),
         received
       ])
-  });
+  };
 }

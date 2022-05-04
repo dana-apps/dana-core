@@ -91,7 +91,7 @@ describe('AssetImportOperation', () => {
 
     await fixture.givenThatAnImportSessionHasRunSuccessfuly();
 
-    expect(events).toEqual(
+    expect(events.events).toEqual(
       expect.arrayContaining([
         {
           phase: IngestPhase.READ_METADATA,
@@ -192,7 +192,7 @@ describe('AssetImportOperation', () => {
     expect(mediaFiles.total).toBe(0);
 
     // Emits change events
-    expect(events).toEqual(['changed']);
+    expect(events.events).toEqual(['changed']);
 
     // Removes session
     const sessions = fixture.importService.listSessions(fixture.archive);
@@ -214,7 +214,7 @@ describe('AssetImportOperation', () => {
     expect(importedFiles.total).toBe(0);
 
     // Emits change events
-    expect(events).toEqual(['changed']);
+    expect(events.events).toEqual(['changed']);
 
     // Removes session
     const sessions = fixture.importService.listSessions(fixture.archive);
@@ -256,7 +256,9 @@ describe('AssetImportOperation', () => {
     );
 
     // Emits change events for each created assets
-    expect(assetEvents.flatMap((event) => event.created)).toHaveLength(2);
+    expect(assetEvents.events.flatMap((event) => event.created)).toHaveLength(
+      2
+    );
   });
 
   test('updating assets in a session changes their metadata and revalidates the import', async () => {
@@ -299,7 +301,7 @@ describe('AssetImportOperation', () => {
 
     expect(assets.items.every((a) => !a.validationErrors)).toBeTruthy();
     expect(session.valid).toBeTruthy();
-    expect(sessionsEmittingEdit).toContain(session);
+    expect(sessionsEmittingEdit.events).toContain(session);
   });
 
   test('updating the schema revalidates the assets in the import session', async () => {

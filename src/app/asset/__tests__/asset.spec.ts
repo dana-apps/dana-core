@@ -46,9 +46,10 @@ describe(AssetService, () => {
       )
     );
 
-    expect(createEvents).toEqual([
+    expect(createEvents.events).toEqual([
       expect.objectContaining({
-        created: [asset.id]
+        created: [asset.id],
+        updated: []
       })
     ]);
 
@@ -81,7 +82,7 @@ describe(AssetService, () => {
       }
     });
 
-    expect(updateEvents).toEqual([
+    expect(updateEvents.events).toEqual([
       expect.objectContaining({
         updated: [asset.id]
       })
