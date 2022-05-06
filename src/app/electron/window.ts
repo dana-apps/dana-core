@@ -109,14 +109,14 @@ export async function createFrontendWindow({
 
     // Show a frameless window so that we can render our own chrome
     frame: false,
-    transparent: true,
+    transparent: platform() !== 'win32',
     resizable: true,
     minimizable: true,
     maximizable: true,
     fullscreenable: true,
     closable: true,
     titleBarStyle: 'hidden',
-    titleBarOverlay: platform() !== 'darwin',
+    titleBarOverlay: false,
     thickFrame: false,
 
     webPreferences: {
