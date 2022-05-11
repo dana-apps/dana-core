@@ -65,7 +65,7 @@ const parseRuntimeFlag = (key: string, defaultValue = false) => {
 };
 
 const parseRuntimeConfig = (key: string, defaultValue: string) => {
-  let value = process.env[key];
+  let value = process.env['DANA_' + key];
   if (typeof value === 'undefined') {
     const configValue = config.flags?.[key];
 

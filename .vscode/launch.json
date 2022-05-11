@@ -13,10 +13,7 @@
         "!**/node_modules/**"
       ],
       "timeout": 15000,
-      "outputCapture": "std",
-      "env": {
-        "START_MAXIMIZED": "true"
-      }
+      "outputCapture": "std"
     },
     {
       "name": "Attach",
