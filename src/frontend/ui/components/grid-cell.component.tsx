@@ -29,7 +29,7 @@ ProgressCell.width = 36;
 
 /** Datagrid cell for database references */
 export const ReferenceCell: DataGridCell<string> = ({ value, property }) => {
-  const asset = unwrapGetResult(useGet(GetAsset, value));
+  const asset = unwrapGetResult(useGet(GetAsset, value ?? SKIP_FETCH));
   const collection = unwrapGetResult(useGet(GetRootAssetsCollection));
   const propertyValue = collection?.schema.find((x) => x.id === property);
 
