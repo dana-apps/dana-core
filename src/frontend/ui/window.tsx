@@ -1,12 +1,13 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, HTMLAttributes, useCallback, useState } from 'react';
+import { FC, HTMLAttributes, useCallback, useEffect, useState } from 'react';
 import { FrontendPlatform } from '../../common/frontend-config';
 import {
   MaximizationState,
   MaximizationStateChanged,
   ToggleMaximizeWindow,
-  MinimizeWindow
+  MinimizeWindow,
+  GetMaximizationState
 } from '../../common/ui.interfaces';
 import { useFrontendConfig } from '../config';
 import { useEvent, useRPC } from '../ipc/ipc.hooks';
@@ -105,6 +106,16 @@ const WindowControls = () => {
   useEvent(MaximizationStateChanged, async (state) => {
     setState(state);
   });
+
+  useEffect(() => {
+    rpc(GetMaximizationState, {}).then((res) => {
+      if (res.status === 'ok') {
+        setState(res.value);
+      } else {
+        setState('normal');
+      }
+    });
+  }, [rpc]);
 
   const minimize = useCallback(() => rpc(MinimizeWindow, {}), [rpc]);
   const toggleMaximize = useCallback(

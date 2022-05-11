@@ -1,12 +1,4 @@
-import {
-  app,
-  autoUpdater,
-  BrowserWindow,
-  ipcMain,
-  Menu,
-  protocol,
-  session
-} from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, protocol, session } from 'electron';
 import { uniqueId } from 'lodash';
 import { platform } from 'os';
 import path from 'path';
