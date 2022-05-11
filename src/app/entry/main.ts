@@ -6,6 +6,7 @@ import { autoUpdater } from 'electron-updater';
 import { initAssets } from '../asset/asset.init';
 import { initApp } from '../electron/app';
 import {
+  DEFAULT_AUTOLOAD_ARCHIVES,
   getUserConfig,
   SHOW_DEVTOOLS,
   updateUserConfig
@@ -66,7 +67,9 @@ async function main() {
     // When an archive document is opened, add it to the autoload array.
     app.archiveService.on('opened', async ({ archive }) => {
       updateUserConfig((config) => {
-        config.autoload[archive.location] = { autoload: false }; // Hard set to false for now
+        config.autoload[archive.location] = {
+          autoload: DEFAULT_AUTOLOAD_ARCHIVES
+        };
       });
     });
   }

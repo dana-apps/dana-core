@@ -61,7 +61,7 @@ export async function updateUserConfig(updater: (val: UserConfig) => void) {
 
 const parseRuntimeFlag = (key: string, defaultValue = false) => {
   const flag = parseRuntimeConfig(key, String(defaultValue));
-  return JSON.parse(flag);
+  return Boolean(JSON.parse(flag));
 };
 
 const parseRuntimeConfig = (key: string, defaultValue: string) => {
@@ -104,4 +104,10 @@ export const HIDE_UNTIL_RENDER = parseRuntimeFlag('HIDE_UNTIL_RENDER', !isDev);
 export const FRONTEND_ENTRYPOINT = parseRuntimeConfig(
   'FRONTEND_ENTRYPOINT',
   DEFAULT_FRONTEND_ENTRYPOINT
+);
+
+/** Should archives default to autoloading on startup? */
+export const DEFAULT_AUTOLOAD_ARCHIVES = parseRuntimeFlag(
+  'AUTOLOAD_ARCHIVES',
+  isDev
 );
