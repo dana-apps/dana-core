@@ -1,5 +1,7 @@
 import { Theme } from 'theme-ui';
 import * as polished from 'polished';
+import { Scale } from '@theme-ui/css';
+import { Dict } from '../../common/util/types';
 
 const controlHover = {
   '&:hover:not(:disabled):not(:active):not([aria-selected="true"])': {
@@ -21,6 +23,9 @@ const colors = {
   charcoal: '#3C3746',
   blue: '#28108A'
 };
+
+const scaleGet = <T>(scale: Scale<T> | undefined, key: string | number) =>
+  scale ? ((scale as Dict<T>)[key] as T | undefined) : undefined;
 
 export const theme: Theme = {
   config: {
@@ -81,6 +86,7 @@ export const theme: Theme = {
   forms: {
     label: {
       fontSize: 1,
+      paddingBottom: 2,
       fontWeight: 600
     },
     select: {
@@ -100,25 +106,25 @@ export const theme: Theme = {
     }
   },
   text: {
-    heading: {
-      fontFamily: 'heading',
-      fontWeight: 'heading',
-      lineHeight: 'heading'
-    },
-    display: {
-      variant: 'text.heading',
+    heading: (theme) => ({
+      fontFamily: scaleGet(theme.fonts, 'heading'),
+      fontWeight: scaleGet(theme.fontWeights, 'heading'),
+      lineHeight: scaleGet(theme.lineHeights, 'heading')
+    }),
+    display: () => ({
+      variant: 'heading',
       fontSize: [5, 6],
       fontWeight: 'display',
       letterSpacing: '-0.03em',
       mt: 3
-    },
-    section: {
+    }),
+    section: (theme) => ({
       textTransform: 'uppercase',
       fontWeight: 700,
       fontSize: 0,
       color: 'grey',
       letterSpacing: 0.95
-    }
+    })
   },
   images: {
     selectable: {
@@ -127,42 +133,43 @@ export const theme: Theme = {
     }
   },
   buttons: {
-    primary: {
+    primary: (theme) => ({
       ...controlHover,
       fontSize: 1,
-      p: 3,
-      px: 4,
-      color: 'primaryContrast',
-      backgroundColor: 'primary',
-      borderRadius: 'control',
+      padding: 3,
+      paddingLeft: 4,
+      paddingRight: 4,
+      color: scaleGet(theme.colors, 'primaryContrast'),
+      backgroundColor: scaleGet(theme.fonts, 'primary'),
+      borderRadius: scaleGet(theme.radii, 'control'),
       '&:disabled': {
-        bg: 'muted'
+        bg: scaleGet(theme.colors, 'muted')
       }
-    },
+    }),
     icon: {
       ...controlHover
     },
-    secondary: {
+    secondary: (theme) => ({
       ...controlHover,
-      color: 'background',
-      bg: 'secondary'
-    },
-    primaryTransparent: {
+      color: scaleGet(theme.colors, 'background'),
+      bg: scaleGet(theme.colors, 'secondary')
+    }),
+    primaryTransparent: (theme) => ({
       ...controlHover,
-      color: 'primary',
-      backgroundColor: 'transparent'
-    }
+      color: scaleGet(theme.fonts, 'body'),
+      backgroundColor: scaleGet(theme.colors, 'transparent')
+    })
   },
   styles: {
     Container: {
       p: 3,
       maxWidth: 1024
     },
-    root: {
-      fontFamily: 'body',
-      lineHeight: 'body',
-      fontWeight: 'body'
-    },
+    root: (theme) => ({
+      fontFamily: scaleGet(theme.fonts, 'body'),
+      lineHeight: scaleGet(theme.lineHeights, 'body'),
+      fontWeight: scaleGet(theme.fontWeights, 'body')
+    }),
     h1: {
       variant: 'text.display'
     },
@@ -192,8 +199,8 @@ export const theme: Theme = {
         color: 'secondary'
       }
     },
-    pre: {
-      fontFamily: 'monospace',
+    pre: (theme) => ({
+      fontFamily: scaleGet(theme.fonts, 'monospace'),
       fontSize: 1,
       p: 3,
       color: 'text',
@@ -202,29 +209,29 @@ export const theme: Theme = {
       code: {
         color: 'inherit'
       }
-    },
-    code: {
-      fontFamily: 'monospace',
+    }),
+    code: (theme) => ({
+      fontFamily: scaleGet(theme.fonts, 'monospace'),
       fontSize: 1
-    },
-    inlineCode: {
-      fontFamily: 'monospace',
+    }),
+    inlineCode: (theme) => ({
+      fontFamily: scaleGet(theme.fonts, 'monospace'),
       color: 'secondary',
       bg: 'muted'
-    },
+    }),
     table: {
       width: '100%',
       my: 4,
       borderCollapse: 'separate',
       borderSpacing: 0,
-      'th,td': {
+      'th,td': (theme) => ({
         textAlign: 'left',
         py: '4px',
         pr: '4px',
         pl: 0,
-        borderColor: 'muted',
+        borderColor: scaleGet(theme.colors, 'muted'),
         borderBottomStyle: 'solid'
-      }
+      })
     },
     th: {
       verticalAlign: 'bottom',
@@ -234,10 +241,10 @@ export const theme: Theme = {
       verticalAlign: 'top',
       borderBottomWidth: '1px'
     },
-    hr: {
+    hr: (theme) => ({
       border: 0,
       borderBottom: '1px solid',
-      borderColor: 'muted'
-    }
+      borderColor: scaleGet(theme.colors, 'muted')
+    })
   }
 };

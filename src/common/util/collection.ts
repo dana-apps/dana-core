@@ -1,3 +1,5 @@
+import { Dict } from './types';
+
 /**
  * Map subclass that adds and returns a default value for missing keys.
  */
@@ -25,4 +27,12 @@ export function tuple<T extends string[]>(...args: T): T;
 export function tuple<T extends unknown[]>(...args: T): T;
 export function tuple<T extends unknown[]>(...args: T): T {
   return args;
+}
+
+export function compactDict<Key extends string, Val>(
+  dict: Dict<Val | null | undefined, Key>
+) {
+  return Object.fromEntries(
+    Object.entries(dict).filter((x) => x[1] !== undefined && x[1] !== null)
+  ) as Dict<Val, Key>;
 }

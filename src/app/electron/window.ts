@@ -189,7 +189,10 @@ function showWindowAfterFirstRender(
         return;
       }
 
-      window.show();
+      if (HIDE_UNTIL_RENDER) {
+        window.show();
+      }
+
       resolve();
 
       if (SHOW_DEVTOOLS) {

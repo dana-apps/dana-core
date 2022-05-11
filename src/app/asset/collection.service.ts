@@ -8,7 +8,7 @@ import {
   SchemaProperty
 } from '../../common/asset.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
-import { DefaultMap } from '../../common/util/collection';
+import { compactDict, DefaultMap } from '../../common/util/collection';
 import { error, FetchError, ok } from '../../common/util/error';
 import { Dict } from '../../common/util/types';
 import { ArchivePackage } from '../package/archive-package';
@@ -315,7 +315,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
         return {
           id: id,
           success: false,
-          errors: result.error.flatten().fieldErrors
+          errors: compactDict(result.error.flatten().fieldErrors)
         };
       }
     );

@@ -12,7 +12,7 @@ import {
   useRef,
   useState
 } from 'react';
-import { Box, BoxProps, Flex, Heading } from 'theme-ui';
+import { Box, BoxProps, Flex, Heading, useThemeUI } from 'theme-ui';
 import { ReflexContainer, ReflexElement, ReflexSplitter } from 'react-reflex';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useContextMenu } from '../hooks/menu.hooks';
@@ -32,7 +32,7 @@ export const NavListSection: FC<NavListSectionProps> = ({
   ...props
 }) => (
   <Box sx={{ pb: 5 }} {...props}>
-    <Heading sx={{ p: 1, px: 2 }} variant="section" as="h3">
+    <Heading sx={{ p: 2, px: 3 }} variant="section" as="h3">
       {title}
     </Heading>
 
@@ -150,8 +150,8 @@ export const NavListItem: FC<NavListItemProps> = ({
         flexDirection: 'row',
         alignItems: 'center',
         bg: isActive ? 'highlight' : undefined,
-        p: 1,
-        px: 2,
+        p: 2,
+        px: 3,
         fontSize: 1,
         marginTop: '1px',
         color: isActive ? 'highlightContrast' : undefined,

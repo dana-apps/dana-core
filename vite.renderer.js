@@ -22,6 +22,10 @@ const config = {
     }
   },
 
+  optimizeDeps: {
+    include: ['theme-ui/jsx-dev-runtime']
+  },
+
   build: {
     sourcemap: true,
     target: `chrome${chrome}`,

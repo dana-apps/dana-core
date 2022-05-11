@@ -13,6 +13,7 @@ import {
 } from '../../../../common/asset.interfaces';
 import { Media } from '../../../../common/media.interfaces';
 import { never } from '../../../../common/util/assert';
+import { compactDict } from '../../../../common/util/collection';
 import { error, ok } from '../../../../common/util/error';
 import { Dict } from '../../../../common/util/types';
 import { IpcContext } from '../../../ipc/ipc.hooks';
@@ -119,7 +120,7 @@ const useIpcFixture = (
       result: async (params) => {
         const result = Validator.safeParse(params.payload);
         if (!result.success) {
-          return error(result.error.formErrors.fieldErrors);
+          return error(compactDict(result.error.formErrors.fieldErrors));
         }
 
         onChangeRef.current(params);

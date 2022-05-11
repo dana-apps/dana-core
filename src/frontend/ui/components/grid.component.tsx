@@ -20,7 +20,7 @@ import { Box, BoxProps, ThemeUIStyleObject, useThemeUI } from 'theme-ui';
 
 import { Resource } from '../../../common/resource';
 import { iterateListCursor, ListCursor } from '../../ipc/ipc.hooks';
-import { compact, last, max, noop } from 'lodash';
+import { compact, last, max, noop, sum } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
@@ -178,6 +178,7 @@ export function DataGrid<T extends Resource>({
               {({ onItemsRendered, ref }) => (
                 <GridContext.Provider
                   value={{
+                    width,
                     columns: columns as GridColumn<Resource>[],
                     rowHeight,
                     columnOffsets,
@@ -277,7 +278,7 @@ function Row<T extends Resource>({
   index
 }: ListChildComponentProps<CellData<T>>) {
   const { current: selection, setSelection } = SelectionContext.useContainer();
-  const { columnSizes } = useContext(GridContext);
+  const { columnSizes, width } = useContext(GridContext);
   const colData = cursor.get(index);
   const plainBg = index % 2 === 1 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
@@ -295,7 +296,11 @@ function Row<T extends Resource>({
   }
 
   return (
-    <div sx={sx} style={style} onClick={() => setSelection(colData.id)}>
+    <div
+      sx={sx}
+      style={{ ...style, minWidth: width }}
+      onClick={() => setSelection(colData.id)}
+    >
       {columns.map((column, i) => (
         <div
           key={column.id}
@@ -310,7 +315,7 @@ function Row<T extends Resource>({
               borderLeft: '1px solid var(--theme-ui-colors-border)'
             }
           }}
-          style={{ width: columnSizes[i] }}
+          style={{ width: columnSizes.length === 1 ? width : columnSizes[i] }}
         >
           <column.cell value={column.getData(colData)} property={column.id} />
         </div>
@@ -366,7 +371,15 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
                   textAlign: 'center'
                 }}
               >
-                {col.label}
+                <div
+                  sx={{
+                    position: 'relative',
+                    top: '50%',
+                    transform: 'translateY(-50%)'
+                  }}
+                >
+                  {col.label}
+                </div>
 
                 <div
                   sx={{
@@ -402,6 +415,7 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
             ref={ref}
             style={{
               ...style,
+              width: sum(columnSizes),
               position: 'relative'
             }}
             {...props}
@@ -419,10 +433,12 @@ const GridContext = createContext<{
   columns: GridColumn<Resource>[];
   onResize: (index: number, size: number) => void;
   columnSizes?: number[];
+  width: number;
   columnOffsets?: number[];
   rowHeight: number;
 }>({
   onResize: noop,
   columns: [],
+  width: 0,
   rowHeight: 0
 });
