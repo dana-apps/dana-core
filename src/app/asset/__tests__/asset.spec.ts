@@ -51,7 +51,7 @@ describe(AssetService, () => {
             requiredProperty: ['1'],
             optionalProperty: ['2'],
             repeatedProperty: ['3', '4'],
-            unknownProperty: 'No'
+            unknownProperty: ['No']
           }
         }
       )

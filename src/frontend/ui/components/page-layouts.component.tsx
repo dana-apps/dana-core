@@ -332,8 +332,7 @@ export const PrimaryDetailLayout: FC<
         },
         '> .reflex-element': {
           overflow: 'hidden'
-        },
-        minHeight: 0
+        }
       }}
       windowResizeAware
       orientation="vertical"

@@ -205,7 +205,7 @@ describe(CollectionService, () => {
         fixture.assetCollection.id,
         {
           metadata: {
-            dbRef: 'this is not a valid id'
+            dbRef: ['this is not a valid id']
           }
         }
       );
