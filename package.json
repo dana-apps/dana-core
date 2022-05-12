@@ -76,7 +76,7 @@
     "@faker-js/faker": "^6.0.0",
     "@mikro-orm/cli": "^5.1.1",
     "@storybook/addon-actions": "^6.4.19",
-    "@storybook/addon-essentials": "^6.4.19",
+    "@storybook/addon-essentials": "^6.4.22",
     "@storybook/addon-interactions": "^6.4.19",
     "@storybook/addon-links": "^6.4.19",
     "@storybook/node-logger": "^6.2.9",
