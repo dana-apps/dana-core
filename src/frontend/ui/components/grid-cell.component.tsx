@@ -38,9 +38,6 @@ const presentationValue = (val?: AssetMetadataItem) => {
   return val.presentationValue.map((x) => x.label).join('; ');
 };
 
-const guessTextWidth = (text: string | undefined, fontSize: number) => {
-  return Math.max(
-    100,
-    Math.min(600, text ? text.length * fontSize * 0.4 : 300)
-  );
+export const guessTextWidth = (text: string | undefined, fontSize: number) => {
+  return Math.max(36, Math.min(600, text ? text.length * fontSize * 0.8 : 500));
 };

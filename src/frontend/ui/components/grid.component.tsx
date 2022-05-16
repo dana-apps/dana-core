@@ -27,6 +27,7 @@ import { compact, last, max, noop, sum } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
+import { guessTextWidth } from './grid-cell.component';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -85,7 +86,10 @@ export function DataGrid<T extends Resource>({
 
         if (typeof width === 'function') {
           return (
-            max(dataSample.map((x) => width(col.getData(x), fontSize))) ?? 100
+            max([
+              guessTextWidth(col.label, fontSize),
+              ...dataSample.map((x) => width(col.getData(x), fontSize))
+            ]) ?? 100
           );
         }
 
