@@ -372,7 +372,9 @@ export class AssetService extends EventEmitter<AssetEvents> {
       ? entity.metadata[titleField.id]?.[0]
       : undefined;
 
-    return archive.useDb(async (): Promise<Asset> => {
+    return archive.useDb(async (db): Promise<Asset> => {
+      await db.populate(entity, ['mediaFiles']);
+
       return {
         id: entity.id,
         title: typeof titleValue === 'string' ? titleValue : entity.id,
