@@ -72,15 +72,34 @@ export const SchemaScreen = () => {
 
   return (
     <>
-      <SchemaEditor
-        sx={{ flex: 1, overflowY: 'auto', width: '100%' }}
-        value={state}
-        errors={errors}
-        onChange={(change) => {
-          setHasEdits(true);
-          setState(change);
-        }}
-      />
+      {/*
+        This intermediary div is required due to an absolutely baffling css bug.
+
+        If we set `overflow-y: auto` on the child element, any update to the DOM while the child is scrolled on the Y
+        axis causes the _parent_ of this component to be repositioned to a Y value inversely proportional to the scroll
+        offset.
+
+        In practice, this means that if a switch is toggled while the editor is scrolled, the contents of the editor
+        disappear.
+
+        For reasons that I don't fully understand, this doesn't happen when the scroll contents are wrapped in a div.
+
+        This is likely a bug a flexbox/overflow bug in chromium (as of v100), so it may be possible to remove the
+        intermediary div if/when it is fixed.
+      */}
+      <div
+        sx={{ overflowY: 'auto', flex: 1, width: '100%', position: 'relative' }}
+      >
+        <SchemaEditor
+          sx={{ width: '100%' }}
+          value={state}
+          errors={errors}
+          onChange={(change) => {
+            setHasEdits(true);
+            setState(change);
+          }}
+        />
+      </div>
       <BottomBar
         actions={
           <>
