@@ -188,7 +188,7 @@ export const DatabaseReferenceField: FC<SchemaFormFieldProps<string>> = ({
         <Label>{property.label}</Label>
         <RelationSelect
           loadOptions={promiseOptions}
-          value={value?.presentationValue[0]}
+          value={value?.presentationValue?.[0]}
           data-testid={fieldEditTestId(property)}
           getOptionLabel={(opt) => opt?.label ?? ''}
           getOptionValue={(opt) => opt?.rawValue ?? ''}
@@ -317,10 +317,10 @@ const ReadonlyDisplay: FC<{
   );
 };
 
-export function fieldDisplayTestId(property: SchemaProperty, i: number = 0) {
+export function fieldDisplayTestId(property: SchemaProperty, i = 0) {
   return `metadata-display-${property.id}@${i}`;
 }
 
-export function fieldEditTestId(property: SchemaProperty, i: number = 0) {
+export function fieldEditTestId(property: SchemaProperty, i = 0) {
   return `metadata-edit-${property.id}@${i}`;
 }
