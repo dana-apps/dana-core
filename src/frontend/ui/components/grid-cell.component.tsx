@@ -1,17 +1,19 @@
 /** @jsxImportSource theme-ui */
 
-import { GetAsset } from '../../../common/asset.interfaces';
-import { SKIP_FETCH, unwrapGetResult, useGet } from '../../ipc/ipc.hooks';
+import { AssetMetadataItem } from '../../../common/asset.interfaces';
 import { ProgressIndicator, ProgressValue } from './atoms.component';
 import { DataGridCell } from './grid.component';
 
 /** Datagrid cell for free text */
 export const TextCell: DataGridCell<string> = ({ value }) => (
-  <>{value?.rawValue.join('; ')}</>
+  <>{presentationValue(value)}</>
 );
 
 TextCell.width = (data, fontSize) =>
-  Math.max(100, Math.min(600, data ? data.length * fontSize * 0.4 : 300));
+  Math.max(
+    100,
+    Math.min(600, data ? presentationValue(data).length * fontSize * 0.4 : 300)
+  );
 
 /** Datagrid cell for indicating progress */
 export const ProgressCell: DataGridCell<ProgressValue> = ({ value }) => {
@@ -30,15 +32,19 @@ ProgressCell.width = 36;
 
 /** Datagrid cell for database references */
 export const ReferenceCell: DataGridCell<string> = ({ value }) => {
-  const idReference = value?.rawValue[0];
-  const asset = unwrapGetResult(useGet(GetAsset, idReference ?? SKIP_FETCH));
-
-  if (!asset) {
-    return null;
-  }
-
-  return <>{asset.title}</>;
+  return <>{presentationValue(value)}</>;
 };
 
 ReferenceCell.width = (data, fontSize) =>
-  Math.max(100, Math.min(600, data ? data.length * fontSize * 0.4 : 300));
+  Math.max(
+    100,
+    Math.min(600, data ? presentationValue(data).length * fontSize * 0.4 : 300)
+  );
+
+const presentationValue = (val?: AssetMetadataItem<unknown>) => {
+  if (!val || val.presentationValue.length === 0) {
+    return '-';
+  }
+
+  return val.presentationValue.map((x) => x.label).join('; ');
+};
