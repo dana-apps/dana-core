@@ -282,10 +282,26 @@ export class AssetService extends EventEmitter<AssetEvents> {
     });
   }
 
+  /**
+   * Get a single asset by ID from the archive
+   *
+   * @param archive Archive to get asset from
+   * @param asset Id of the asset
+   * @param opts Options for fetching the asset
+   * @returns The asset represented by `id`, or undefined if it does not exist.
+   */
   get(archive: ArchivePackage, asset: string, opts?: GetAssetOpts) {
     return this.getMultiple(archive, [asset], opts).then((assets) => assets[0]);
   }
 
+  /**
+   * Get a multiple assets by ID from the archive
+   *
+   * @param archive Archive to get assets from
+   * @param asset Ids of the assets to fetch
+   * @param opts Options for fetching the asset
+   * @returns Array containing any referenced assets found.
+   */
   getMultiple(
     archive: ArchivePackage,
     assetIds: string[],
@@ -308,6 +324,18 @@ export class AssetService extends EventEmitter<AssetEvents> {
       );
   }
 
+  /**
+   * Cast a value of unknown type to the type expected by the schema property.
+   *
+   * If this succeeds, the returned value is valid according to the the schema at the time of casting.
+   *
+   * This method may have side effects, such as creating new entries in a controlled database.
+   *
+   * @param archive Archive that owns `property`
+   * @param property Property value representing the expected type
+   * @param value Value to cast to the type represented by `value`
+   * @returns A result value indicating whether the cast was successful and if so, the casted value.
+   */
   castOrCreateProperty(
     archive: ArchivePackage,
     property: SchemaProperty,
@@ -320,6 +348,17 @@ export class AssetService extends EventEmitter<AssetEvents> {
     });
   }
 
+  /**
+   * Convert a database entity representing to an Asset value sutable for returning to the frontend or passing to other
+   * areas of the application.
+   *
+   * This recurses into the asset's related properties and media in order to provide useful
+   *
+   * @param archive
+   * @param entity
+   * @param opts
+   * @returns
+   */
   private entityToAsset(
     archive: ArchivePackage,
     entity: AssetEntity,
@@ -368,6 +407,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
 }
 
 interface GetAssetOpts {
+  /**
+   * If false, recurse into the asset, fetching related media and metadata from the database (default is false).
+   *
+   * This will usually want to be false, except in contexts where a related property is being fetched and you want to
+   * avoid an infinite recursion.
+   **/
   shallow?: boolean;
 }
 

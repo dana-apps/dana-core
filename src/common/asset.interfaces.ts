@@ -5,17 +5,32 @@ import { Media } from './media.interfaces';
 import { ResourceList } from './resource';
 import { FetchError } from './util/error';
 
-/**
- * Represent a metadata property of an asset
- **/
 const AssetMetadataItem = z.object({
   rawValue: z.array(z.unknown().optional()),
   presentationValue: z.array(
     z.object({ rawValue: z.unknown().optional(), label: z.string() })
   )
 });
+/**
+ * Represent a metadata property of an asset. Contains all the information required to display or edit a single metadata
+ * property.
+ **/
 export interface AssetMetadataItem<T = unknown> {
+  /*
+   * The canonical value of the property, as stored in the database.
+   *
+   * Property values are always repredented using an array in order to allow for consistent treatment of single and
+   * repated occurances in the schema.
+   *
+   * A null value for a non-repeated property implies a rawValue of `[]`.
+   * A value for a non-repeated property implies an array of length 1
+   * A repeated property will have 0 or more elements.
+   */
   rawValue: (T | undefined)[];
+
+  /**
+   * For each element in `rawValue`, both the raw value and a human-readable string representation of it.
+   */
   presentationValue: { rawValue?: T; label: string }[];
 }
 

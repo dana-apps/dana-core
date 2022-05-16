@@ -83,16 +83,8 @@ export abstract class SchemaPropertyValue {
   repeated!: boolean;
 
   /**
-   * Override to define collections referenced by this property. Defaults to none.
-   *
-   * @returns The id of a referenced collection or undefined if none.
-   */
-  getReferencedCollection(): string | undefined {
-    return undefined;
-  }
-
-  /**
-   * Override to provide a display value for the
+   * Override to define how raw values in the database are converted into `AssetMetadataItem` values for presentation
+   * in the UI
    */
   abstract convertToMetadataItems(
     context: AssetContext,
@@ -282,10 +274,6 @@ export class ControlledDatabaseSchemaPropertyValue
 
   toJson() {
     return this;
-  }
-
-  getReferencedCollection(): string | undefined {
-    return this.databaseId;
   }
 
   async convertToMetadataItems(
