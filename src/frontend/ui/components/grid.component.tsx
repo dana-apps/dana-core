@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /** @jsxImportSource theme-ui */
 
 import {
@@ -26,14 +27,13 @@ import { compact, last, max, noop, sum } from 'lodash';
 import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
-import { AssetMetadataItem } from '../../../common/asset.interfaces';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
   data: ListCursor<T>;
 
   /** Specification of the grid columns */
-  columns: GridColumn<T>[];
+  columns: GridColumn<T, any>[];
 
   /** Font size used to size grid rows and set their inner font size */
   fontSize?: number;
@@ -243,7 +243,7 @@ export function DataGrid<T extends Resource>({
  * Specify data access and presentation for a grid row.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface GridColumn<T extends Resource = Resource, Val = any> {
+export interface GridColumn<T = unknown, Val = any> {
   /** Unique id of the column */
   id: string;
 
@@ -259,7 +259,7 @@ export interface GridColumn<T extends Resource = Resource, Val = any> {
 
 /** Presentation component for a datagrid */
 export type DataGridCell<Val = unknown> = FC<{
-  value?: AssetMetadataItem<Val>;
+  value?: Val;
   property: string;
 }> & {
   /**
@@ -267,9 +267,7 @@ export type DataGridCell<Val = unknown> = FC<{
    *
    * Provieding a function will cause the size to be estimated based on a sample of the grid data.
    **/
-  width?:
-    | number
-    | ((val: AssetMetadataItem<Val> | undefined, fontSize: number) => number);
+  width?: number | ((val: Val | undefined, fontSize: number) => number);
 };
 
 /**

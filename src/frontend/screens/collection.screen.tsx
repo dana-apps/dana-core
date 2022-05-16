@@ -5,10 +5,9 @@ import {
   Asset,
   GetCollection,
   ListAssets,
-  SchemaProperty,
-  SchemaPropertyType
+  SchemaProperty
 } from '../../common/asset.interfaces';
-import { never, required } from '../../common/util/assert';
+import { required } from '../../common/util/assert';
 import {
   iterateListCursor,
   ListCursor,
@@ -16,7 +15,6 @@ import {
   useGet,
   useList
 } from '../ipc/ipc.hooks';
-import { ReferenceCell, TextCell } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { AssetDetail } from '../ui/components/asset-detail.component';
 import {
@@ -28,6 +26,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useContextMenu } from '../ui/hooks/menu.hooks';
 import { IconButton } from 'theme-ui';
 import { Gear, Plus } from 'react-bootstrap-icons';
+import { MetadataItemCell } from '../ui/components/grid-cell.component';
 
 /**
  * Screen for viewing the assets in a collection.
@@ -166,22 +165,10 @@ export const CollectionScreen: FC = () => {
  */
 const getGridColumns = (schema: SchemaProperty[]) =>
   schema.map((property): GridColumn<Asset> => {
-    if (property.type === SchemaPropertyType.FREE_TEXT) {
-      return {
-        id: property.id,
-        cell: TextCell,
-        getData: (x) => x.metadata[property.id],
-        label: property.label
-      };
-    }
-    if (property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
-      return {
-        id: property.id,
-        cell: ReferenceCell,
-        getData: (x) => x.metadata[property.id],
-        label: property.label
-      };
-    }
-
-    return never(property);
+    return {
+      id: property.id,
+      cell: MetadataItemCell,
+      getData: (x) => x.metadata[property.id],
+      label: property.label
+    };
   });

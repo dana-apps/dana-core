@@ -4,9 +4,10 @@ import { FC, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from 'theme-ui';
 import {
+  Asset,
+  AssetMetadataItem,
   GetRootAssetsCollection,
-  SchemaProperty,
-  SchemaPropertyType
+  SchemaProperty
 } from '../../common/asset.interfaces';
 import {
   IngestPhase,
@@ -16,13 +17,12 @@ import {
   GetIngestSession,
   CancelIngestSession
 } from '../../common/ingest.interfaces';
-import { never, required } from '../../common/util/assert';
+import { required } from '../../common/util/assert';
 import { iterateListCursor, useGet, useList, useRPC } from '../ipc/ipc.hooks';
 import { ProgressValue } from '../ui/components/atoms.component';
 import {
-  ProgressCell,
-  ReferenceCell,
-  TextCell
+  MetadataItemCell,
+  ProgressCell
 } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { AssetDetail } from '../ui/components/asset-detail.component';
@@ -164,25 +164,13 @@ function useCancelImport(sessionId: string) {
  * @returns An array of DataGrid columns for each property in the schma.
  */
 const getGridColumns = (schema: SchemaProperty[]) => {
-  const metadataColumns = schema.map((property): GridColumn<IngestedAsset> => {
-    if (property.type === SchemaPropertyType.FREE_TEXT) {
-      return {
-        id: property.id,
-        cell: TextCell,
-        getData: (x) => x.metadata[property.id],
-        label: property.label
-      };
-    }
-    if (property.type === SchemaPropertyType.CONTROLLED_DATABASE) {
-      return {
-        id: property.id,
-        cell: ReferenceCell,
-        getData: (x) => x.metadata[property.id],
-        label: property.label
-      };
-    }
-
-    return never(property);
+  const metadataColumns = schema.map((property): GridColumn<Asset> => {
+    return {
+      id: property.id,
+      cell: MetadataItemCell,
+      getData: (x) => x.metadata[property.id],
+      label: property.label
+    };
   });
 
   return [
