@@ -108,7 +108,7 @@
     "babel-jest": "^27.5.1",
     "babel-loader": "^7.1.5",
     "babel-preset-vite": "^1.0.4",
-    "electron": "^18.2.0",
+    "electron": "^18.2.3",
     "electron-builder": "^23.0.3",
     "electron-notarize": "^1.2.1",
     "eslint": "^8.11.0",
