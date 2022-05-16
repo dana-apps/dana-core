@@ -87,7 +87,7 @@
     "@storybook/react": "^6.4.19",
     "@storybook/testing-library": "^0.0.9",
     "@testing-library/react": "^12.1.4",
-    "@testing-library/react-hooks": "^7.0.2",
+    "@testing-library/react-hooks": "^8.0.0",
     "@types/jest": "^27.0.3",
     "@types/lodash": "^4.14.178",
     "@types/mime": "^2.0.3",
