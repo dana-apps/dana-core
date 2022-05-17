@@ -92,6 +92,14 @@ export abstract class SchemaPropertyValue {
   ): Promise<AssetMetadataItem>;
 
   /**
+   *
+   * @returns
+   */
+  referencedCollectionId(): string | undefined {
+    return undefined;
+  }
+
+  /**
    * Return a zod validator object for this schema property.
    */
   async getValidator(context: CollectionContext) {
@@ -216,6 +224,10 @@ export class ControlledDatabaseSchemaPropertyValue
         });
       }
     });
+  }
+
+  referencedCollectionId(): string | undefined {
+    return this.databaseId;
   }
 
   async castValue(value: unknown, { archive, assets }: AssetContext) {

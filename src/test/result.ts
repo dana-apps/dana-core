@@ -3,7 +3,11 @@ import { assert } from '../common/util/assert';
 import { Result } from '../common/util/error';
 
 export function requireSuccess<T>(x: Result<T>) {
-  assert(x.status === 'ok', 'Expected operation to succeed. Got result:', x);
+  assert(
+    x.status === 'ok',
+    'Expected operation to fail. Got error:',
+    JSON.stringify((x as any).error)
+  );
 
   return x.value;
 }

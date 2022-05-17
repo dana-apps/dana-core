@@ -8,7 +8,12 @@ import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { MediaFileService } from '../../media/media-file.service';
 import { AssetsChangedEvent, AssetService } from '../asset.service';
 import { CollectionService } from '../collection.service';
-import { assetMetadata } from '../test-utils';
+import {
+  assetMetadata,
+  assetMetadataItem,
+  assetMetadataItemMatcher,
+  someSchemaProperty
+} from '../test-utils';
 
 const SCHEMA: SchemaProperty[] = [
   {
@@ -305,6 +310,147 @@ describe(AssetService, () => {
         );
         expect(dbAssets.total).toBe(0);
         expect(res).toBeUndefined();
+      });
+    });
+  });
+
+  describe('deleting assets', () => {
+    it('should not allow deletion of assets that are referenced by a single required property', async () => {
+      const fixture = await setup();
+
+      const targetDb = await fixture.givenAControlledDatabaseWithSchema([]);
+
+      const [dbProperty] = await fixture.givenTheSchema([
+        someSchemaProperty({
+          type: SchemaPropertyType.CONTROLLED_DATABASE,
+          required: true,
+          databaseId: targetDb.id
+        })
+      ]);
+
+      const targetRecord = requireSuccess(
+        await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          metadata: {}
+        })
+      );
+      const referencingRecord = requireSuccess(
+        await fixture.service.createAsset(
+          fixture.archive,
+          fixture.rootCollection.id,
+          { metadata: { [dbProperty.id]: [targetRecord.id] } }
+        )
+      );
+
+      expect(
+        await fixture.service.deleteAssets(fixture.archive, targetDb.id, [
+          targetRecord.id
+        ])
+      ).toEqual({
+        status: 'error',
+        error: expect.arrayContaining([
+          expect.objectContaining({
+            assetId: referencingRecord.id
+          })
+        ])
+      });
+
+      expect(
+        await fixture.service.listAssets(fixture.archive, targetDb.id)
+      ).toHaveProperty('total', 1);
+    });
+
+    it('should remove references from non-required properties from the related record', async () => {
+      const fixture = await setup();
+
+      const targetDb = await fixture.givenAControlledDatabaseWithSchema([]);
+
+      const [dbProperty] = await fixture.givenTheSchema([
+        someSchemaProperty({
+          type: SchemaPropertyType.CONTROLLED_DATABASE,
+          required: false,
+          databaseId: targetDb.id
+        })
+      ]);
+
+      const targetRecord = requireSuccess(
+        await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          metadata: {}
+        })
+      );
+
+      const referencingRecord = requireSuccess(
+        await fixture.service.createAsset(
+          fixture.archive,
+          fixture.rootCollection.id,
+          { metadata: { [dbProperty.id]: [targetRecord.id] } }
+        )
+      );
+
+      requireSuccess(
+        await fixture.service.deleteAssets(fixture.archive, targetDb.id, [
+          targetRecord.id
+        ])
+      );
+
+      expect(
+        await fixture.service.listAssets(fixture.archive, targetDb.id)
+      ).toHaveProperty('total', 0);
+
+      expect(
+        await fixture.service.get(fixture.archive, referencingRecord.id)
+      ).toHaveProperty('metadata', {
+        [dbProperty.id]: assetMetadataItemMatcher([])
+      });
+    });
+
+    it('should remove references from required properties from the related record where there would still be a remaining property', async () => {
+      const fixture = await setup();
+
+      const targetDb = await fixture.givenAControlledDatabaseWithSchema([]);
+
+      const [dbProperty] = await fixture.givenTheSchema([
+        someSchemaProperty({
+          type: SchemaPropertyType.CONTROLLED_DATABASE,
+          required: true,
+          repeated: true,
+          databaseId: targetDb.id
+        })
+      ]);
+
+      const targetRecord = requireSuccess(
+        await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          metadata: {}
+        })
+      );
+
+      const anotherRecord = requireSuccess(
+        await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          metadata: {}
+        })
+      );
+
+      const referencingRecord = requireSuccess(
+        await fixture.service.createAsset(
+          fixture.archive,
+          fixture.rootCollection.id,
+          { metadata: { [dbProperty.id]: [targetRecord.id, anotherRecord.id] } }
+        )
+      );
+
+      requireSuccess(
+        await fixture.service.deleteAssets(fixture.archive, targetDb.id, [
+          targetRecord.id
+        ])
+      );
+
+      expect(
+        await fixture.service.listAssets(fixture.archive, targetDb.id)
+      ).toHaveProperty('total', 1);
+
+      expect(
+        await fixture.service.get(fixture.archive, referencingRecord.id)
+      ).toHaveProperty('metadata', {
+        [dbProperty.id]: assetMetadataItemMatcher([anotherRecord.id])
       });
     });
   });

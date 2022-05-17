@@ -18,6 +18,36 @@ export const someAsset = (props: Partial<Asset> = {}): Asset => ({
   ...props
 });
 
+export const someSchemaProperty = (
+  props: Partial<SchemaProperty> = {}
+): SchemaProperty => {
+  const base = {
+    id: faker.datatype.uuid(),
+    label: faker.word.noun(),
+    required: false,
+    repeated: false
+  };
+
+  if (!props.type || props.type === SchemaPropertyType.FREE_TEXT) {
+    return {
+      ...base,
+      ...props,
+      type: SchemaPropertyType.FREE_TEXT
+    };
+  }
+
+  if (props.type === SchemaPropertyType.CONTROLLED_DATABASE) {
+    return {
+      databaseId: faker.datatype.uuid(),
+      ...base,
+      ...props,
+      type: SchemaPropertyType.CONTROLLED_DATABASE
+    };
+  }
+
+  return never(props.type);
+};
+
 export const somePropertyFromASchema = (
   schema: SchemaProperty
 ): AssetMetadataItem => {
@@ -64,4 +94,15 @@ export const assetMetadataItem = (rawValue: unknown[]): AssetMetadataItem => ({
     rawValue: val,
     label: String(val)
   }))
+});
+
+export const assetMetadataItemMatcher = (
+  rawValue: unknown[]
+): AssetMetadataItem => ({
+  rawValue,
+  presentationValue: rawValue.map((val) =>
+    expect.objectContaining({
+      rawValue: val
+    })
+  )
 });

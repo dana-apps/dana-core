@@ -286,6 +286,24 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     return res.success;
   }
 
+  async findPropertiesReferencingCollection(
+    archive: ArchivePackage,
+    referencedCollectionId: string
+  ) {
+    const allCollections = await archive.useDb((db) =>
+      db.find(AssetCollectionEntity, {})
+    );
+
+    return allCollections.flatMap((collection) => {
+      return collection.schema
+        .filter(
+          (property) =>
+            property.referencedCollectionId() === referencedCollectionId
+        )
+        .map((property) => ({ property, collection }));
+    });
+  }
+
   /**
    * Validate a that a proposed addition into the archive is valid according to a schema.
    *

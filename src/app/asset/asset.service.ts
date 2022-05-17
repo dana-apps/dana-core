@@ -1,10 +1,12 @@
 import { EventEmitter } from 'eventemitter3';
 import {
+  AggregatedValidationError,
   Asset,
+  ReferentialIntegrityError,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
-import { mapValues } from 'lodash';
+import { mapValues, uniq } from 'lodash';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, FetchError, ok, Result } from '../../common/util/error';
@@ -15,6 +17,7 @@ import { ArchivePackage } from '../package/archive-package';
 import { AssetCollectionEntity, AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
 import { SchemaPropertyValue } from './metadata.entity';
+import { never } from '../../common/util/assert';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -81,7 +84,8 @@ export class AssetService extends EventEmitter<AssetEvents> {
     if (res.status === 'ok') {
       this.emit('change', {
         created: [res.value.id],
-        updated: []
+        updated: [],
+        deleted: []
       });
     }
 
@@ -132,7 +136,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
     });
 
     if (res.status === 'ok') {
-      this.emit('change', { updated: [res.value.id], created: [] });
+      this.emit('change', {
+        updated: [res.value.id],
+        created: [],
+        deleted: []
+      });
     }
 
     return res;
@@ -206,7 +214,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
   }
 
   /**
-   * List assets in the archive.
+   * Search assets in the archive by title of the asset
    *
    * @returns ResourceList representing the query.
    */
@@ -234,51 +242,48 @@ export class AssetService extends EventEmitter<AssetEvents> {
         return error(FetchError.DOES_NOT_EXIST);
       }
 
-      let matchingRefs;
-      const fieldIdParam = `$.${title.id}`;
-
-      // We need to run a raw query here to filter on the metadata values due to them being embedded in arrays and
-      // therefore not being able to use the ORM's abstractions.
-      //
-      // We just take the IDs here, then get back into ORM-land as quickly as possible.
-      //
-      // We may well end up deciding that recurrent properties should be modelled relationally rather than via json
-      // arrays, but it works for now.
-      if (exact) {
-        matchingRefs = await db.execute(
-          `SELECT asset.id id FROM asset, json_each(json_extract(metadata, ?)) AS titles
-           WHERE titles.value = ? AND collection_id = ?`,
-          [fieldIdParam, query, collectionId]
-        );
-      } else {
-        const queryParam = `${query}%`;
-
-        matchingRefs = await db.execute(
-          `SELECT asset.id id FROM asset, json_each(json_extract(metadata, ?)) AS titles
-           WHERE titles.value LIKE ? AND collection_id = ?;`,
-          [fieldIdParam, queryParam, collectionId]
-        );
-      }
-
-      const entities = await archive.list(
-        AssetEntity,
-        {
-          id: matchingRefs.map((ref) => ref.id)
-        },
-        {
-          populate: ['collection', 'mediaFiles'],
+      return ok(
+        await this.filterAssets(
+          archive,
+          collectionId,
+          {
+            query: [query],
+            match: exact ? 'any' : 'fuzzy',
+            propertyId: title.id
+          },
           range
-        }
+        )
+      );
+    });
+  }
+
+  /**
+   * Filter assets in the archive according to the value of a single column
+   *
+   * @returns ResourceList representing the query.
+   */
+  async filterAssets(
+    archive: ArchivePackage,
+    collectionId: string,
+    opts: { query: unknown[]; propertyId: string; match: 'any' | 'fuzzy' },
+    range?: PageRange
+  ) {
+    return archive.useDb(async () => {
+      const entities = await this.filterAssetEntities(
+        archive,
+        collectionId,
+        { ...opts, populate: ['collection', 'mediaFiles'] },
+        range
       );
 
-      return ok({
+      return {
         ...entities,
         items: await Promise.all(
           entities.items.map(async (entity) =>
             this.entityToAsset(archive, entity, { shallow: false })
           )
         )
-      });
+      };
     });
   }
 
@@ -349,6 +354,85 @@ export class AssetService extends EventEmitter<AssetEvents> {
   }
 
   /**
+   * Delete a group of assets. Rejects if the assets cannot be deleted.
+   *
+   * @param archive
+   * @param collectionId
+   * @param deletedIds
+   * @returns
+   */
+  async deleteAssets(
+    archive: ArchivePackage,
+    collectionId: string,
+    deletedIds: string[]
+  ) {
+    return archive.useDb(async (db) => {
+      const properties =
+        await this.collectionService.findPropertiesReferencingCollection(
+          archive,
+          collectionId
+        );
+
+      const errors: ReferentialIntegrityError = [];
+      const toPersist: AssetEntity[] = [];
+
+      for (const { property, collection } of properties) {
+        const references = await this.filterAssetEntities(
+          archive,
+          collection.id,
+          { match: 'any', query: deletedIds, propertyId: property.id },
+          { limit: Infinity, offset: 0 }
+        );
+
+        for (const reference of references.items) {
+          if (
+            property.required &&
+            reference.metadata[property.id]?.length === 1
+          ) {
+            errors.push({
+              assetId: reference.id,
+              collectionId: collection.id
+            });
+          } else {
+            const propertyVal = reference.metadata[property.id];
+
+            reference.metadata[property.id] = propertyVal?.filter((assetRef) =>
+              deletedIds.every((deletedId) => assetRef !== deletedId)
+            );
+
+            toPersist.push(reference);
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        return error(errors);
+      }
+
+      const assets = await db.find(
+        AssetEntity,
+        { id: deletedIds },
+        { populate: ['mediaFiles'] }
+      );
+      const mediaFileIds = uniq(
+        assets.flatMap((asset) => asset.mediaFiles.getIdentifiers())
+      );
+
+      await db.transactional(async (em) => {
+        db.remove(assets);
+        db.persist(toPersist);
+
+        await em.flush();
+      });
+
+      this.emit('change', { updated: [], created: [], deleted: deletedIds });
+
+      await this.mediaService.deleteFiles(archive, mediaFileIds);
+      return ok();
+    });
+  }
+
+  /**
    * Convert a database entity representing to an Asset value sutable for returning to the frontend or passing to other
    * areas of the application.
    *
@@ -404,6 +488,67 @@ export class AssetService extends EventEmitter<AssetEvents> {
       };
     });
   }
+
+  /**
+   * Filter assets in the archive according to the value of a single column
+   */
+  private async filterAssetEntities(
+    archive: ArchivePackage,
+    collectionId: string,
+    {
+      query,
+      match,
+      propertyId,
+      populate
+    }: {
+      propertyId: string;
+      query: unknown[];
+      match: 'any' | 'fuzzy';
+      populate?: (keyof AssetEntity)[];
+    },
+    range?: PageRange
+  ) {
+    return archive.useDb(async (db) => {
+      let matchingRefs;
+      const fieldIdParam = `$.${propertyId}`;
+
+      // We need to run a raw query here to filter on the metadata values due to them being embedded in arrays and
+      // therefore not being able to use the ORM's abstractions.
+      //
+      // We just take the IDs here, then get back into ORM-land as quickly as possible.
+      //
+      // We may well end up deciding that recurrent properties should be modelled relationally rather than via json
+      // arrays, but it works for now.
+      if (match === 'any') {
+        matchingRefs = await db.execute(
+          `SELECT asset.id id FROM asset, json_each(json_extract(metadata, ?)) AS titles
+           WHERE titles.value = ? AND collection_id = ?`,
+          [fieldIdParam, query, collectionId]
+        );
+      } else if (match === 'fuzzy') {
+        const queryParam = `${query}%`;
+
+        matchingRefs = await db.execute(
+          `SELECT asset.id id FROM asset, json_each(json_extract(metadata, ?)) AS titles
+           WHERE titles.value LIKE ? AND collection_id = ?;`,
+          [fieldIdParam, queryParam, collectionId]
+        );
+      } else {
+        return never(match);
+      }
+
+      return await archive.list(
+        AssetEntity,
+        {
+          id: matchingRefs.map((ref) => ref.id)
+        },
+        {
+          populate,
+          range
+        }
+      );
+    });
+  }
 }
 
 interface GetAssetOpts {
@@ -427,4 +572,7 @@ export interface AssetsChangedEvent {
 
   /** Ids of updated assets */
   updated: string[];
+
+  /** Ids of deleted assets */
+  deleted: string[];
 }
