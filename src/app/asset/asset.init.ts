@@ -10,7 +10,8 @@ import {
   UpdateCollection,
   CreateAsset,
   GetAsset,
-  SearchAsset
+  SearchAsset,
+  DeleteAssets
 } from '../../common/asset.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { ok, okIfExists } from '../../common/util/error';
@@ -58,6 +59,10 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
     }
   );
 
+  router.bindArchiveRpc(DeleteAssets, (archive, { assetIds, collectionId }) => {
+    return assetService.deleteAssets(archive, collectionId, assetIds);
+  });
+
   router.bindArchiveRpc(
     CreateCollection,
     async (archive, { parent, ...props }) =>
@@ -94,8 +99,16 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
     );
   });
 
-  assetService.on('change', ({ created }) => {
-    router.emit(ChangeEvent, { type: ListAssets.id, ids: [...created] });
+  assetService.on('change', ({ updated }) => {
+    router.emit(ChangeEvent, {
+      type: ListAssets.id,
+      ids: []
+    });
+
+    router.emit(ChangeEvent, {
+      type: GetAsset.id,
+      ids: updated
+    });
   });
 
   collectionService.on('change', ({ created, updated, deleted }) => {

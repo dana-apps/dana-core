@@ -3,6 +3,7 @@
 import { FC, useCallback, useMemo, useState } from 'react';
 import {
   Asset,
+  DeleteAssets,
   GetCollection,
   ListAssets,
   SchemaProperty
@@ -13,7 +14,8 @@ import {
   ListCursor,
   unwrapGetResult,
   useGet,
-  useList
+  useList,
+  useRPC
 } from '../ipc/ipc.hooks';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { AssetDetail } from '../ui/components/asset-detail.component';
@@ -27,16 +29,20 @@ import { useContextMenu } from '../ui/hooks/menu.hooks';
 import { IconButton } from 'theme-ui';
 import { Gear, Plus } from 'react-bootstrap-icons';
 import { MetadataItemCell } from '../ui/components/grid-cell.component';
+import { useErrorDisplay } from '../ui/hooks/error.hooks';
 
 /**
  * Screen for viewing the assets in a collection.
  */
 export const CollectionScreen: FC = () => {
+  const errors = useErrorDisplay();
+  const navigate = useNavigate();
+  const rpc = useRPC();
+
   const collectionId = required(
     useParams().collectionId,
     'Expected collectionId param'
   );
-  const navigate = useNavigate();
   const collection = unwrapGetResult(useGet(GetCollection, collectionId));
   const fetchedAssets = useList(
     ListAssets,
@@ -138,6 +144,15 @@ export const CollectionScreen: FC = () => {
           sx={{ flex: 1, width: '100%' }}
           columns={gridColumns}
           data={assets}
+          contextMenuItems={(assetIds) => [
+            assetIds.length > 0 && {
+              id: 'delete',
+              label: 'Delete',
+              action: async () => {
+                await rpc(DeleteAssets, { assetIds, collectionId });
+              }
+            }
+          ]}
         />
 
         <BottomBar

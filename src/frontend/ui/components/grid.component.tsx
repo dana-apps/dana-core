@@ -28,6 +28,7 @@ import { useEventEmitter } from '../hooks/state.hooks';
 import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
 import { guessTextWidth } from './grid-cell.component';
+import { ContextMenuChoice, useContextMenu } from '../hooks/menu.hooks';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -38,6 +39,9 @@ export interface DataGridProps<T extends Resource> extends BoxProps {
 
   /** Font size used to size grid rows and set their inner font size */
   fontSize?: number;
+
+  /** If provided, menu items to display in the context menu */
+  contextMenuItems?: (targets: string[]) => ContextMenuChoice[];
 }
 
 /**
@@ -49,6 +53,7 @@ export function DataGrid<T extends Resource>({
   data,
   columns,
   fontSize: fontSizeParam = 1,
+  contextMenuItems,
   ...props
 }: DataGridProps<T>) {
   const { theme } = useThemeUI();
@@ -185,6 +190,7 @@ export function DataGrid<T extends Resource>({
                   value={{
                     width,
                     columns: columns as GridColumn<Resource>[],
+                    contextMenuItems,
                     rowHeight,
                     columnOffsets,
                     columnSizes,
@@ -283,7 +289,7 @@ function Row<T extends Resource>({
   index
 }: ListChildComponentProps<CellData<T>>) {
   const { current: selection, setSelection } = SelectionContext.useContainer();
-  const { columnSizes, width } = useContext(GridContext);
+  const { columnSizes, width, contextMenuItems } = useContext(GridContext);
   const colData = cursor.get(index);
   const plainBg = index % 2 === 1 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
@@ -296,6 +302,10 @@ function Row<T extends Resource>({
     position: 'relative'
   };
 
+  const contextMenu = useContextMenu({
+    options: contextMenuItems && colData ? contextMenuItems([colData.id]) : []
+  });
+
   if (!colData || !columnSizes) {
     return <div sx={sx} style={style} />;
   }
@@ -305,12 +315,19 @@ function Row<T extends Resource>({
       sx={sx}
       style={{ ...style, minWidth: width }}
       onClick={() => setSelection(colData.id)}
+      {...contextMenu.triggerProps}
     >
       {columns.map((column, i) => (
         <div
           key={column.id}
           sx={{
+            variant:
+              contextMenu.visible && !selected ? 'listItems.active' : undefined,
             overflow: 'hidden',
+            outline:
+              contextMenu.visible && !selected
+                ? '2px solid var(--theme-ui-colors-muted)'
+                : undefined,
             py: 1,
             px: 2,
             height: '100%',
@@ -437,6 +454,7 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
 const GridContext = createContext<{
   columns: GridColumn<Resource>[];
   onResize: (index: number, size: number) => void;
+  contextMenuItems?: (targets: string[]) => ContextMenuChoice[];
   columnSizes?: number[];
   width: number;
   columnOffsets?: number[];

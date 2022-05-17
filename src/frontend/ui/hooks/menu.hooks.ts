@@ -9,13 +9,13 @@ import {
 import { ShowContextMenu } from '../../../common/ui.interfaces';
 import { useRPC } from '../../ipc/ipc.hooks';
 
-interface ContextMenuItem {
+export interface ContextMenuItem {
   id: string;
   label: string;
   action: () => void;
 }
 
-type ContextMenuChoice = ContextMenuItem | '-' | undefined;
+export type ContextMenuChoice = ContextMenuItem | '-' | false | undefined;
 
 interface ContextMenuOpts {
   /** Menu options */

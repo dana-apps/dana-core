@@ -143,9 +143,9 @@ export const NavListItem: FC<NavListItemProps> = ({
       ref={wrapperRef}
       tabIndex={0}
       sx={{
-        outline:
+        variant:
           !isActive && (editing || contextMenu.visible)
-            ? '2px solid var(--theme-ui-colors-muted)'
+            ? 'listItems.active'
             : undefined,
         flexDirection: 'row',
         alignItems: 'center',

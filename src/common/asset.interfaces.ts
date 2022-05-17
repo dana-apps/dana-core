@@ -294,7 +294,7 @@ export const CreateAsset = RpcInterface({
 });
 
 /**
- * Create a new asset.
+ * Search for an asset by part of its title.
  */
 export const SearchAsset = RpcInterface({
   id: 'assets/search',
@@ -304,6 +304,19 @@ export const SearchAsset = RpcInterface({
   }),
   response: ResourceList(Asset),
   error: z.nativeEnum(FetchError)
+});
+
+/**
+ * Delete one or more assets.
+ */
+export const DeleteAssets = RpcInterface({
+  id: 'assets/delete',
+  request: z.object({
+    collectionId: z.string(),
+    assetIds: z.array(z.string())
+  }),
+  response: z.object({}),
+  error: z.nativeEnum(FetchError).or(ReferentialIntegrityError)
 });
 
 /**
