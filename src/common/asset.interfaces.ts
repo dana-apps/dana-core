@@ -108,7 +108,11 @@ export type AggregatedValidationError = z.TypeOf<
 export const ReferentialIntegrityError = z.array(
   z.object({
     assetId: z.string(),
-    collectionId: z.string()
+    assetTitle: z.string().optional(),
+    collectionId: z.string(),
+    collectionTitle: z.string(),
+    propertyId: z.string(),
+    propertyLabel: z.string()
   })
 );
 export type ReferentialIntegrityError = z.TypeOf<

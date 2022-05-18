@@ -35,9 +35,7 @@ import { useErrorDisplay } from '../ui/hooks/error.hooks';
  * Screen for viewing the assets in a collection.
  */
 export const CollectionScreen: FC = () => {
-  const errors = useErrorDisplay();
   const navigate = useNavigate();
-  const rpc = useRPC();
 
   const collectionId = required(
     useParams().collectionId,
@@ -51,6 +49,8 @@ export const CollectionScreen: FC = () => {
   );
   const selection = SelectionContext.useContainer();
   const [pendingAsset, setPendingAsset] = useState<Asset>();
+
+  const assetContextMenu = useAssetContextMenu(collectionId);
 
   const assets = useMemo((): ListCursor<Asset> | undefined => {
     if (!fetchedAssets) {
@@ -144,15 +144,7 @@ export const CollectionScreen: FC = () => {
           sx={{ flex: 1, width: '100%' }}
           columns={gridColumns}
           data={assets}
-          contextMenuItems={(assetIds) => [
-            assetIds.length > 0 && {
-              id: 'delete',
-              label: 'Delete',
-              action: async () => {
-                await rpc(DeleteAssets, { assetIds, collectionId });
-              }
-            }
-          ]}
+          contextMenuItems={assetContextMenu}
         />
 
         <BottomBar
@@ -187,3 +179,86 @@ const getGridColumns = (schema: SchemaProperty[]) =>
       label: property.label
     };
   });
+
+const useAssetContextMenu = (collectionId: string) => {
+  const errorDisplay = useErrorDisplay();
+  const rpc = useRPC();
+
+  return useCallback(
+    (assetIds: string[]) => [
+      assetIds.length > 0 && {
+        id: 'delete',
+        label: 'Delete',
+        action: async () => {
+          const res = await rpc(DeleteAssets, { assetIds, collectionId });
+
+          if (res.status === 'error') {
+            if (typeof res.error === 'object') {
+              errorDisplay(
+                <>
+                  <div sx={{ pb: 2 }}>
+                    The records selected cannot be deleted right now due for the
+                    following {res.error.length === 1 ? 'reason' : 'reasons'}:
+                  </div>
+
+                  <div style={{ userSelect: 'text', overflow: 'auto' }}>
+                    <ul>
+                      {res.error.map(
+                        ({
+                          assetId,
+                          assetTitle,
+                          collectionTitle,
+                          propertyLabel,
+                          propertyId
+                        }) => {
+                          const displayedTitle = assetTitle ? (
+                            <>
+                              Record <strong>{assetTitle}</strong>
+                            </>
+                          ) : (
+                            'A record'
+                          );
+
+                          return (
+                            <li key={assetId + '.' + propertyId}>
+                              <div style={{ paddingBottom: '0.5em' }}>
+                                {displayedTitle} in collection{' '}
+                                <strong>{collectionTitle}</strong> has this
+                                record as its <strong>{propertyLabel}</strong>{' '}
+                                property.
+                              </div>
+                              <div>
+                                Deleting it would mean that{' '}
+                                <strong>{propertyLabel}</strong> is blank, which
+                                is not allowed by the schema.
+                              </div>
+                              <div style={{ paddingBottom: '0.5em' }}>
+                                Either delete {displayedTitle} as well, or chage
+                                its <strong>{propertyLabel}</strong> property to
+                                something else.
+                              </div>
+                              (record id:{' '}
+                              <code style={{ userSelect: 'all' }}>
+                                {assetId}
+                              </code>
+                              )
+                            </li>
+                          );
+                        }
+                      )}
+                    </ul>
+                  </div>
+                </>
+              );
+            } else {
+              errorDisplay.unexpected(res.error);
+            }
+
+            return;
+          }
+        }
+      }
+    ],
+    [collectionId, errorDisplay, rpc]
+  );
+};

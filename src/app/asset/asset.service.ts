@@ -17,7 +17,7 @@ import { ArchivePackage } from '../package/archive-package';
 import { AssetCollectionEntity, AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
 import { SchemaPropertyValue } from './metadata.entity';
-import { never } from '../../common/util/assert';
+import { never, required } from '../../common/util/assert';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -389,9 +389,20 @@ export class AssetService extends EventEmitter<AssetEvents> {
             property.required &&
             reference.metadata[property.id]?.length === 1
           ) {
+            const asset = required(
+              await this.get(archive, reference.id),
+              'Cannot resolve entity by id'
+            );
+
             errors.push({
               assetId: reference.id,
-              collectionId: collection.id
+              collectionId: collection.id,
+              collectionTitle: collection.title,
+              propertyId: property.id,
+              propertyLabel:
+                collection.schema.find((x) => x.id === property.id)?.label ??
+                property.id,
+              assetTitle: asset.title
             });
           } else {
             const propertyVal = reference.metadata[property.id];
