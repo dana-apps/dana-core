@@ -100,6 +100,7 @@ export const WindowDragArea: FC<HTMLAttributes<unknown>> = (props) => (
 );
 
 const WindowControls = () => {
+  const config = useFrontendConfig();
   const rpc = useRPC();
   const [state, setState] = useState<MaximizationState>();
 
@@ -122,6 +123,10 @@ const WindowControls = () => {
     () => rpc(ToggleMaximizeWindow, {}),
     [rpc]
   );
+
+  if (config.type === 'modal') {
+    return null;
+  }
 
   if (!state) {
     return null;
@@ -150,77 +155,81 @@ const WindowControls = () => {
         }
       }}
     >
-      <div role="button" onClick={minimize}>
-        <img
-          srcSet={`${windowsIcon(
-            './icons/windows/min-w-10.png'
-          )} 1x, ${windowsIcon(
-            './icons/windows/min-w-12.png'
-          )} 1.25x, ${windowsIcon(
-            './icons/windows/min-w-15.png'
-          )} 1.5x, ${windowsIcon(
-            './icons/windows/min-w-15.png'
-          )} 1.75x, ${windowsIcon(
-            './icons/windows/min-w-20.png'
-          )} 2x, ${windowsIcon(
-            './icons/windows/min-w-20.png'
-          )} 2.25x, ${windowsIcon(
-            './icons/windows/min-w-24.png'
-          )} 2.5x, ${windowsIcon(
-            './icons/windows/min-w-30.png'
-          )} 3x, ${windowsIcon('./icons/windows/min-w-30.png')} 3.5x`}
-          draggable="false"
-        />
-      </div>
+      {config.type === 'archive' && (
+        <>
+          <div role="button" onClick={minimize}>
+            <img
+              srcSet={`${windowsIcon(
+                './icons/windows/min-w-10.png'
+              )} 1x, ${windowsIcon(
+                './icons/windows/min-w-12.png'
+              )} 1.25x, ${windowsIcon(
+                './icons/windows/min-w-15.png'
+              )} 1.5x, ${windowsIcon(
+                './icons/windows/min-w-15.png'
+              )} 1.75x, ${windowsIcon(
+                './icons/windows/min-w-20.png'
+              )} 2x, ${windowsIcon(
+                './icons/windows/min-w-20.png'
+              )} 2.25x, ${windowsIcon(
+                './icons/windows/min-w-24.png'
+              )} 2.5x, ${windowsIcon(
+                './icons/windows/min-w-30.png'
+              )} 3x, ${windowsIcon('./icons/windows/min-w-30.png')} 3.5x`}
+              draggable="false"
+            />
+          </div>
 
-      {state !== 'maximized' && (
-        <div role="button" onClick={toggleMaximize}>
-          <img
-            srcSet={`${windowsIcon(
-              './icons/windows/max-w-10.png'
-            )} 1x, ${windowsIcon(
-              './icons/windows/max-w-12.png'
-            )} 1.25x, ${windowsIcon(
-              './icons/windows/max-w-15.png'
-            )} 1.5x, ${windowsIcon(
-              './icons/windows/max-w-15.png'
-            )} 1.75x, ${windowsIcon(
-              './icons/windows/max-w-20.png'
-            )} 2x, ${windowsIcon(
-              './icons/windows/max-w-20.png'
-            )} 2.25x, ${windowsIcon(
-              './icons/windows/max-w-24.png'
-            )} 2.5x, ${windowsIcon(
-              './icons/windows/max-w-30.png'
-            )} 3x, ${windowsIcon('./icons/windows/max-w-30.png')} 3.5x`}
-            draggable="false"
-          />
-        </div>
-      )}
+          {state !== 'maximized' && (
+            <div role="button" onClick={toggleMaximize}>
+              <img
+                srcSet={`${windowsIcon(
+                  './icons/windows/max-w-10.png'
+                )} 1x, ${windowsIcon(
+                  './icons/windows/max-w-12.png'
+                )} 1.25x, ${windowsIcon(
+                  './icons/windows/max-w-15.png'
+                )} 1.5x, ${windowsIcon(
+                  './icons/windows/max-w-15.png'
+                )} 1.75x, ${windowsIcon(
+                  './icons/windows/max-w-20.png'
+                )} 2x, ${windowsIcon(
+                  './icons/windows/max-w-20.png'
+                )} 2.25x, ${windowsIcon(
+                  './icons/windows/max-w-24.png'
+                )} 2.5x, ${windowsIcon(
+                  './icons/windows/max-w-30.png'
+                )} 3x, ${windowsIcon('./icons/windows/max-w-30.png')} 3.5x`}
+                draggable="false"
+              />
+            </div>
+          )}
 
-      {state === 'maximized' && (
-        <div role="button" onClick={toggleMaximize}>
-          <img
-            srcSet={`${windowsIcon(
-              './icons/windows/restore-w-10.png'
-            )} 1x, ${windowsIcon(
-              './icons/windows/restore-w-12.png'
-            )} 1.25x, ${windowsIcon(
-              './icons/windows/restore-w-15.png'
-            )} 1.5x, ${windowsIcon(
-              './icons/windows/restore-w-15.png'
-            )} 1.75x, ${windowsIcon(
-              './icons/windows/restore-w-20.png'
-            )} 2x, ${windowsIcon(
-              './icons/windows/restore-w-20.png'
-            )} 2.25x, ${windowsIcon(
-              './icons/windows/restore-w-24.png'
-            )} 2.5x, ${windowsIcon(
-              './icons/windows/restore-w-30.png'
-            )} 3x, ${windowsIcon('./icons/windows/restore-w-30.png')} 3.5x`}
-            draggable="false"
-          />
-        </div>
+          {state === 'maximized' && (
+            <div role="button" onClick={toggleMaximize}>
+              <img
+                srcSet={`${windowsIcon(
+                  './icons/windows/restore-w-10.png'
+                )} 1x, ${windowsIcon(
+                  './icons/windows/restore-w-12.png'
+                )} 1.25x, ${windowsIcon(
+                  './icons/windows/restore-w-15.png'
+                )} 1.5x, ${windowsIcon(
+                  './icons/windows/restore-w-15.png'
+                )} 1.75x, ${windowsIcon(
+                  './icons/windows/restore-w-20.png'
+                )} 2x, ${windowsIcon(
+                  './icons/windows/restore-w-20.png'
+                )} 2.25x, ${windowsIcon(
+                  './icons/windows/restore-w-24.png'
+                )} 2.5x, ${windowsIcon(
+                  './icons/windows/restore-w-30.png'
+                )} 3x, ${windowsIcon('./icons/windows/restore-w-30.png')} 3.5x`}
+                draggable="false"
+              />
+            </div>
+          )}
+        </>
       )}
 
       <div role="button" onClick={window.close}>

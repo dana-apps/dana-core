@@ -30,6 +30,27 @@ export const MaximizationStateChanged = EventInterface({
   type: MaximizationState
 });
 
+export const ShowModal = RpcInterface({
+  id: 'window/show-modal',
+  request: z.object({
+    title: z.string(),
+    icon: z.string(),
+    message: z.string()
+  }),
+  response: z.object({
+    action: z.enum(['confirm', 'cancel'])
+  })
+});
+
+export const CloseModal = RpcInterface({
+  id: 'window/close-modal',
+  request: z.object({
+    returnId: z.string(),
+    action: z.enum(['confirm', 'cancel'])
+  }),
+  response: z.object({})
+});
+
 export const ShowContextMenu = RpcInterface({
   id: 'window/show-context-menu',
   request: z.object({

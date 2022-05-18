@@ -1,10 +1,12 @@
+import { randomUUID } from 'crypto';
 import { app, BrowserWindow, ipcMain, Menu, protocol, session } from 'electron';
+import EventEmitter from 'eventemitter3';
 import { uniqueId } from 'lodash';
 import { platform } from 'os';
 import path from 'path';
 import { URL } from 'url';
 
-import { FrontendConfig } from '../../common/frontend-config';
+import { FrontendConfig, ModalIcon } from '../../common/frontend-config';
 import {
   GetMaximizationState,
   MaximizationState,
@@ -12,7 +14,9 @@ import {
   ToggleMaximizeWindow,
   MinimizeWindow,
   ShowContextMenu,
-  ShowContextMenuResult
+  ShowContextMenuResult,
+  ShowModal,
+  CloseModal
 } from '../../common/ui.interfaces';
 import { error, ok } from '../../common/util/error';
 import { getFrontendPlatform } from '../util/platform';
@@ -36,7 +40,7 @@ interface CreateFrontendWindow {
     'platform' | 'windowId' | 'version' | 'releaseDate'
   >;
 
-  size?: 'small' | 'regular';
+  size?: 'small' | 'regular' | 'dialog';
 
   /** Resolve `media:` url schemes to an absolute path */
   resolveMedia?: MediaResolveFn;
@@ -80,6 +84,18 @@ export async function createFrontendWindow({
         width: 300,
         minWidth: 300,
         minHeight: 300,
+        resizable: false,
+        minimizable: false,
+        maximizable: false
+      };
+    }
+
+    if (size === 'dialog') {
+      return {
+        height: 400,
+        width: 600,
+        minWidth: 600,
+        minHeight: 400,
         resizable: false,
         minimizable: false,
         maximizable: false
@@ -247,6 +263,10 @@ protocol.registerSchemesAsPrivileged([
  * @param router The IPC router to bind to
  */
 export async function initWindows(router: ElectronRouter) {
+  const visibleModals = new EventEmitter<{
+    [windowId: string]: [{ action: 'confirm' | 'cancel' }];
+  }>();
+
   router.bindRpc(
     ShowContextMenu,
     (req) =>
@@ -292,6 +312,37 @@ export async function initWindows(router: ElectronRouter) {
       window?.maximize();
     }
 
+    return ok();
+  });
+
+  router.bindRpc(ShowModal, async (req, documentId) => {
+    const returnId = randomUUID();
+    const window = await createFrontendWindow({
+      title: req.title,
+      router,
+      size: 'dialog',
+      config: {
+        type: 'modal',
+        documentId,
+        title: req.title,
+        modalConfig: {
+          message: { __html: req.message },
+          icon: req.icon as ModalIcon,
+          returnId
+        }
+      }
+    });
+
+    return new Promise((resolve) => {
+      visibleModals.once(returnId, ({ action }) => {
+        window.close();
+        resolve(ok({ action }));
+      });
+    });
+  });
+
+  router.bindRpc(CloseModal, async (req) => {
+    visibleModals.emit(req.returnId, { action: req.action });
     return ok();
   });
 

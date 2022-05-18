@@ -9,6 +9,15 @@ export interface FrontendConfig {
   /** If the window represents a document, the id of that document */
   documentId?: string;
 
+  /** The type of window to display */
+  type: 'splash-screen' | 'archive' | 'modal';
+
+  modalConfig?: {
+    message: { __html: string };
+    icon: ModalIcon;
+    returnId: string;
+  };
+
   /** Title of the window */
   title?: string;
 
@@ -20,3 +29,4 @@ export interface FrontendConfig {
 }
 
 export type FrontendPlatform = 'linuxish' | 'mac' | 'windows' | 'web';
+export type ModalIcon = 'error';
