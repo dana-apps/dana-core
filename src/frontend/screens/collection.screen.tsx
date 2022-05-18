@@ -190,7 +190,7 @@ const useAssetContextMenu = (collectionId: string) => {
         id: 'delete',
         label: 'Delete',
         action: async () => {
-          const res = await rpc(DeleteAssets, { assetIds, collectionId });
+          const res = await rpc(DeleteAssets, { assetIds });
 
           if (res.status === 'error') {
             if (typeof res.error === 'object') {

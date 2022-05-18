@@ -316,7 +316,6 @@ export const SearchAsset = RpcInterface({
 export const DeleteAssets = RpcInterface({
   id: 'assets/delete',
   request: z.object({
-    collectionId: z.string(),
     assetIds: z.array(z.string())
   }),
   response: z.object({}),

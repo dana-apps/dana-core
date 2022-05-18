@@ -59,8 +59,8 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
     }
   );
 
-  router.bindArchiveRpc(DeleteAssets, (archive, { assetIds, collectionId }) => {
-    return assetService.deleteAssets(archive, collectionId, assetIds);
+  router.bindArchiveRpc(DeleteAssets, (archive, { assetIds }) => {
+    return assetService.deleteAssets(archive, assetIds);
   });
 
   router.bindArchiveRpc(

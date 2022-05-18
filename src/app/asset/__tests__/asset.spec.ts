@@ -3,7 +3,7 @@ import {
   SchemaPropertyType
 } from '../../../common/asset.interfaces';
 import { collectEvents } from '../../../test/event';
-import { requireSuccess } from '../../../test/result';
+import { requireFailure, requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { MediaFileService } from '../../media/media-file.service';
 import { AssetsChangedEvent, AssetService } from '../asset.service';
@@ -342,9 +342,7 @@ describe(AssetService, () => {
       );
 
       expect(
-        await fixture.service.deleteAssets(fixture.archive, targetDb.id, [
-          targetRecord.id
-        ])
+        await fixture.service.deleteAssets(fixture.archive, [targetRecord.id])
       ).toEqual({
         status: 'error',
         error: expect.arrayContaining([
@@ -387,9 +385,7 @@ describe(AssetService, () => {
       );
 
       requireSuccess(
-        await fixture.service.deleteAssets(fixture.archive, targetDb.id, [
-          targetRecord.id
-        ])
+        await fixture.service.deleteAssets(fixture.archive, [targetRecord.id])
       );
 
       expect(
@@ -438,9 +434,7 @@ describe(AssetService, () => {
       );
 
       requireSuccess(
-        await fixture.service.deleteAssets(fixture.archive, targetDb.id, [
-          targetRecord.id
-        ])
+        await fixture.service.deleteAssets(fixture.archive, [targetRecord.id])
       );
 
       expect(
@@ -452,6 +446,56 @@ describe(AssetService, () => {
       ).toHaveProperty('metadata', {
         [dbProperty.id]: assetMetadataItemMatcher([anotherRecord.id])
       });
+    });
+
+    it('where a delete removes all references from a required, recurring property, the delete is rejected', async () => {
+      const fixture = await setup();
+
+      const targetDb = await fixture.givenAControlledDatabaseWithSchema([]);
+
+      const [dbProperty] = await fixture.givenTheSchema([
+        someSchemaProperty({
+          type: SchemaPropertyType.CONTROLLED_DATABASE,
+          required: true,
+          repeated: true,
+          databaseId: targetDb.id
+        })
+      ]);
+
+      const targetRecords = [
+        requireSuccess(
+          await fixture.service.createAsset(fixture.archive, targetDb.id, {
+            metadata: {}
+          })
+        ),
+        requireSuccess(
+          await fixture.service.createAsset(fixture.archive, targetDb.id, {
+            metadata: {}
+          })
+        )
+      ];
+
+      const targedRecordIds = targetRecords.map((record) => record.id);
+
+      requireSuccess(
+        await fixture.service.createAsset(
+          fixture.archive,
+          fixture.rootCollection.id,
+          {
+            metadata: {
+              [dbProperty.id]: targedRecordIds
+            }
+          }
+        )
+      );
+
+      requireFailure(
+        await fixture.service.deleteAssets(fixture.archive, targedRecordIds)
+      );
+
+      expect(
+        await fixture.service.listAssets(fixture.archive, targetDb.id)
+      ).toHaveProperty('total', 2);
     });
   });
 });

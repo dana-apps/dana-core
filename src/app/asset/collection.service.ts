@@ -286,6 +286,13 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     return res.success;
   }
 
+  /**
+   * For a given collection, return all the properties (and their collection instance) that reference it.
+   *
+   * @param archive Archive containing the collection
+   * @param referencedCollectionId Collection to check for referencing properties
+   * @returns Object of { property, collection } values for each referencing property
+   */
   async findPropertiesReferencingCollection(
     archive: ArchivePackage,
     referencedCollectionId: string

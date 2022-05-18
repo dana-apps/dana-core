@@ -6,7 +6,7 @@ import {
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
-import { mapValues, uniq } from 'lodash';
+import { countBy, mapValues, sumBy, uniq } from 'lodash';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, FetchError, ok, Result } from '../../common/util/error';
@@ -18,6 +18,7 @@ import { AssetCollectionEntity, AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
 import { SchemaPropertyValue } from './metadata.entity';
 import { never, required } from '../../common/util/assert';
+import { DefaultMap } from '../../common/util/collection';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -361,57 +362,79 @@ export class AssetService extends EventEmitter<AssetEvents> {
    * @param deletedIds
    * @returns
    */
-  async deleteAssets(
-    archive: ArchivePackage,
-    collectionId: string,
-    deletedIds: string[]
-  ) {
+  async deleteAssets(archive: ArchivePackage, deletedIds: string[]) {
     return archive.useDb(async (db) => {
-      const properties =
-        await this.collectionService.findPropertiesReferencingCollection(
-          archive,
-          collectionId
-        );
+      const deletedSet = new Set<unknown>(deletedIds);
+
+      // Return true if, once `deletedIds` are removed, the property will have at least one remaining value
+      const hasRemainingValuesAfterDeletingAssets = (
+        asset: AssetEntity,
+        property: SchemaPropertyValue
+      ) => {
+        const propertyValues = asset.metadata[property.id];
+        const count = sumBy(propertyValues, (x) => (deletedSet.has(x) ? 0 : 1));
+
+        return count > 0;
+      };
+
+      // Check all collections for
+      const deletedAssetCollections = await db.find(AssetCollectionEntity, {
+        assets: deletedIds
+      });
 
       const errors: ReferentialIntegrityError = [];
       const toPersist: AssetEntity[] = [];
 
-      for (const { property, collection } of properties) {
-        const references = await this.filterAssetEntities(
-          archive,
-          collection.id,
-          { match: 'any', query: deletedIds, propertyId: property.id },
-          { limit: Infinity, offset: 0 }
-        );
+      for (const deletedAssetCollection of deletedAssetCollections) {
+        // Find all properties that may potentially reference assets being deleted from a collection
+        const properties =
+          await this.collectionService.findPropertiesReferencingCollection(
+            archive,
+            deletedAssetCollection.id
+          );
 
-        for (const reference of references.items) {
-          if (
-            property.required &&
-            reference.metadata[property.id]?.length === 1
-          ) {
-            const asset = required(
-              await this.get(archive, reference.id),
-              'Cannot resolve entity by id'
-            );
+        // For each of these properties, record an error if removing the property would move the collection into an
+        // inconsistent state.
+        //
+        // Otherwise, modify the property and mark it for persistence.
+        for (const { property, collection } of properties) {
+          const references = await this.filterAssetEntities(
+            archive,
+            collection.id,
+            { match: 'any', query: deletedIds, propertyId: property.id },
+            { limit: Infinity, offset: 0 }
+          );
 
-            errors.push({
-              assetId: reference.id,
-              collectionId: collection.id,
-              collectionTitle: collection.title,
-              propertyId: property.id,
-              propertyLabel:
-                collection.schema.find((x) => x.id === property.id)?.label ??
-                property.id,
-              assetTitle: asset.title
-            });
-          } else {
-            const propertyVal = reference.metadata[property.id];
+          for (const reference of references.items) {
+            if (
+              property.required &&
+              !hasRemainingValuesAfterDeletingAssets(reference, property)
+            ) {
+              const asset = required(
+                await this.get(archive, reference.id),
+                'Cannot resolve entity by id'
+              );
 
-            reference.metadata[property.id] = propertyVal?.filter((assetRef) =>
-              deletedIds.every((deletedId) => assetRef !== deletedId)
-            );
+              errors.push({
+                assetId: reference.id,
+                collectionId: collection.id,
+                collectionTitle: collection.title,
+                propertyId: property.id,
+                propertyLabel:
+                  collection.schema.find((x) => x.id === property.id)?.label ??
+                  property.id,
+                assetTitle: asset.title
+              });
+            } else {
+              const propertyVal = reference.metadata[property.id];
 
-            toPersist.push(reference);
+              reference.metadata[property.id] = propertyVal?.filter(
+                (assetRef) =>
+                  deletedIds.every((deletedId) => assetRef !== deletedId)
+              );
+
+              toPersist.push(reference);
+            }
           }
         }
       }
@@ -533,11 +556,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
       if (match === 'any') {
         matchingRefs = await db.execute(
           `SELECT asset.id id FROM asset, json_each(json_extract(metadata, ?)) AS titles
-           WHERE titles.value = ? AND collection_id = ?`,
+           WHERE titles.value IN (?) AND collection_id = ?`,
           [fieldIdParam, query, collectionId]
         );
       } else if (match === 'fuzzy') {
-        const queryParam = `${query}%`;
+        const queryParam = `${query[0]}%`;
 
         matchingRefs = await db.execute(
           `SELECT asset.id id FROM asset, json_each(json_extract(metadata, ?)) AS titles
