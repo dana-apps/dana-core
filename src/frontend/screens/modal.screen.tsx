@@ -1,7 +1,10 @@
 /** @jsxImportSource theme-ui */
 
 import { Box, Button, Flex, Text } from 'theme-ui';
-import { ExclamationTriangleFill } from 'react-bootstrap-icons';
+import {
+  ExclamationTriangleFill,
+  QuestionCircleFill
+} from 'react-bootstrap-icons';
 
 import { CloseModal } from '../../common/ui.interfaces';
 import { required } from '../../common/util/assert';
@@ -12,6 +15,9 @@ import { WindowDragArea } from '../ui/window';
 const icons = {
   error: (
     <ExclamationTriangleFill size={48} color="var(--theme-ui-colors-error)" />
+  ),
+  question: (
+    <QuestionCircleFill size={48} color="var(--theme-ui-colors-primary)" />
   )
 };
 
@@ -25,6 +31,10 @@ export const ModalScreen = () => {
 
   const handleConfirm = () => {
     rpc(CloseModal, { returnId: modalConfig.returnId, action: 'confirm' });
+  };
+
+  const handleCancel = () => {
+    rpc(CloseModal, { returnId: modalConfig.returnId, action: 'cancel' });
   };
 
   return (
@@ -55,8 +65,14 @@ export const ModalScreen = () => {
           justifyContent: 'flex-end'
         }}
       >
+        {modalConfig.type === 'confirm' && (
+          <Button sx={{ px: 5, mr: 4 }} onClick={handleCancel}>
+            {modalConfig.cancelButtonLabel ?? 'Cancel'}
+          </Button>
+        )}
+
         <Button sx={{ px: 5 }} onClick={handleConfirm}>
-          Ok
+          {modalConfig.confirmButtonLabel ?? 'Ok'}
         </Button>
       </WindowDragArea>
     </Flex>

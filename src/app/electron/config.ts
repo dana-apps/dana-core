@@ -95,7 +95,7 @@ const DEFAULT_FRONTEND_ENTRYPOINT = FRONTEND_BUNDLE_DIR
   : 'http://localhost:3000/desktop.html';
 
 /** Enable developer tools */
-export const SHOW_DEVTOOLS = parseRuntimeFlag('SHOW_DEVTOOLS', false);
+export const SHOW_DEVTOOLS = parseRuntimeFlag('SHOW_DEVTOOLS', isDev);
 
 /** Enable developer tools */
 export const HIDE_UNTIL_RENDER = parseRuntimeFlag('HIDE_UNTIL_RENDER', !isDev);

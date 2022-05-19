@@ -16,6 +16,9 @@ export interface FrontendConfig {
     message: { __html: string };
     icon: ModalIcon;
     returnId: string;
+    type: ModalType;
+    confirmButtonLabel?: string;
+    cancelButtonLabel?: string;
   };
 
   /** Title of the window */
@@ -29,4 +32,5 @@ export interface FrontendConfig {
 }
 
 export type FrontendPlatform = 'linuxish' | 'mac' | 'windows' | 'web';
-export type ModalIcon = 'error';
+export type ModalIcon = 'error' | 'question';
+export type ModalType = 'alert' | 'confirm';

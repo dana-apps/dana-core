@@ -6,7 +6,11 @@ import { platform } from 'os';
 import path from 'path';
 import { URL } from 'url';
 
-import { FrontendConfig, ModalIcon } from '../../common/frontend-config';
+import {
+  FrontendConfig,
+  ModalIcon,
+  ModalType
+} from '../../common/frontend-config';
 import {
   GetMaximizationState,
   MaximizationState,
@@ -327,7 +331,10 @@ export async function initWindows(router: ElectronRouter) {
         title: req.title,
         modalConfig: {
           message: { __html: req.message },
+          type: req.type as ModalType,
           icon: req.icon as ModalIcon,
+          confirmButtonLabel: req.confirmButtonLabel,
+          cancelButtonLabel: req.cancelButtonLabel,
           returnId
         }
       }

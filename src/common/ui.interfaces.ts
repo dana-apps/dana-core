@@ -33,9 +33,12 @@ export const MaximizationStateChanged = EventInterface({
 export const ShowModal = RpcInterface({
   id: 'window/show-modal',
   request: z.object({
+    type: z.string(),
     title: z.string(),
     icon: z.string(),
-    message: z.string()
+    message: z.string(),
+    confirmButtonLabel: z.string().optional(),
+    cancelButtonLabel: z.string().optional()
   }),
   response: z.object({
     action: z.enum(['confirm', 'cancel'])

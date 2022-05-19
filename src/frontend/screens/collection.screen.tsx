@@ -30,6 +30,7 @@ import { IconButton } from 'theme-ui';
 import { Gear, Plus } from 'react-bootstrap-icons';
 import { MetadataItemCell } from '../ui/components/grid-cell.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
+import { useModal } from '../ui/hooks/modal.hooks';
 
 /**
  * Screen for viewing the assets in a collection.
@@ -50,7 +51,7 @@ export const CollectionScreen: FC = () => {
   const selection = SelectionContext.useContainer();
   const [pendingAsset, setPendingAsset] = useState<Asset>();
 
-  const assetContextMenu = useAssetContextMenu(collectionId);
+  const assetContextMenu = useAssetContextMenu();
 
   const assets = useMemo((): ListCursor<Asset> | undefined => {
     if (!fetchedAssets) {
@@ -180,9 +181,10 @@ const getGridColumns = (schema: SchemaProperty[]) =>
     };
   });
 
-const useAssetContextMenu = (collectionId: string) => {
+const useAssetContextMenu = () => {
   const errorDisplay = useErrorDisplay();
   const rpc = useRPC();
+  const modal = useModal();
 
   return useCallback(
     (assetIds: string[]) => [
@@ -190,6 +192,30 @@ const useAssetContextMenu = (collectionId: string) => {
         id: 'delete',
         label: 'Delete',
         action: async () => {
+          const confirmed = await modal.confirm({
+            title: 'Are you sure?',
+            message: (
+              <>
+                <div style={{ paddingBottom: '0.5em' }}>
+                  Are you sure you want to delete{' '}
+                  {assetIds.length === 1 ? 'this record' : 'these records'}?
+                </div>
+
+                <div style={{ paddingBottom: '0.5em' }}>
+                  Deleting a record is permanent. You won't be able to undo this
+                  if you confirm.
+                </div>
+              </>
+            ),
+            confirmButtonLabel:
+              assetIds.length > 1
+                ? `Delete ${assetIds.length} records`
+                : 'Delete record'
+          });
+          if (!confirmed) {
+            return;
+          }
+
           const res = await rpc(DeleteAssets, { assetIds });
 
           if (res.status === 'error') {
@@ -227,7 +253,7 @@ const useAssetContextMenu = (collectionId: string) => {
                                 record as its <strong>{propertyLabel}</strong>{' '}
                                 property.
                               </div>
-                              <div>
+                              <div style={{ paddingBottom: '0.5em' }}>
                                 Deleting it would mean that{' '}
                                 <strong>{propertyLabel}</strong> is blank, which
                                 is not allowed by the schema.
@@ -259,6 +285,16 @@ const useAssetContextMenu = (collectionId: string) => {
         }
       }
     ],
-    [collectionId, errorDisplay, rpc]
+    [errorDisplay, modal, rpc]
   );
+};
+
+const getAssetTitleOrId = (asset: Asset) => {
+  if (asset.title) {
+    return (
+      <>
+        Record <strong>{asset.title || asset.id}</strong>
+      </>
+    );
+  }
 };
