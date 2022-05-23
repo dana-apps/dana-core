@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { IngestError, IngestPhase } from '../../common/ingest.interfaces';
 import { Dict } from '../../common/util/types';
+import { AssetCollectionEntity } from '../asset/asset.entity';
 import { MediaFile } from '../media/media-file.entity';
 
 /**
@@ -28,6 +29,9 @@ export class ImportSessionEntity {
   /** Assets imported by the session */
   @OneToMany(() => AssetImportEntity, (asset) => asset.session)
   assets = new Collection<AssetImportEntity>(this);
+
+  @ManyToOne({ entity: () => AssetCollectionEntity, nullable: false })
+  targetCollection!: AssetCollectionEntity;
 
   /** The current phase that the session is in */
   @Enum({ type: () => IngestPhase, nullable: false, items: () => IngestPhase })

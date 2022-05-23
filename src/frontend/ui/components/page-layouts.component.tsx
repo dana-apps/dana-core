@@ -15,7 +15,11 @@ import {
 import { Box, BoxProps, Flex, Heading, useThemeUI } from 'theme-ui';
 import { ReflexContainer, ReflexElement, ReflexSplitter } from 'react-reflex';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useContextMenu } from '../hooks/menu.hooks';
+import {
+  ContextMenuItem,
+  ContextSeparator,
+  useContextMenu
+} from '../hooks/menu.hooks';
 import { useOnClickOutside } from '../hooks/mouse.hooks';
 
 interface NavListSectionProps {
@@ -58,6 +62,8 @@ interface NavListItemProps {
 
   /** If provided, allows the item to be deleted via the context menu */
   onDelete?: () => Promise<void>;
+
+  contextMenuItems?: ContextMenuItem[];
 }
 
 /**
@@ -70,6 +76,7 @@ export const NavListItem: FC<NavListItemProps> = ({
   onRename,
   onDelete,
   status,
+  contextMenuItems = [],
   ...props
 }) => {
   const isActive = useLocation().pathname === path;
@@ -88,7 +95,10 @@ export const NavListItem: FC<NavListItemProps> = ({
         id: 'delete',
         label: 'Delete',
         action: onDelete
-      }
+      },
+      ...(contextMenuItems.length > 0
+        ? [ContextSeparator, ...contextMenuItems]
+        : [])
     ]
   });
 

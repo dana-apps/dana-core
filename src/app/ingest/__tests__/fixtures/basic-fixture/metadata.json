@@ -1,0 +1,13 @@
+{
+  "1": {
+    "metadata": {
+      "property": "value1"
+    },
+    "files": ["a.png", "b.jpg"]
+  },
+  "2": {
+    "metadata": {
+      "property": "value2"
+    }
+  }
+}

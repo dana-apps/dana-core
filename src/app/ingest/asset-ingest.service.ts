@@ -64,13 +64,18 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param archive Archive to import files into.
    * @param basePath Absolute path to the local directory to ingest from.
    */
-  async beginSession(archive: ArchivePackage, basePath: string) {
+  async beginSession(
+    archive: ArchivePackage,
+    basePath: string,
+    targetCollectionId: string
+  ) {
     const session = this.openSession(
       archive,
 
-      await archive.useDb((em) => {
+      await archive.useDb(async (em) => {
         const session = em.create(ImportSessionEntity, {
           basePath,
+          targetCollection: targetCollectionId,
           phase: IngestPhase.READ_METADATA,
           valid: true
         });
@@ -211,25 +216,9 @@ export class AssetIngestService extends EventEmitter<Events> {
       return;
     }
 
-    // Stop any pending activity in the session
+    // Stop any pending activity in the session and return the archive to its initial state
     await session.teardown();
-
-    // Delete the import, returning any imported media
-    const importedMedia = await archive.useDbTransaction(async (db) => {
-      const importedMedia = await archive.useDb((db) =>
-        session
-          .queryImportedFiles(db)
-          .populate([{ field: 'media' }])
-          .getResultList()
-      );
-
-      db.remove(db.getReference(ImportSessionEntity, sessionId));
-
-      return compact(importedMedia.map((file) => file.media?.id));
-    });
-
-    // Delete the imported media
-    await this.mediaService.deleteFiles(archive, importedMedia);
+    await session.removeImportedFiles();
 
     await this.closeSession(archive, sessionId);
   }

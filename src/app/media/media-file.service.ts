@@ -1,7 +1,7 @@
 import { createReadStream } from 'fs';
 import { copyFile, stat, unlink } from 'fs/promises';
 import mime from 'mime';
-import path from 'path';
+import path, { extname } from 'path';
 import sharp, { FormatEnum } from 'sharp';
 import { Logger } from 'tslog';
 
@@ -12,6 +12,11 @@ import { ArchivePackage } from '../package/archive-package';
 import { hashStream } from '../util/stream-utils';
 import { MediaFile } from './media-file.entity';
 import { getMediaType } from './media-types';
+
+interface Extractable {
+  extension: string;
+  extractTo: (path: string) => void | Promise<void>;
+}
 
 export class MediaFileService {
   private static RENDITION_URI_PREFIX = 'media://';
@@ -24,31 +29,40 @@ export class MediaFileService {
    * @param source File path to the source file
    * @returns A MediaFile instance representing the file
    */
-  putFile(archive: ArchivePackage, source: string) {
+  putFile(archive: ArchivePackage, source: string | Extractable) {
     return archive.useDb(async (db): Promise<FileImportResult<MediaFile>> => {
+      if (typeof source === 'string') {
+        const sourcePath = source;
+        source = {
+          extension: extname(sourcePath),
+          extractTo: (path) => copyFile(sourcePath, path)
+        };
+      }
+
       const mediaRepository = db.getRepository(MediaFile);
-      const mediaType = getMediaType(source);
+      const mediaType = getMediaType(source.extension);
       if (!mediaType) {
         return error(IngestError.UNSUPPORTED_MEDIA_TYPE);
       }
 
-      const sha256 = await hashStream(createReadStream(source));
       const mediaFile = mediaRepository.create({
-        sha256,
+        sha256: '',
         mimeType: mediaType.mimeType
       });
+      const destPath = this.getMediaPath(archive, mediaFile);
 
       try {
-        await copyFile(source, this.getMediaPath(archive, mediaFile));
+        await source.extractTo(destPath);
       } catch (err) {
         this.log.error('Copy file to archive failed', source, err);
         return error(IngestError.IO_ERROR);
       }
 
+      mediaFile.sha256 = await hashStream(createReadStream(destPath));
       await this.createImageRendition(archive, mediaFile, 'png');
 
       await mediaRepository.persistAndFlush(mediaFile);
-      this.log.info('Created media file', source, mediaFile.id);
+      this.log.info('Created media file', mediaFile.id);
 
       return ok(mediaFile);
     });

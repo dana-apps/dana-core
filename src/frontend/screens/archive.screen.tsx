@@ -41,6 +41,7 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const config = useFrontendConfig();
   const rpc = useRPC();
   const assetRoot = unwrapGetResult(useGet(GetRootAssetsCollection));
+  const navigate = useNavigate();
 
   const databaseRoot = unwrapGetResult(useGet(GetRootDatabaseCollection));
   const databases = useListAll(
@@ -52,6 +53,14 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const createMenu = useCreateMenu();
   const renameCollection = async (id: string, title: string) => {
     await rpc(UpdateCollection, { id, title });
+  };
+
+  const startImport = async (targetCollectionId: string) => {
+    const session = await rpc(StartIngest, { targetCollectionId });
+
+    if (session.status === 'ok') {
+      navigate(`/ingest/${session.value.id}`);
+    }
   };
 
   if (!assetRoot) {
@@ -84,6 +93,13 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
               <NavListItem
                 title="Main Collection"
                 path={`/collection/${assetRoot.id}`}
+                contextMenuItems={[
+                  {
+                    action: () => startImport(assetRoot.id),
+                    id: 'start-import',
+                    label: 'Import assets'
+                  }
+                ]}
               />
             </NavListSection>
 
@@ -96,6 +112,13 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
                     title={db.title}
                     path={`/collection/${db.id}`}
                     onRename={(title) => renameCollection(db.id, title)}
+                    contextMenuItems={[
+                      {
+                        action: () => startImport(db.id),
+                        id: 'start-import',
+                        label: 'Import database records'
+                      }
+                    ]}
                   />
                 ))}
               </NavListSection>
@@ -191,19 +214,6 @@ function useCreateMenu() {
   const root = useGet(GetRootDatabaseCollection);
   const navigate = useNavigate();
 
-  /**
-   * Return a callback that starts a new import section and navigates to it if starts successfuly.
-   *
-   * TODO: Show an error if it fails.
-   */
-  const startImport = async () => {
-    const session = await rpc(StartIngest, {});
-
-    if (session.status === 'ok') {
-      navigate(`/ingest/${session.value.id}`);
-    }
-  };
-
   const createControlledDatabase = async () => {
     if (!root || root.status !== 'ok') {
       return;
@@ -228,12 +238,6 @@ function useCreateMenu() {
         id: 'newControlledDatabase',
         label: 'New Controlled Database',
         action: createControlledDatabase
-      },
-      '-',
-      {
-        id: 'newImport',
-        label: 'Bulk import…',
-        action: startImport
       }
     ]
   });

@@ -12,8 +12,94 @@
           "nullable": false,
           "mappedType": "text"
         },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "schema": {
+          "name": "schema",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
+        }
+      },
+      "name": "asset_collection",
+      "indexes": [
+        {
+          "columnNames": [
+            "parent_id"
+          ],
+          "composite": false,
+          "keyName": "asset_collection_parent_id_index",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "primary",
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "primary": true,
+          "unique": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "asset_collection_parent_id_foreign": {
+          "constraintName": "asset_collection_parent_id_foreign",
+          "columnNames": [
+            "parent_id"
+          ],
+          "localTableName": "asset_collection",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "asset_collection",
+          "deleteRule": "set null",
+          "updateRule": "cascade"
+        }
+      }
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
         "base_path": {
           "name": "base_path",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
+        },
+        "target_collection_id": {
+          "name": "target_collection_id",
           "type": "text",
           "unsigned": false,
           "autoincrement": false,
@@ -50,6 +136,15 @@
       "name": "import_session",
       "indexes": [
         {
+          "columnNames": [
+            "target_collection_id"
+          ],
+          "composite": false,
+          "keyName": "import_session_target_collection_id_index",
+          "primary": false,
+          "unique": false
+        },
+        {
           "keyName": "primary",
           "columnNames": [
             "id"
@@ -60,7 +155,20 @@
         }
       ],
       "checks": [],
-      "foreignKeys": {}
+      "foreignKeys": {
+        "import_session_target_collection_id_foreign": {
+          "constraintName": "import_session_target_collection_id_foreign",
+          "columnNames": [
+            "target_collection_id"
+          ],
+          "localTableName": "import_session",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "asset_collection",
+          "updateRule": "cascade"
+        }
+      }
     },
     {
       "columns": {
@@ -160,83 +268,6 @@
           ],
           "referencedTableName": "import_session",
           "deleteRule": "cascade",
-          "updateRule": "cascade"
-        }
-      }
-    },
-    {
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "text"
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "text"
-        },
-        "parent_id": {
-          "name": "parent_id",
-          "type": "text",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": true,
-          "mappedType": "text"
-        },
-        "schema": {
-          "name": "schema",
-          "type": "json",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "mappedType": "json"
-        }
-      },
-      "name": "asset_collection",
-      "indexes": [
-        {
-          "columnNames": [
-            "parent_id"
-          ],
-          "composite": false,
-          "keyName": "asset_collection_parent_id_index",
-          "primary": false,
-          "unique": false
-        },
-        {
-          "keyName": "primary",
-          "columnNames": [
-            "id"
-          ],
-          "composite": false,
-          "primary": true,
-          "unique": true
-        }
-      ],
-      "checks": [],
-      "foreignKeys": {
-        "asset_collection_parent_id_foreign": {
-          "constraintName": "asset_collection_parent_id_foreign",
-          "columnNames": [
-            "parent_id"
-          ],
-          "localTableName": "asset_collection",
-          "referencedColumnNames": [
-            "id"
-          ],
-          "referencedTableName": "asset_collection",
-          "deleteRule": "set null",
           "updateRule": "cascade"
         }
       }

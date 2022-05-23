@@ -17,6 +17,8 @@ export interface ContextMenuItem {
 
 export type ContextMenuChoice = ContextMenuItem | '-' | false | undefined;
 
+export const ContextSeparator: ContextMenuChoice = '-';
+
 interface ContextMenuOpts {
   /** Menu options */
   options: ContextMenuChoice[];

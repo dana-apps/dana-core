@@ -57,6 +57,7 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
     },
     borders: {
       primary: '2px solid var(--theme-ui-colors-border)',
+      light: '1px solid var(--theme-ui-colors-border)',
       active: '2px solid var(--theme-ui-colors-muted)',
       selected: '2px solid var(--theme-ui-colors-accent)'
     },

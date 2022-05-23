@@ -1,12 +1,14 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, useCallback, useMemo } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from 'theme-ui';
+import { Box, Button, Flex, Label, Select } from 'theme-ui';
 import {
   Asset,
   AssetMetadataItem,
   GetRootAssetsCollection,
+  GetRootDatabaseCollection,
+  GetSubcollections,
   SchemaProperty
 } from '../../common/asset.interfaces';
 import {
@@ -18,7 +20,15 @@ import {
   CancelIngestSession
 } from '../../common/ingest.interfaces';
 import { required } from '../../common/util/assert';
-import { iterateListCursor, useGet, useList, useRPC } from '../ipc/ipc.hooks';
+import {
+  iterateListCursor,
+  SKIP_FETCH,
+  unwrapGetResult,
+  useGet,
+  useList,
+  useListAll,
+  useRPC
+} from '../ipc/ipc.hooks';
 import { ProgressValue } from '../ui/components/atoms.component';
 import {
   MetadataItemCell,
@@ -29,11 +39,13 @@ import { AssetDetail } from '../ui/components/asset-detail.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { BottomBar } from '../ui/components/page-layouts.component';
+import { CollectionChooser } from '../ui/components/collection-chooser.component';
 
 /**
  * Screen for managing, editing and accepting a bulk import.
  */
 export const ArchiveIngestScreen: FC = () => {
+  const rpc = useRPC();
   const sessionId = required(useParams().sessionId, 'Expected sessionId param');
   const assets = useList(ListIngestAssets, () => ({ sessionId }), [sessionId]);
   const session = useGet(GetIngestSession, sessionId);
@@ -57,7 +69,13 @@ export const ArchiveIngestScreen: FC = () => {
     return [];
   }, [collection]);
 
-  if (!assets || !session || !collection || collection.status !== 'ok') {
+  if (
+    !assets ||
+    !session ||
+    !collection ||
+    collection.status !== 'ok' ||
+    session.status !== 'ok'
+  ) {
     return null;
   }
 
@@ -85,7 +103,7 @@ export const ArchiveIngestScreen: FC = () => {
         detail={detailView}
       >
         <DataGrid
-          sx={{ flex: 1, width: '100%', height: '100%' }}
+          sx={{ flex: 1, width: '100%', height: '100%', borderTop: 'light' }}
           columns={gridColumns}
           data={assets}
         />

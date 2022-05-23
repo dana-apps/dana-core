@@ -74,6 +74,8 @@ export const IngestSession = z.object({
   /** The total number of files are referenced by metadata entries. Undefined if this is not yet known. */
   totalFiles: z.optional(z.number()),
 
+  targetCollectionId: z.string(),
+
   /** False if there are validation errors, otherwise true */
   valid: z.boolean()
 });
@@ -87,7 +89,8 @@ export type IngestSession = z.TypeOf<typeof IngestSession>;
 export const StartIngest = RpcInterface({
   id: 'ingest/start',
   request: z.object({
-    basePath: z.string().optional()
+    basePath: z.string().optional(),
+    targetCollectionId: z.string()
   }),
   response: IngestSession,
   error: z.nativeEnum(FetchError).or(z.nativeEnum(StartIngestError))
@@ -103,7 +106,8 @@ export type GetIngestSessionResponse = ResponseType<typeof GetIngestSession>;
 export const GetIngestSession = RpcInterface({
   id: 'ingest/get',
   request: z.object({
-    id: z.string()
+    id: z.string(),
+    targetCollection: z.string()
   }),
   response: IngestSession
 });

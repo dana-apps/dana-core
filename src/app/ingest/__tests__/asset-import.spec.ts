@@ -142,7 +142,8 @@ describe('AssetImportOperation', () => {
 
     const session = await fixture.importService.beginSession(
       fixture.archive,
-      BASIC_EXAMPLE
+      BASIC_EXAMPLE,
+      fixture.rootCollection.id
     );
     await waitUntilEvent(fixture.importService, 'importRunCompleted', session);
 
@@ -165,8 +166,16 @@ describe('AssetImportOperation', () => {
     const fixture = await setup();
 
     const begunSessions = await Promise.all([
-      fixture.importService.beginSession(fixture.archive, BASIC_EXAMPLE),
-      fixture.importService.beginSession(fixture.archive, BASIC_EXAMPLE)
+      fixture.importService.beginSession(
+        fixture.archive,
+        BASIC_EXAMPLE,
+        fixture.rootCollection.id
+      ),
+      fixture.importService.beginSession(
+        fixture.archive,
+        BASIC_EXAMPLE,
+        fixture.rootCollection.id
+      )
     ]);
 
     const sessions = fixture.importService.listSessions(fixture.archive);
@@ -462,7 +471,11 @@ const setup = async () => {
     givenThatAnImportSessionHasRunSuccessfuly: async (
       example: string = BASIC_EXAMPLE
     ) => {
-      const session = await importService.beginSession(archive, example);
+      const session = await importService.beginSession(
+        archive,
+        example,
+        rootCollection.id
+      );
 
       await waitUntilEvent(importService, 'importRunCompleted', session);
       return session;
@@ -470,4 +483,8 @@ const setup = async () => {
   };
 };
 
-const BASIC_EXAMPLE = path.join(__dirname, 'fixtures', 'basic-fixture');
+const BASIC_EXAMPLE = path.join(
+  __dirname,
+  'fixtures',
+  'basic-fixture.danapack'
+);

@@ -1,5 +1,5 @@
-import { readdir, readFile } from 'fs/promises';
-import path from 'path';
+import { readdir, readFile, stat } from 'fs/promises';
+import path, { basename, dirname, extname, join } from 'path';
 import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
@@ -7,6 +7,7 @@ import { Logger } from 'tslog';
 import { compact, keyBy } from 'lodash';
 import { ObjectQuery } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
+import AdmZip from 'adm-zip';
 
 import {
   IngestError,
@@ -24,13 +25,14 @@ import {
 import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { CollectionService } from '../asset/collection.service';
-import {
-  SchemaProperty,
-  SchemaPropertyType
-} from '../../common/asset.interfaces';
+import { SchemaProperty } from '../../common/asset.interfaces';
 import { AssetService } from '../asset/asset.service';
 import { error, FetchError, ok } from '../../common/util/error';
 import { arrayify } from '../../common/util/collection';
+import { AssetCollectionEntity } from '../asset/asset.entity';
+import { required } from '../../common/util/assert';
+import { promisify } from 'util';
+import { readJson } from '../util/json-utils';
 
 /**
  * Encapsulates an import operation.
@@ -51,7 +53,7 @@ import { arrayify } from '../../common/util/collection';
 export class AssetIngestOperation implements IngestSession {
   private _totalFiles?: number;
   private _filesRead?: number;
-  private _active = false;
+  private _state: 'active' | 'stopping' | 'stopped' = 'stopped';
   private log = new Logger({
     name: 'AssetIngestOperation',
     instanceName: this.id
@@ -59,6 +61,9 @@ export class AssetIngestOperation implements IngestSession {
 
   /** Supported file extensions for metadata sheets */
   private static SPREADSHEET_TYPES = ['.xlsx', '.csv', '.xls', '.ods'];
+
+  /** Supported file extension for a dana package */
+  private static PACKAGE_TYPE = '.danapack';
 
   constructor(
     readonly archive: ArchivePackage,
@@ -122,28 +127,34 @@ export class AssetIngestOperation implements IngestSession {
    * Whether the ingest operation is currently processing assets or files.
    **/
   get active() {
-    return this._active;
+    return this._state === 'active';
   }
 
   /**
-   * Absolute path to root directory of imported metadata
+   * The collection this asset is being imported into
    **/
-  get metadataPath() {
-    return path.join(this.session.basePath, 'metadata');
+  async getTargetCollection() {
+    return required(
+      await this.collectionService.getCollection(
+        this.archive,
+        this.targetCollectionId
+      ),
+      'Target collection does not exist'
+    );
   }
 
   /**
-   * Absolute path to root directory of imported media files
+   * The collection this asset is being imported into
    **/
-  get mediaPath() {
-    return path.join(this.session.basePath, 'media');
+  get targetCollectionId() {
+    return this.session.targetCollection.id;
   }
 
   /**
    * Either start or continue the import operation from its most recent point
    **/
   async run() {
-    if (this._active) {
+    if (this._state === 'active') {
       this.log.warn(
         'Attempting to call run() on an ingest sesison that is already running.'
       );
@@ -152,7 +163,7 @@ export class AssetIngestOperation implements IngestSession {
 
     this.collectionService.on('change', this.handleCollectionChanged);
 
-    this._active = true;
+    this._state = 'active';
 
     this.log.info('Starting session');
 
@@ -166,11 +177,27 @@ export class AssetIngestOperation implements IngestSession {
 
       await this.revalidate();
     } finally {
-      this._active = false;
+      this._state = 'stopped';
       this.ingestService.emit('importRunCompleted', this);
     }
 
     this.log.info('Completed session');
+  }
+
+  stop() {
+    if (this._state === 'stopped') {
+      return;
+    }
+
+    this._state = 'stopping';
+
+    return new Promise<void>((resolve) => {
+      this.ingestService.on('importRunCompleted', () => {
+        if (this._state === 'stopped') {
+          resolve();
+        }
+      });
+    });
   }
 
   /**
@@ -178,7 +205,7 @@ export class AssetIngestOperation implements IngestSession {
    **/
   async teardown() {
     this.collectionService.off('change', this.handleCollectionChanged);
-    this._active = false;
+    await this.stop();
   }
 
   /**
@@ -188,7 +215,7 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
 
     await this.archive.useDb(async (db) => {
-      await this.readDirectoryMetadata(this.metadataPath);
+      await this.readFilepathMetadata();
 
       this.session.phase = IngestPhase.READ_FILES;
       await db.persistAndFlush(this.session);
@@ -197,60 +224,73 @@ export class AssetIngestOperation implements IngestSession {
   }
 
   /**
-   * Read all metadata files under a specified path into the database and stage them for import
+   * Read an importable file from a location on the current filesystem into the archive.
    *
    * @param currentPath Directory to traverse for files to ignest
    */
-  async readDirectoryMetadata(currentPath: string) {
-    this.log.info('Reading metadata directory', currentPath);
-
-    for (const item of await readdir(currentPath, { withFileTypes: true })) {
-      if (!this._active) {
-        return;
-      }
-
-      if (item.isDirectory() && !item.isSymbolicLink()) {
-        // Recurse into directories
-        await this.readDirectoryMetadata(path.join(currentPath, item.name));
-      }
-
-      if (path.extname(item.name) === '.json') {
-        await this.readJsonMetadata(path.join(currentPath, item.name));
-      }
-
-      if (
-        AssetIngestOperation.SPREADSHEET_TYPES.includes(path.extname(item.name))
-      ) {
-        await this.readMetadataSheet(path.join(currentPath, item.name));
-      }
+  async readFilepathMetadata() {
+    if (path.extname(this.basePath) === AssetIngestOperation.PACKAGE_TYPE) {
+      await this.readPackageMetadata();
+    } else if (
+      AssetIngestOperation.SPREADSHEET_TYPES.includes(
+        path.extname(this.basePath)
+      )
+    ) {
+      await this.readMetadataSheet();
     }
   }
 
   /**
-   * Read a metadata json file into the database and move it to the `READ_FILES` phase
+   * Read the metadata from a danapack file.
    *
-   * @param jsonPath Absolute path to a json file of metadata
-   **/
-  async readJsonMetadata(jsonPath: string) {
-    this.log.info('Reading metadata file', jsonPath);
+   * @param path Path to the danapack file
+   */
+  async readPackageMetadata() {
+    this.log.info('Reading metadata package', this.basePath);
 
-    const contents = MetadataFileSchema.safeParse(
-      SecureJSON.parse(await readFile(jsonPath, 'utf8'))
-    );
+    const archive = this.openAsDanapack();
 
-    const relativePath = path.relative(this.metadataPath, jsonPath);
-
-    if (!contents.success) {
+    if (!archive.metadataEntry) {
       await this.archive.useDb((db) => {
         this.session.phase = IngestPhase.ERROR;
-        db.persistAndFlush(this.session);
+        db.persist(this.session);
       });
+
+      this.emitStatus();
       return;
     }
 
-    const { metadata, files = [] } = contents.data;
+    const metadataFileContents = await new Promise<object>(
+      (resolve, reject) => {
+        archive.metadataEntry.getDataAsync((data, err) => {
+          if (data) {
+            resolve(SecureJSON.parse(data));
+          } else {
+            reject(err);
+          }
+        });
+      }
+    );
 
-    await this.readMetadataObject(metadata, files, relativePath);
+    const metadata = MetadataFileSchema.safeParse(metadataFileContents);
+    if (!metadata.success) {
+      this.log.error(
+        'Metadata file validation failed with error:',
+        metadata.error
+      );
+
+      await this.archive.useDb((db) => {
+        this.session.phase = IngestPhase.ERROR;
+        db.persist(this.session);
+      });
+
+      this.emitStatus();
+      return;
+    }
+
+    for (const [key, val] of Object.entries(metadata.data)) {
+      await this.readMetadataObject(val.metadata, val.files ?? [], key);
+    }
   }
 
   /**
@@ -258,18 +298,17 @@ export class AssetIngestOperation implements IngestSession {
    *
    * @param sheetPath Absolute path to a spreadsheet of metadata
    **/
-  async readMetadataSheet(sheetPath: string) {
-    this.log.info('Reading metadata sheet', sheetPath);
+  async readMetadataSheet() {
+    this.log.info('Reading metadata sheet', this.basePath);
 
-    const workbook = xlsx.readFile(sheetPath, { codepage: 65001 });
-    const relativePath = path.relative(this.metadataPath, sheetPath);
+    const workbook = xlsx.readFile(this.basePath, { codepage: 65001 });
 
     for (const [sheetName, sheet] of Object.entries(workbook.Sheets)) {
       const rows = xlsx.utils.sheet_to_json<Dict>(sheet);
       let i = 0;
 
       for (const { files: fileRecord = '', ...metadata } of rows) {
-        const locator = `${relativePath}:${sheetName},${i}`;
+        const locator = `${sheetName},${i}`;
         const files = compact(String(fileRecord).split(';'));
 
         await this.readMetadataObject(metadata, files, locator);
@@ -296,9 +335,6 @@ export class AssetIngestOperation implements IngestSession {
     await this.archive.useDbTransaction(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
       const fileRepository = db.getRepository(FileImport);
-      const collection = await this.collectionService.getRootAssetCollection(
-        this.archive
-      );
 
       const exists = !!(await assetsRepository.count({
         path: locator,
@@ -363,13 +399,10 @@ export class AssetIngestOperation implements IngestSession {
   private async revalidate() {
     await this.archive.useDb(async (db) => {
       const assets = await db.find(AssetImportEntity, {});
-      const collection = await this.collectionService.getRootAssetCollection(
-        this.archive
-      );
       const validation =
         await this.collectionService.validateItemsForCollection(
           this.archive,
-          collection.id,
+          this.targetCollectionId,
           assets
         );
       const assetsById = keyBy(assets, 'id');
@@ -426,6 +459,13 @@ export class AssetIngestOperation implements IngestSession {
    * - Associate the media files with the imported asset.
    **/
   async readMediaFiles() {
+    // Only read media files from a dana package
+    if (extname(this.session.basePath) !== AssetIngestOperation.PACKAGE_TYPE) {
+      return;
+    }
+
+    const pack = this.openAsDanapack();
+
     await this.archive.useDb(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
 
@@ -444,11 +484,11 @@ export class AssetIngestOperation implements IngestSession {
       });
 
       for (const asset of assets) {
-        if (!this._active) {
+        if (this._state !== 'active') {
           return;
         }
 
-        await this.readAssetMediaFiles(asset);
+        await this.readAssetMediaFiles(asset, pack);
         asset.phase = IngestPhase.COMPLETED;
 
         await db.persistAndFlush(asset);
@@ -467,7 +507,7 @@ export class AssetIngestOperation implements IngestSession {
    *
    * @param asset Imported asset to find media files for
    **/
-  async readAssetMediaFiles(asset: AssetImportEntity) {
+  async readAssetMediaFiles(asset: AssetImportEntity, pack: DanaPack) {
     this.log.info('Read media file for asset', asset.path);
 
     await this.archive.useDb(async (db) => {
@@ -476,15 +516,25 @@ export class AssetIngestOperation implements IngestSession {
       this.emitStatus([asset.id]);
 
       for (const file of await asset.files.loadItems()) {
-        if (!this._active) {
+        if (this._state !== 'active') {
           return;
         }
 
         try {
-          const res = await this.mediaService.putFile(
-            this.archive,
-            path.join(this.mediaPath, file.path)
-          );
+          const packEntry = pack.entries[join('media', file.path)];
+          const res = await this.mediaService.putFile(this.archive, {
+            extension: extname(file.path),
+            extractTo: (dest) => {
+              pack.zipFile.extractEntryTo(
+                packEntry,
+                dirname(dest),
+                true,
+                false,
+                false,
+                basename(dest)
+              );
+            }
+          });
 
           if (this._filesRead !== undefined) {
             this._filesRead += 1;
@@ -549,16 +599,12 @@ export class AssetIngestOperation implements IngestSession {
         return error(FetchError.DOES_NOT_EXIST);
       }
 
-      const collection = await this.collectionService.getRootAssetCollection(
-        this.archive
-      );
-
       asset.metadata = metadata;
 
       const [validationResult] =
         await this.collectionService.validateItemsForCollection(
           this.archive,
-          collection.id,
+          this.targetCollectionId,
           [{ id: asset.id, metadata: metadata ?? asset?.metadata }]
         );
 
@@ -583,6 +629,24 @@ export class AssetIngestOperation implements IngestSession {
     return res;
   }
 
+  async removeImportedFiles() {
+    // Delete the import, returning any imported media
+    const importedMedia = await this.archive.useDbTransaction(async (db) => {
+      const importedMedia = await this.archive.useDb((db) =>
+        this.queryImportedFiles(db)
+          .populate([{ field: 'media' }])
+          .getResultList()
+      );
+
+      db.remove(db.getReference(ImportSessionEntity, this.id));
+
+      return compact(importedMedia.map((file) => file.media?.id));
+    });
+
+    // Delete the imported media
+    await this.mediaService.deleteFiles(this.archive, importedMedia);
+  }
+
   /**
    * Convenience for emitting a `status` event for this ingest operation.
    *
@@ -600,6 +664,21 @@ export class AssetIngestOperation implements IngestSession {
     await this.revalidate();
     this.emitStatus();
   };
+
+  private openAsDanapack() {
+    const zip = new AdmZip(this.basePath);
+    const entries = Object.fromEntries(
+      zip
+        .getEntries()
+        .map((e) => [join(...e.entryName.split(path.sep).slice(1)), e])
+    ) as Dict<AdmZip.IZipEntry>;
+
+    return {
+      zipFile: zip,
+      metadataEntry: entries['metadata.json'],
+      entries
+    };
+  }
 }
 
 /**
@@ -613,8 +692,13 @@ export class AssetIngestOperation implements IngestSession {
  * Media files MUST be specified as a relative path (using posix conventions) from the media directory of the import
  * root.
  **/
-const MetadataFileSchema = z.object({
+const MetadataRecordSchema = z.object({
   metadata: z.record(z.any()),
   files: z.optional(z.array(z.string()))
 });
+type MetadataRecordSchema = z.TypeOf<typeof MetadataRecordSchema>;
+
+const MetadataFileSchema = z.record(MetadataRecordSchema);
 type MetadataFileSchema = z.TypeOf<typeof MetadataFileSchema>;
+
+type DanaPack = ReturnType<AssetIngestOperation['openAsDanapack']>;
