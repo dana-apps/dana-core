@@ -3,7 +3,7 @@ import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
 import { Logger } from 'tslog';
-import { compact, keyBy } from 'lodash';
+import { compact, keyBy, mapValues } from 'lodash';
 import { ObjectQuery } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
 import AdmZip from 'adm-zip';
@@ -267,7 +267,7 @@ export class AssetIngestOperation implements IngestSession {
       return;
     }
 
-    for (const [key, val] of Object.entries(metadata.data)) {
+    for (const [key, val] of Object.entries(metadata.data.assets)) {
       await this.readMetadataObject(val.metadata, val.files ?? [], key);
     }
   }
@@ -289,7 +289,11 @@ export class AssetIngestOperation implements IngestSession {
       for (const metadata of rows) {
         const locator = `${sheetName},${i}`;
 
-        await this.readMetadataObject(metadata, [], locator);
+        await this.readMetadataObject(
+          mapValues(metadata, (value) => [value]),
+          [],
+          locator
+        );
 
         i += 1;
       }
@@ -303,7 +307,11 @@ export class AssetIngestOperation implements IngestSession {
    * @param files Array of paths to media files (relative to `mediaPath`) to import
    * @param locator Unique string representing the location (path, path + line number, etc) this item was imported from
    */
-  async readMetadataObject(metadata: Dict, files: string[], locator: string) {
+  async readMetadataObject(
+    metadata: Dict<unknown[]>,
+    files: string[],
+    locator: string
+  ) {
     const collection = await this.getTargetCollection();
     const convertToSchema = this.getMetadataConverter(collection.schema);
     metadata = await convertToSchema(metadata);
@@ -368,13 +376,17 @@ export class AssetIngestOperation implements IngestSession {
    * @returns The provided value, converted to the expected type if possible
    */
   async convertTypeForImport(property: SchemaProperty, value: unknown) {
-    const castedValue = await this.assetService.castOrCreateProperty(
-      this.archive,
-      property,
-      value
-    );
+    return Promise.all(
+      arrayify(value).map(async (val) => {
+        const castedValue = await this.assetService.castOrCreateProperty(
+          this.archive,
+          property,
+          val
+        );
 
-    return arrayify(castedValue.status === 'error' ? value : castedValue.value);
+        return castedValue.status === 'error' ? val : castedValue.value;
+      })
+    );
   }
 
   /**
@@ -418,7 +430,7 @@ export class AssetIngestOperation implements IngestSession {
       schema.map((property) => [property.label.toLowerCase(), property])
     );
 
-    return async (metadata: Dict) => {
+    return async (metadata: Dict<unknown[]>) => {
       const entries = await Promise.all(
         Object.entries(metadata).map(async ([label, val]) => {
           const property = byLabel[label.toLowerCase()];
@@ -724,7 +736,7 @@ type DanaPack = ReturnType<AssetIngestOperation['openAsDanapack']>;
  *   package.
  **/
 const MetadataRecordSchema = z.object({
-  metadata: z.record(z.any()),
+  metadata: z.record(z.array(z.unknown())),
   files: z.optional(z.array(z.string()))
 });
 type MetadataRecordSchema = z.TypeOf<typeof MetadataRecordSchema>;
@@ -732,5 +744,7 @@ type MetadataRecordSchema = z.TypeOf<typeof MetadataRecordSchema>;
 /**
  * Structure of the metadata.json entry in a DanaPack file.
  */
-const MetadataFileSchema = z.record(MetadataRecordSchema);
+const MetadataFileSchema = z.object({
+  assets: z.record(MetadataRecordSchema)
+});
 type MetadataFileSchema = z.TypeOf<typeof MetadataFileSchema>;
