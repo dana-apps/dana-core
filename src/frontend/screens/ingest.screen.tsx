@@ -2,7 +2,7 @@
 
 import { FC, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from 'theme-ui';
+import { Button, Flex, Text } from 'theme-ui';
 import {
   Asset,
   GetCollection,
@@ -90,6 +90,12 @@ export const ArchiveIngestScreen: FC = () => {
         sx={{ flex: 1, width: '100%', position: 'relative' }}
         detail={detailView}
       >
+        <Flex sx={{ py: 5, px: 4, bg: 'gray1', flexDirection: 'column' }}>
+          <Text sx={{ fontSize: 1 }}>
+            Importing from <strong>{session.title}</strong> into{' '}
+            <strong>{collection.title}</strong>
+          </Text>
+        </Flex>
         <DataGrid
           sx={{ flex: 1, width: '100%', height: '100%', borderTop: 'light' }}
           columns={gridColumns}
