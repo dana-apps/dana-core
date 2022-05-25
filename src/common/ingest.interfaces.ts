@@ -106,8 +106,7 @@ export type GetIngestSessionResponse = ResponseType<typeof GetIngestSession>;
 export const GetIngestSession = RpcInterface({
   id: 'ingest/get',
   request: z.object({
-    id: z.string(),
-    targetCollection: z.string()
+    id: z.string()
   }),
   response: IngestSession
 });

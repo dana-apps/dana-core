@@ -1,14 +1,11 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, useCallback, useMemo, useState } from 'react';
+import { FC, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Button, Flex, Label, Select } from 'theme-ui';
+import { Button } from 'theme-ui';
 import {
   Asset,
-  AssetMetadataItem,
-  GetRootAssetsCollection,
-  GetRootDatabaseCollection,
-  GetSubcollections,
+  GetCollection,
   SchemaProperty
 } from '../../common/asset.interfaces';
 import {
@@ -26,7 +23,6 @@ import {
   unwrapGetResult,
   useGet,
   useList,
-  useListAll,
   useRPC
 } from '../ipc/ipc.hooks';
 import { ProgressValue } from '../ui/components/atoms.component';
@@ -39,18 +35,18 @@ import { AssetDetail } from '../ui/components/asset-detail.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { BottomBar } from '../ui/components/page-layouts.component';
-import { CollectionChooser } from '../ui/components/collection-chooser.component';
 
 /**
  * Screen for managing, editing and accepting a bulk import.
  */
 export const ArchiveIngestScreen: FC = () => {
-  const rpc = useRPC();
   const sessionId = required(useParams().sessionId, 'Expected sessionId param');
   const assets = useList(ListIngestAssets, () => ({ sessionId }), [sessionId]);
-  const session = useGet(GetIngestSession, sessionId);
-  const collection = useGet(GetRootAssetsCollection);
-  const completeImport = useCompleteImport(sessionId);
+  const session = unwrapGetResult(useGet(GetIngestSession, sessionId));
+  const collection = unwrapGetResult(
+    useGet(GetCollection, session?.targetCollectionId ?? SKIP_FETCH)
+  );
+  const completeImport = useCompleteImport(sessionId, collection?.id);
   const cancelImport = useCancelImport(sessionId);
   const selection = SelectionContext.useContainer();
   const selectedAsset = useMemo(() => {
@@ -62,29 +58,23 @@ export const ArchiveIngestScreen: FC = () => {
   }, [assets, selection]);
 
   const gridColumns = useMemo(() => {
-    if (collection?.status === 'ok') {
-      return getGridColumns(collection.value.schema);
+    if (collection) {
+      return getGridColumns(collection.schema);
     }
 
     return [];
   }, [collection]);
 
-  if (
-    !assets ||
-    !session ||
-    !collection ||
-    collection.status !== 'ok' ||
-    session.status !== 'ok'
-  ) {
+  if (!assets || !session || !collection) {
     return null;
   }
-
+  1;
   const detailView =
-    selectedAsset && collection.status === 'ok' ? (
+    selectedAsset && collection ? (
       <AssetDetail
         asset={selectedAsset}
         sx={{ width: '100%', height: '100%' }}
-        collection={collection.value}
+        collection={collection}
         errors={selectedAsset.validationErrors ?? undefined}
         sessionId={sessionId}
         action="import"
@@ -92,9 +82,7 @@ export const ArchiveIngestScreen: FC = () => {
     ) : undefined;
 
   const allowComplete =
-    session.status === 'ok' &&
-    session.value.valid &&
-    session.value.phase === IngestPhase.COMPLETED;
+    session.valid && session.phase === IngestPhase.COMPLETED;
 
   return (
     <>
@@ -131,7 +119,10 @@ export const ArchiveIngestScreen: FC = () => {
  * @param sessionId The import session to commit
  * @returns An event handler that commits the import.
  */
-function useCompleteImport(sessionId: string) {
+function useCompleteImport(
+  sessionId: string,
+  collectionId: string | undefined
+) {
   const rpc = useRPC();
   const navigate = useNavigate();
 
@@ -142,14 +133,10 @@ function useCompleteImport(sessionId: string) {
       return;
     }
 
-    const collection = await rpc(GetRootAssetsCollection, {});
-
-    navigate(
-      collection.status === 'ok' ? `/collection/${collection.value.id}` : '/'
-    );
+    navigate(`/collection/${collectionId}`);
 
     return;
-  }, [navigate, rpc, sessionId]);
+  }, [collectionId, navigate, rpc, sessionId]);
 }
 
 /**

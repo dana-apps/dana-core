@@ -59,12 +59,6 @@ export class AssetIngestOperation implements IngestSession {
     instanceName: this.id
   });
 
-  /** Supported file extensions for metadata sheets */
-  private static SPREADSHEET_TYPES = ['.xlsx', '.csv', '.xls', '.ods'];
-
-  /** Supported file extension for a dana package */
-  private static PACKAGE_TYPE = '.danapack';
-
   constructor(
     readonly archive: ArchivePackage,
     readonly session: ImportSessionEntity,
@@ -229,12 +223,10 @@ export class AssetIngestOperation implements IngestSession {
    * @param currentPath Directory to traverse for files to ignest
    */
   async readFilepathMetadata() {
-    if (path.extname(this.basePath) === AssetIngestOperation.PACKAGE_TYPE) {
+    if (path.extname(this.basePath) === AssetIngestService.PACKAGE_TYPE) {
       await this.readPackageMetadata();
     } else if (
-      AssetIngestOperation.SPREADSHEET_TYPES.includes(
-        path.extname(this.basePath)
-      )
+      AssetIngestService.SPREADSHEET_TYPES.includes(path.extname(this.basePath))
     ) {
       await this.readMetadataSheet();
     }
@@ -307,11 +299,10 @@ export class AssetIngestOperation implements IngestSession {
       const rows = xlsx.utils.sheet_to_json<Dict>(sheet);
       let i = 0;
 
-      for (const { files: fileRecord = '', ...metadata } of rows) {
+      for (const metadata of rows) {
         const locator = `${sheetName},${i}`;
-        const files = compact(String(fileRecord).split(';'));
 
-        await this.readMetadataObject(metadata, files, locator);
+        await this.readMetadataObject(metadata, [], locator);
 
         i += 1;
       }
@@ -326,9 +317,7 @@ export class AssetIngestOperation implements IngestSession {
    * @param locator Unique string representing the location (path, path + line number, etc) this item was imported from
    */
   async readMetadataObject(metadata: Dict, files: string[], locator: string) {
-    const collection = await this.collectionService.getRootAssetCollection(
-      this.archive
-    );
+    const collection = await this.getTargetCollection();
     const convertToSchema = this.getMetadataConverter(collection.schema);
     metadata = await convertToSchema(metadata);
 
@@ -460,7 +449,21 @@ export class AssetIngestOperation implements IngestSession {
    **/
   async readMediaFiles() {
     // Only read media files from a dana package
-    if (extname(this.session.basePath) !== AssetIngestOperation.PACKAGE_TYPE) {
+    if (extname(this.session.basePath) !== AssetIngestService.PACKAGE_TYPE) {
+      await this.archive.useDb(async (db) => {
+        this.session.phase = IngestPhase.COMPLETED;
+
+        const assets = await db.find(AssetImportEntity, {
+          session: this.session
+        });
+        for (const a of assets) {
+          a.phase = IngestPhase.COMPLETED;
+        }
+
+        db.persist([this.session, ...assets]);
+      });
+      this.emitStatus();
+
       return;
     }
 

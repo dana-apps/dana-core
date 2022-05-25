@@ -234,6 +234,46 @@ describe('AssetImportOperation', () => {
     expect(sessions.items).toHaveLength(0);
   });
 
+  test('assets can be imported into collections other than the default', async () => {
+    const fixture = await setup();
+    const targetCollection = await fixture.collectionService.createCollection(
+      fixture.archive,
+      fixture.rootCollection.id,
+      {
+        title: 'Other collection',
+        schema: [
+          {
+            label: 'property',
+            id: 'p',
+            type: SchemaPropertyType.FREE_TEXT,
+            required: true,
+            repeated: true
+          }
+        ]
+      }
+    );
+
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly(
+      BASIC_EXAMPLE,
+      targetCollection.id
+    );
+
+    await fixture.importService.commitSession(fixture.archive, session.id);
+    const assets = await fixture.assetService.listAssets(
+      fixture.archive,
+      targetCollection.id
+    );
+
+    expect(assets.total).toBe(2);
+
+    expect(assets.items).toContainEqual(
+      expect.objectContaining({ metadata: assetMetadata({ p: ['value1'] }) })
+    );
+    expect(assets.items).toContainEqual(
+      expect.objectContaining({ metadata: assetMetadata({ p: ['value2'] }) })
+    );
+  });
+
   test('comitting a session creates assets and notifies the changes to assets', async () => {
     const fixture = await setup();
     await fixture.givenACollectionMetadataSchema([
@@ -431,6 +471,46 @@ describe('AssetImportOperation', () => {
       assetMetadataItem(['value1'])
     );
   });
+
+  test('Imports metadata records from a csv file)', async () => {
+    const fixture = await setup();
+    await fixture.collectionService.updateCollectionSchema(
+      fixture.archive,
+      fixture.rootCollection.id,
+      [
+        {
+          label: 'Title',
+          id: 'title',
+          type: SchemaPropertyType.FREE_TEXT,
+          required: true,
+          repeated: true
+        },
+        {
+          label: 'Style',
+          id: 'style',
+          type: SchemaPropertyType.FREE_TEXT,
+          required: true,
+          repeated: true
+        }
+      ]
+    );
+
+    const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly(
+      CSV_EXAMPLE
+    );
+    const assets = await fixture.importService.listSessionAssets(
+      fixture.archive,
+      session.id
+    );
+
+    expect(session.phase).toEqual(IngestPhase.COMPLETED);
+    expect(session.valid).toBeTruthy();
+    expect(assets.items).toHaveLength(2);
+    expect(assets.items.map((x) => x.phase)).toEqual([
+      IngestPhase.COMPLETED,
+      IngestPhase.COMPLETED
+    ]);
+  });
 });
 
 const setup = async () => {
@@ -455,10 +535,13 @@ const setup = async () => {
     assetService,
     collectionService,
     rootCollection,
-    givenACollectionMetadataSchema: async (schema: SchemaProperty[]) => {
+    givenACollectionMetadataSchema: async (
+      schema: SchemaProperty[],
+      collectionId = rootCollection.id
+    ) => {
       await collectionService.updateCollectionSchema(
         archive,
-        rootCollection.id,
+        collectionId,
         schema
       );
     },
@@ -469,12 +552,13 @@ const setup = async () => {
       return collectEvents(importService, 'edit', fn);
     },
     givenThatAnImportSessionHasRunSuccessfuly: async (
-      example: string = BASIC_EXAMPLE
+      example: string = BASIC_EXAMPLE,
+      collection = rootCollection.id
     ) => {
       const session = await importService.beginSession(
         archive,
         example,
-        rootCollection.id
+        collection
       );
 
       await waitUntilEvent(importService, 'importRunCompleted', session);
@@ -488,3 +572,5 @@ const BASIC_EXAMPLE = path.join(
   'fixtures',
   'basic-fixture.danapack'
 );
+
+const CSV_EXAMPLE = path.join(__dirname, 'fixtures', 'controlled-db.csv');

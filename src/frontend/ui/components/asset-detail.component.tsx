@@ -68,7 +68,7 @@ export const AssetDetail: FC<MediaDetailProps> = ({
   ...props
 }) => {
   const showMedia =
-    collection.type === CollectionType.ASSET_COLLECTION && action === 'update';
+    collection.type === CollectionType.ASSET_COLLECTION && action !== 'create';
   const [tabId, setTabId] = useState(
     initialTab || (showMedia && 'Media') || undefined
   );
@@ -128,8 +128,9 @@ export const AssetDetail: FC<MediaDetailProps> = ({
     } else {
       setEdits(undefined);
       setEditErrors(undefined);
+      onCreate?.(res.value);
     }
-  }, [collection.id, displayError, metadata, rpc]);
+  }, [collection.id, displayError, metadata, onCreate, rpc]);
 
   /** Update the metadata for an imported asset */
   const updateIngestedAsset = useCallback(async () => {
