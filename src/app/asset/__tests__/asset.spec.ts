@@ -10,7 +10,6 @@ import { AssetsChangedEvent, AssetService } from '../asset.service';
 import { CollectionService } from '../collection.service';
 import {
   assetMetadata,
-  assetMetadataItem,
   assetMetadataItemMatcher,
   someSchemaProperty
 } from '../test-utils';

@@ -288,13 +288,3 @@ const useAssetContextMenu = () => {
     [errorDisplay, modal, rpc]
   );
 };
-
-const getAssetTitleOrId = (asset: Asset) => {
-  if (asset.title) {
-    return (
-      <>
-        Record <strong>{asset.title || asset.id}</strong>
-      </>
-    );
-  }
-};

@@ -127,13 +127,13 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
         letterSpacing: '-0.03em',
         mt: 3
       }),
-      section: (theme) => ({
+      section: {
         textTransform: 'uppercase',
         fontWeight: 700,
         fontSize: 0,
         color: 'grey',
         letterSpacing: 0.95
-      })
+      }
     },
     images: {
       selectable: {

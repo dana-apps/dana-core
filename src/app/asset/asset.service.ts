@@ -1,12 +1,11 @@
 import { EventEmitter } from 'eventemitter3';
 import {
-  AggregatedValidationError,
   Asset,
   ReferentialIntegrityError,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
-import { countBy, mapValues, sumBy, uniq } from 'lodash';
+import { mapValues, sumBy, uniq } from 'lodash';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, FetchError, ok, Result } from '../../common/util/error';
@@ -18,7 +17,6 @@ import { AssetCollectionEntity, AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
 import { SchemaPropertyValue } from './metadata.entity';
 import { never, required } from '../../common/util/assert';
-import { DefaultMap } from '../../common/util/collection';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -225,7 +223,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
     { query, exact }: { query: string; exact?: boolean },
     range?: PageRange
   ): Promise<Result<ResourceList<Asset>>> {
-    return archive.useDb(async (db) => {
+    return archive.useDb(async () => {
       const collection = await this.collectionService.getCollection(
         archive,
         collectionId

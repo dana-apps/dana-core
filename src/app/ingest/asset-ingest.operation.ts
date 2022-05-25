@@ -1,4 +1,3 @@
-import { readdir, readFile, stat } from 'fs/promises';
 import path, { basename, dirname, extname, join } from 'path';
 import { z } from 'zod';
 import * as xlsx from 'xlsx';
@@ -29,10 +28,7 @@ import { SchemaProperty } from '../../common/asset.interfaces';
 import { AssetService } from '../asset/asset.service';
 import { error, FetchError, ok } from '../../common/util/error';
 import { arrayify } from '../../common/util/collection';
-import { AssetCollectionEntity } from '../asset/asset.entity';
 import { required } from '../../common/util/assert';
-import { promisify } from 'util';
-import { readJson } from '../util/json-utils';
 
 /**
  * Encapsulates an import operation.
@@ -203,13 +199,21 @@ export class AssetIngestOperation implements IngestSession {
   }
 
   /**
-   * Read all metadata files under `basePath` into the database and stage them for import
-   **/
+   * Read metadata from the imported file and create staged assets.
+   */
   async readMetadata() {
     this.emitStatus();
 
     await this.archive.useDb(async (db) => {
-      await this.readFilepathMetadata();
+      if (path.extname(this.basePath) === AssetIngestService.PACKAGE_TYPE) {
+        await this.readPackageMetadata();
+      } else if (
+        AssetIngestService.SPREADSHEET_TYPES.includes(
+          path.extname(this.basePath)
+        )
+      ) {
+        await this.readMetadataSheet();
+      }
 
       this.session.phase = IngestPhase.READ_FILES;
       await db.persistAndFlush(this.session);
@@ -218,24 +222,7 @@ export class AssetIngestOperation implements IngestSession {
   }
 
   /**
-   * Read an importable file from a location on the current filesystem into the archive.
-   *
-   * @param currentPath Directory to traverse for files to ignest
-   */
-  async readFilepathMetadata() {
-    if (path.extname(this.basePath) === AssetIngestService.PACKAGE_TYPE) {
-      await this.readPackageMetadata();
-    } else if (
-      AssetIngestService.SPREADSHEET_TYPES.includes(path.extname(this.basePath))
-    ) {
-      await this.readMetadataSheet();
-    }
-  }
-
-  /**
-   * Read the metadata from a danapack file.
-   *
-   * @param path Path to the danapack file
+   * Read assset metadata and file references from a danapack file.
    */
   async readPackageMetadata() {
     this.log.info('Reading metadata package', this.basePath);
@@ -372,6 +359,14 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
   }
 
+  /**
+   * Given a property defined in the schema and an imported value of unknown type, coerce the value to the type expected
+   * by the schema property
+   *
+   * @param property Schema property reepresenting the expectedf type
+   * @param value Value to convert
+   * @returns The provided value, converted to the expected type if possible
+   */
   async convertTypeForImport(property: SchemaProperty, value: unknown) {
     const castedValue = await this.assetService.castOrCreateProperty(
       this.archive,
@@ -441,7 +436,7 @@ export class AssetIngestOperation implements IngestSession {
   }
 
   /**
-   * For every asset in the `READ_FILES' phase:
+   * If the current session is importing from a DanaPack file, then for every asset in the `READ_FILES' phase:
    *
    * - Ensure that the media file it references exists and is a supported format.
    * - Resolve the media files it references and load them into the archive.
@@ -506,9 +501,10 @@ export class AssetIngestOperation implements IngestSession {
   }
 
   /**
-   * Ingest all media files referenced by an asset
+   * Ingest all media files from a DanaPack file that are referenced by an asset imported from that DanaPack file
    *
    * @param asset Imported asset to find media files for
+   * @param pack DanaPack file to import media from
    **/
   async readAssetMediaFiles(asset: AssetImportEntity, pack: DanaPack) {
     this.log.info('Read media file for asset', asset.path);
@@ -632,6 +628,9 @@ export class AssetIngestOperation implements IngestSession {
     return res;
   }
 
+  /**
+   * Delete any media files created during this import.
+   */
   async removeImportedFiles() {
     // Delete the import, returning any imported media
     const importedMedia = await this.archive.useDbTransaction(async (db) => {
@@ -668,6 +667,11 @@ export class AssetIngestOperation implements IngestSession {
     this.emitStatus();
   };
 
+  /**
+   * Open the `baseUrl` of this import as a DanaPack file
+   *
+   * @returns DanaPack instance.
+   */
   private openAsDanapack() {
     const zip = new AdmZip(this.basePath);
     const entries = Object.fromEntries(
@@ -685,15 +689,39 @@ export class AssetIngestOperation implements IngestSession {
 }
 
 /**
- * Structure of a metadata document.
+ * A DanaPack file is a zipped bundle of asset metadata and media files with a defined internal file structure.
+ *
+ * It must have the extension `.danapack` to be used by Dana Core.
+ *
+ * The archive structure is as follows:
+ *
+ * ```
+ * + [root directory]
+ *   - metadata.json
+ *   + media
+ *     - file1
+ *     - file2
+ *     ...
+ * ```
+ * The root directory may have any name, but must be present. The metadata.json and media entries should not be at the
+ * root of the archive.
+ */
+type DanaPack = ReturnType<AssetIngestOperation['openAsDanapack']>;
+
+/**
+ * Structure of a metadata record in a DanaPack file.
  *
  * A metadata document contains the metadata and media files that compose an imported asset.
- * Metadata MUST be specified as a flat json map with.
- * Metadata need not fit any schema otherwise – it will be validated and
- * An imported asset MAY have zero, one or multiple associated media files.
- * Media files MUST be in a supported format.
- * Media files MUST be specified as a relative path (using posix conventions) from the media directory of the import
- * root.
+ *
+ * It has the following requirements:
+ *
+ * - Metadata MUST be specified as a json map from import references to asset records.
+ * - Metadata need not fit any schema otherwise – it will be validated against the schema as part of the import and
+ *   edited by the operator.
+ * - An imported asset MAY have zero, one or multiple associated media files.
+ * - Media files MUST be in a supported format.
+ * - Media files MUST be specified as a relative path (using posix conventions) from the media directory of the dana
+ *   package.
  **/
 const MetadataRecordSchema = z.object({
   metadata: z.record(z.any()),
@@ -701,7 +729,8 @@ const MetadataRecordSchema = z.object({
 });
 type MetadataRecordSchema = z.TypeOf<typeof MetadataRecordSchema>;
 
+/**
+ * Structure of the metadata.json entry in a DanaPack file.
+ */
 const MetadataFileSchema = z.record(MetadataRecordSchema);
 type MetadataFileSchema = z.TypeOf<typeof MetadataFileSchema>;
-
-type DanaPack = ReturnType<AssetIngestOperation['openAsDanapack']>;

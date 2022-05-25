@@ -16,7 +16,6 @@ import { ElectronRendererIpc } from '../ipc/electron-ipc';
 import { ReactElement, StrictMode } from 'react';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { never } from '../../common/util/assert';
-import { ModalScreen } from '../screens/modal.screen';
 
 /** Exposed from main process via browser-preload.js */
 declare const bridge: {

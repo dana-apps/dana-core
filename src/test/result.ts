@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { assert } from '../common/util/assert';
-import { Result } from '../common/util/error';
+import { ErrorResult, Result } from '../common/util/error';
 
 export function requireSuccess<T>(x: Result<T>) {
   assert(
     x.status === 'ok',
     'Expected operation to fail. Got error:',
-    JSON.stringify((x as any).error)
+    JSON.stringify((x as ErrorResult<unknown>).error)
   );
 
   return x.value;

@@ -12,7 +12,7 @@ import {
   useRef,
   useState
 } from 'react';
-import { Box, BoxProps, Flex, Heading, useThemeUI } from 'theme-ui';
+import { Box, BoxProps, Flex, Heading } from 'theme-ui';
 import { ReflexContainer, ReflexElement, ReflexSplitter } from 'react-reflex';
 import { NavLink, useLocation } from 'react-router-dom';
 import {

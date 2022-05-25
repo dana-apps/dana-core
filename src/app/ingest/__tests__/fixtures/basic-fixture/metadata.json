@@ -1,13 +1,15 @@
 {
-  "1": {
-    "metadata": {
-      "property": "value1"
+  "assets": {
+    "1": {
+      "metadata": {
+        "property": ["value1"]
+      },
+      "files": ["a.png", "b.jpg"]
     },
-    "files": ["a.png", "b.jpg"]
-  },
-  "2": {
-    "metadata": {
-      "property": "value2"
+    "2": {
+      "metadata": {
+        "property": ["value2"]
+      }
     }
   }
 }

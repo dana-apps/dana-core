@@ -5,7 +5,6 @@ import { EventEmitter } from 'eventemitter3';
 import { noop, times } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
-import { AssetMetadataItem } from '../../../../common/asset.interfaces';
 
 import { RpcInterface } from '../../../../common/ipc.interfaces';
 import {
@@ -17,7 +16,7 @@ import { IpcContext, ListCursor, useList } from '../../../ipc/ipc.hooks';
 import { MockIpc } from '../../../ipc/mock-ipc';
 import { SelectionContext } from '../../hooks/selection.hooks';
 import { Window } from '../../window';
-import { MetadataItemCell, StringCell } from '../grid-cell.component';
+import { StringCell } from '../grid-cell.component';
 import { DataGrid, GridColumn } from '../grid.component';
 
 export default {

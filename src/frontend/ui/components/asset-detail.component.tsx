@@ -19,13 +19,11 @@ import {
   Collection,
   CollectionType,
   CreateAsset,
-  SchemaProperty,
   SingleValidationError,
   UpdateAssetMetadata
 } from '../../../common/asset.interfaces';
 import { UpdateIngestedMetadata } from '../../../common/ingest.interfaces';
 import { FetchError } from '../../../common/util/error';
-import { Dict } from '../../../common/util/types';
 import { useRPC } from '../../ipc/ipc.hooks';
 import { useErrorDisplay } from '../hooks/error.hooks';
 import { Tabs, IconTab, ValidationError } from './atoms.component';

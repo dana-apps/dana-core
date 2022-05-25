@@ -1,10 +1,10 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useCallback } from 'react';
-import { Flex, Button, Heading } from 'theme-ui';
+import { Button, Heading } from 'theme-ui';
 import { OpenArchive } from '../../common/interfaces/archive.interfaces';
 import { useRPC } from '../ipc/ipc.hooks';
-import { WindowDragArea, WindowInset } from '../ui/window';
+import { WindowDragArea } from '../ui/window';
 
 /**
  * Root component for a window shown on first launch

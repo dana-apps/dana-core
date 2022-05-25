@@ -12,7 +12,6 @@ import { PropsWithChildren } from 'react';
 import { someAsset, someMetadata } from '../../../../app/asset/test-utils';
 import {
   AssetMetadata,
-  AssetMetadataItem,
   CollectionType,
   SchemaProperty,
   SchemaPropertyType,
