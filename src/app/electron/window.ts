@@ -29,9 +29,12 @@ import {
   ShowContextMenuResult,
   ShowModal,
   CloseModal,
-  ShowFilePickerModal
+  ShowFilePickerModal,
+  CreateWindow,
+  WindowSize
 } from '../../common/ui.interfaces';
 import { error, ok } from '../../common/util/error';
+import { MediaFileService } from '../media/media-file.service';
 import { getFrontendPlatform } from '../util/platform';
 import {
   FRONTEND_BUNDLE_DIR,
@@ -53,7 +56,7 @@ interface CreateFrontendWindow {
     'platform' | 'windowId' | 'version' | 'releaseDate'
   >;
 
-  size?: 'small' | 'regular' | 'dialog';
+  size?: WindowSize;
 
   /** Resolve `media:` url schemes to an absolute path */
   resolveMedia?: MediaResolveFn;
@@ -68,7 +71,7 @@ type MediaResolveFn = (uri: string) => string;
 export async function createFrontendWindow({
   title,
   config,
-  size = 'regular',
+  size = WindowSize.REGULAR,
   resolveMedia,
   router
 }: CreateFrontendWindow) {
@@ -95,6 +98,18 @@ export async function createFrontendWindow({
       return {
         height: 300,
         width: 300,
+        minWidth: 300,
+        minHeight: 300,
+        resizable: false,
+        minimizable: false,
+        maximizable: false
+      };
+    }
+
+    if (size === 'narrow') {
+      return {
+        height: 600,
+        width: 400,
         minWidth: 300,
         minHeight: 300,
         resizable: false,
@@ -333,7 +348,7 @@ export async function initWindows(router: ElectronRouter) {
     const window = await createFrontendWindow({
       title: req.title,
       router,
-      size: 'dialog',
+      size: WindowSize.DIALOG,
       config: {
         type: 'modal',
         documentId,
@@ -351,7 +366,6 @@ export async function initWindows(router: ElectronRouter) {
 
     return new Promise((resolve) => {
       visibleModals.once(returnId, ({ action }) => {
-        window.close();
         resolve(ok({ action }));
       });
     });
@@ -384,4 +398,26 @@ export async function initWindows(router: ElectronRouter) {
 
     return ok(res.canceled ? undefined : res.filePaths);
   });
+
+  router.bindArchiveRpc(
+    CreateWindow,
+    async (archive, { title, path, size = WindowSize.REGULAR }) => {
+      const window = await createFrontendWindow({
+        title,
+        router,
+        size,
+        resolveMedia: (uri) =>
+          MediaFileService.resolveRenditionUri(archive, uri),
+        config: {
+          type: 'archive',
+          documentId: archive.id,
+          initialPath: path
+        }
+      });
+
+      router.addWindow(window.webContents, archive.id);
+
+      return ok();
+    }
+  );
 }

@@ -29,7 +29,7 @@ describe(MediaFileService, () => {
       expect(await service.getFile(archive, mediaFile.id)).toBeDefined();
 
       // Rendition URI is created and resolvable
-      const renditionPath = service.resolveRenditionUri(
+      const renditionPath = MediaFileService.resolveRenditionUri(
         archive,
         service.getRenditionUri(archive, mediaFile)
       );
@@ -45,7 +45,7 @@ describe(MediaFileService, () => {
     );
     const blobPath = service.getMediaPath(archive, mediaFile);
 
-    const renditionPath = service.resolveRenditionUri(
+    const renditionPath = MediaFileService.resolveRenditionUri(
       archive,
       service.getRenditionUri(archive, mediaFile)
     );

@@ -184,10 +184,13 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
         )}
       </Flex>
 
-      <Grid
-        gap={5}
-        repeat="fit"
-        sx={{ p: 4, pb: 5, bg: 'background' }}
+      <Box
+        sx={{
+          p: 4,
+          pb: 5,
+          bg: 'background',
+          '> :not(:last-child)': { mb: 5 }
+        }}
         {...props}
       >
         {!hideRecordId && (
@@ -213,6 +216,7 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
             )}
           </Box>
         ))}
+
         {isEditing && onCommitEdits && (
           <Flex
             sx={{
@@ -230,7 +234,7 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
             {<Button onClick={onCommitEdits}>Save</Button>}
           </Flex>
         )}
-      </Grid>
+      </Box>
     </Box>
   );
 };

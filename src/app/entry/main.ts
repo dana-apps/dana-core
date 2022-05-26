@@ -18,6 +18,8 @@ import { initMedia } from '../media/media.init';
 import { ArchivePackage } from '../package/archive-package';
 import { Logger } from 'tslog';
 import { stat } from 'fs/promises';
+import { MediaFileService } from '../media/media-file.service';
+import { WindowSize } from '../../common/ui.interfaces';
 
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
@@ -96,8 +98,7 @@ async function main() {
     const window = await createFrontendWindow({
       title: path.basename(archive.location, path.extname(archive.location)),
       config: { documentId: archive.id, type: 'archive' },
-      resolveMedia: (uri) =>
-        media.fileService.resolveRenditionUri(archive, uri),
+      resolveMedia: (uri) => MediaFileService.resolveRenditionUri(archive, uri),
       router: app.router
     });
 
@@ -150,7 +151,7 @@ async function main() {
       title: 'New Archive',
       config: { type: 'splash-screen' },
       router: app.router,
-      size: 'small'
+      size: WindowSize.SMALL
     });
 
     window.on('close', () => {

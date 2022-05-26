@@ -23,6 +23,18 @@ export class MediaFileService {
   private log = new Logger({ name: 'MediaFileService' });
 
   /**
+   * Resolve rendition url to the absolute file path of the rendition.
+   *
+   * @param archive
+   * @param uri A uri returned by `getRenditionUri`
+   * @returns The resolved filename of the uri represented by `uri`
+   */
+  static resolveRenditionUri(archive: ArchivePackage, uri: string) {
+    const slug = uri.substring(MediaFileService.RENDITION_URI_PREFIX.length);
+    return path.join(archive.blobPath, slug);
+  }
+
+  /**
    * Persist a media file in the archive.
    *
    * @param archive Archive to store the file in
@@ -147,18 +159,6 @@ export class MediaFileService {
       MediaFileService.RENDITION_URI_PREFIX +
       this.getRenditionSlug(mediaFile, 'png')
     );
-  }
-
-  /**
-   * Resolve rendition url to the absolute file path of the rendition.
-   *
-   * @param archive
-   * @param uri A uri returned by `getRenditionUri`
-   * @returns The resolved filename of the uri represented by `uri`
-   */
-  resolveRenditionUri(archive: ArchivePackage, uri: string) {
-    const slug = uri.substring(MediaFileService.RENDITION_URI_PREFIX.length);
-    return path.join(archive.blobPath, slug);
   }
 
   /**

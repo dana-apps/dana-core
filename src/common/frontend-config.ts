@@ -12,6 +12,9 @@ export interface FrontendConfig {
   /** The type of window to display */
   type: 'splash-screen' | 'archive' | 'modal';
 
+  /** Initial path to render for 'archive' window types */
+  initialPath?: string;
+
   modalConfig?: {
     message: { __html: string };
     icon: ModalIcon;

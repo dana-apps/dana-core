@@ -141,6 +141,11 @@ export class ElectronRouter {
    * @param archiveId id of the archive to associate with the window
    */
   addWindow(window: WebContents, archiveId?: string) {
+    for (const windowRecord of this._windows) {
+      if (windowRecord.window === window && !windowRecord.archiveId) {
+        windowRecord.archiveId = archiveId;
+      }
+    }
     const existing = this._windows.find((record) => record.window === window);
     if (existing && !existing.archiveId) {
       existing.archiveId = archiveId;

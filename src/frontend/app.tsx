@@ -5,6 +5,7 @@ import { Route, Routes } from 'react-router-dom';
 
 import { ArchiveScreen } from './screens/archive.screen';
 import { CollectionScreen } from './screens/collection.screen';
+import { CreateAssetScreen } from './screens/create-asset.screen';
 import { ArchiveIngestScreen } from './screens/ingest.screen';
 import { SchemaScreen } from './screens/schema.screen';
 import { InvalidateOnPageChange } from './ui/components/util.component';
@@ -14,6 +15,7 @@ import { InvalidateOnPageChange } from './ui/components/util.component';
  */
 export const ArchiveWindow: FC<{ title?: string }> = ({ title }) => (
   <Routes>
+    <Route path="/create-asset" element={<CreateAssetScreen />} />
     <Route path="/" element={<ArchiveScreen title={title} />}>
       <Route index element={<></>} />
       <Route
