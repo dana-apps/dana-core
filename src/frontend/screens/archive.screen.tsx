@@ -6,6 +6,7 @@ import { Plus } from 'react-bootstrap-icons';
 import { Box, Flex, IconButton, Text } from 'theme-ui';
 
 import {
+  ExportCollection,
   IngestPhase,
   IngestSession,
   ListIngestSession,
@@ -63,6 +64,10 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
     }
   };
 
+  const startExport = async (collectionId: string) => {
+    await rpc(ExportCollection, { collectionId });
+  };
+
   if (!assetRoot) {
     return null;
   }
@@ -98,6 +103,11 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
                     action: () => startImport(assetRoot.id),
                     id: 'start-import',
                     label: 'Import assets'
+                  },
+                  {
+                    action: () => startExport(assetRoot.id),
+                    id: 'start-export',
+                    label: 'Export assets'
                   }
                 ]}
               />
@@ -117,6 +127,11 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
                         action: () => startImport(db.id),
                         id: 'start-import',
                         label: 'Import database records'
+                      },
+                      {
+                        action: () => startExport(db.id),
+                        id: 'start-export',
+                        label: 'Export database'
                       }
                     ]}
                   />

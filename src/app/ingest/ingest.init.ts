@@ -1,7 +1,9 @@
 import { BrowserWindow, dialog } from 'electron';
+import { extname } from 'path';
 import {
   CancelIngestSession,
   CommitIngestSession,
+  ExportCollection,
   GetIngestSession,
   ListIngestAssets,
   ListIngestSession,
@@ -17,6 +19,7 @@ import { CollectionService } from '../asset/collection.service';
 import type { ElectronRouter } from '../electron/router';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchiveService } from '../package/archive.service';
+import { AssetExportService } from './asset-export.service';
 import { AssetIngestService } from './asset-ingest.service';
 
 /**
@@ -37,10 +40,20 @@ export async function initIngest(
     collectionService
   );
 
+  const assetExport = new AssetExportService(
+    collectionService,
+    assetService,
+    mediaService
+  );
+
   // When an archive opens, start managing its ingest operations
   archiveService.on('opened', ({ archive }) => {
     assetIngest.addArchive(archive);
   });
+
+  for (const a of archiveService.archives) {
+    assetIngest.addArchive(a);
+  }
 
   // When an archive closes, stop managing its ingest operations
   archiveService.on('closed', ({ archive }) => {
@@ -173,7 +186,29 @@ export async function initIngest(
     }
   );
 
+  router.bindArchiveRpc(ExportCollection, async (archive, { collectionId }) => {
+    const res = await dialog.showSaveDialog(
+      undefined as unknown as BrowserWindow,
+      {
+        buttonLabel: 'Export',
+        title: 'Export Collection',
+        properties: ['showOverwriteConfirmation'],
+        filters: [createFileFilter('Dana Package', ['danapack'])]
+      }
+    );
+    if (res.canceled || !res.filePath) {
+      return ok();
+    }
+
+    const outpath =
+      extname(res.filePath) === '.danapack'
+        ? res.filePath
+        : res.filePath + '.danapack';
+    return assetExport.exportCollection(archive, collectionId, outpath);
+  });
+
   return {
+    assetExport,
     assetIngest
   };
 }

@@ -182,6 +182,8 @@ export async function createFrontendWindow({
 
   app.dock?.show();
 
+  frontendWindow.focus();
+
   return frontendWindow;
 }
 
