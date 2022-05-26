@@ -30,7 +30,7 @@ const renderWindow = (el: ReactElement) => {
     <StrictMode>
       <ThemeProvider theme={theme}>
         <SelectionContext.Provider>
-          <MemoryRouter>
+          <MemoryRouter initialEntries={[bridge.config.initialPath ?? '/']}>
             <IpcContext.Provider
               value={{ ipc, documentId: bridge.config.documentId }}
             >

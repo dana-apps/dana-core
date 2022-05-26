@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { Result } from '../../../common/util/error';
-import { useModal } from './modal.hooks';
+import { useModal } from './window.hooks';
 
 /**
  * Hook for displaying errors.

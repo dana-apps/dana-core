@@ -1,7 +1,11 @@
 import { ReactElement, useMemo } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ModalIcon } from '../../../common/frontend-config';
-import { ShowModal } from '../../../common/ui.interfaces';
+import {
+  CreateWindow,
+  CreateWindowOpts,
+  ShowModal
+} from '../../../common/ui.interfaces';
 import { useRPC } from '../../ipc/ipc.hooks';
 
 export function useModal() {
@@ -42,6 +46,21 @@ export function useModal() {
 
         return res.value.action === 'cancel' ? false : true;
       }
+    }),
+    [rpc]
+  );
+}
+
+export function useWindows() {
+  const rpc = useRPC();
+
+  return useMemo(
+    () => ({
+      open: async (opts: CreateWindowOpts) => {
+        return rpc(CreateWindow, opts);
+      },
+
+      close: () => window.close()
     }),
     [rpc]
   );

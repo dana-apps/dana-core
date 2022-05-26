@@ -6,12 +6,15 @@ import {
   SingleValidationError,
   UpdateAssetMetadata
 } from '../../../common/asset.interfaces';
+import { WindowSize } from '../../../common/ui.interfaces';
 import { useRPC } from '../../ipc/ipc.hooks';
 import { useErrorDisplay } from './error.hooks';
+import { useWindows } from './window.hooks';
 
-export function useAssets(_collectionId: string) {
+export function useAssets(collectionId: string) {
   const errors = useErrorDisplay();
   const rpc = useRPC();
+  const windows = useWindows();
 
   return useMemo(
     () => ({
@@ -33,10 +36,14 @@ export function useAssets(_collectionId: string) {
           }
         }
       },
-      createNewAsset: () => {
-        // TODO
+      addNew: () => {
+        windows.open({
+          path: `/create-asset?collectionId=${collectionId}`,
+          title: 'New Asset',
+          size: WindowSize.NARROW
+        });
       }
     }),
-    [errors, rpc]
+    [collectionId, errors, rpc, windows]
   );
 }

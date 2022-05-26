@@ -29,7 +29,7 @@ import { IconButton } from 'theme-ui';
 import { Gear, Plus } from 'react-bootstrap-icons';
 import { MetadataItemCell } from '../ui/components/grid-cell.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
-import { useModal } from '../ui/hooks/modal.hooks';
+import { useModal } from '../ui/hooks/window.hooks';
 import { RecordInspector } from '../ui/components/inspector.component';
 import { useAssets } from '../ui/hooks/asset.hooks';
 
@@ -121,7 +121,7 @@ export const CollectionScreen: FC = () => {
         <BottomBar
           actions={
             <>
-              <IconButton onClick={assetOps.createNewAsset} aria-label="Add">
+              <IconButton onClick={assetOps.addNew} aria-label="Add">
                 <Plus />
               </IconButton>
               <IconButton aria-label="Settings" {...configMenu.triggerProps}>

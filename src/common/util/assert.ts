@@ -24,7 +24,7 @@ export function assert(
  * @returns `value`, typed as non-null
  */
 export function required<T>(
-  value: T | undefined,
+  value: T | undefined | null,
   msg: string,
   ...args: unknown[]
 ): T {

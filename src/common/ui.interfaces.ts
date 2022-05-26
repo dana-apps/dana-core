@@ -1,7 +1,8 @@
-import { z } from 'zod';
+import { string, z } from 'zod';
 import {
   ErrorType,
   EventInterface,
+  RequestType,
   ResponseType,
   RpcInterface
 } from './ipc.interfaces';
@@ -92,3 +93,22 @@ export type ShowContextMenuResult = Result<
   ShowContextMenuResponse,
   ShowContextMenuError
 >;
+
+export enum WindowSize {
+  SMALL = 'small',
+  NARROW = 'narrow',
+  REGULAR = 'regular',
+  DIALOG = 'dialog'
+}
+
+export const CreateWindow = RpcInterface({
+  id: 'window/create',
+  request: z.object({
+    title: z.string(),
+    path: z.string(),
+    size: z.nativeEnum(WindowSize).optional()
+  }),
+  response: z.unknown()
+});
+
+export type CreateWindowOpts = RequestType<typeof CreateWindow>;

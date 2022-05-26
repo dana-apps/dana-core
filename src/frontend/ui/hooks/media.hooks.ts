@@ -8,7 +8,7 @@ import { ShowFilePickerModal } from '../../../common/ui.interfaces';
 import { createFileFilter } from '../../../common/util/file';
 import { useRPC } from '../../ipc/ipc.hooks';
 import { useErrorDisplay } from './error.hooks';
-import { useModal } from './modal.hooks';
+import { useModal } from './window.hooks';
 
 const MediaFileFilters = MediaTypes.map((type) =>
   createFileFilter(type.name, type.extensions)
