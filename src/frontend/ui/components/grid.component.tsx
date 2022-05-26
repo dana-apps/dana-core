@@ -310,6 +310,10 @@ function Row<T extends Resource>({
     flexDirection: 'row',
     bg: selected ? 'primary' : plainBg,
     color: selected ? 'primaryContrast' : undefined,
+    outline:
+      contextMenu.visible && !selected
+        ? '2px solid var(--theme-ui-colors-muted)'
+        : undefined,
     position: 'relative'
   };
 
