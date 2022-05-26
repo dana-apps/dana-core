@@ -11,7 +11,9 @@ import {
   CreateAsset,
   GetAsset,
   SearchAsset,
-  DeleteAssets
+  DeleteAssets,
+  AddAssetMedia,
+  RemoveAssetMedia
 } from '../../common/asset.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { ok, okIfExists } from '../../common/util/error';
@@ -97,6 +99,21 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
       req.collectionId,
       req.value
     );
+  });
+
+  router.bindArchiveRpc(AddAssetMedia, async (archive, request) => {
+    return assetService.addMedia(
+      archive,
+      request.assetId,
+      request.mediaFilePath
+    );
+  });
+
+  router.bindArchiveRpc(RemoveAssetMedia, async (archive, request) => {
+    const [res] = await assetService.removeMedia(archive, request.assetId, [
+      request.mediaId
+    ]);
+    return res;
   });
 
   assetService.on('change', ({ updated }) => {

@@ -1,4 +1,5 @@
 import { ReactElement } from 'react';
+import { Result } from '../../../common/util/error';
 import { useModal } from './modal.hooks';
 
 /**
@@ -10,11 +11,23 @@ export function useErrorDisplay() {
   const error = (error: string | ReactElement) => {
     model.alert({ message: error, title: 'Error', icon: 'error' });
   };
+  const unexpectedError = (code: unknown) => {
+    console.error(error, code);
+    error('An unexpected error occured');
+  };
 
   return Object.assign(error, {
-    unexpected: (code: string) => {
-      console.error(error, code);
-      error('An unexpected error occured');
+    unexpected: unexpectedError,
+    guard: <T>(result?: Result<T, unknown>) => {
+      if (!result) {
+        return;
+      }
+
+      if (result.status === 'error') {
+        unexpectedError(result.error);
+      } else {
+        return result.value;
+      }
     }
   });
 }

@@ -1,294 +1,95 @@
 /** @jsxImportSource theme-ui */
 
-import { mapValues } from 'lodash';
-import { FC, useCallback, useMemo, useState } from 'react';
-import { CardList, Collection as CollectionIcon } from 'react-bootstrap-icons';
-import {
-  Box,
-  BoxProps,
-  Button,
-  Flex,
-  Grid,
-  Image,
-  Label,
-  Text
-} from 'theme-ui';
+import { FC } from 'react';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { Box, BoxProps, Image } from 'theme-ui';
 import {
   Asset,
   AssetMetadata,
   Collection,
-  CollectionType,
-  CreateAsset,
-  SingleValidationError,
-  UpdateAssetMetadata
+  SingleValidationError
 } from '../../../common/asset.interfaces';
-import { UpdateIngestedMetadata } from '../../../common/ingest.interfaces';
-import { FetchError } from '../../../common/util/error';
-import { useRPC } from '../../ipc/ipc.hooks';
-import { useErrorDisplay } from '../hooks/error.hooks';
-import { Tabs, IconTab, ValidationError } from './atoms.component';
-import { SchemaField } from './schema-form.component';
+import { RecordInspector } from './inspector.component';
+import { PrimaryDetailLayout } from './page-layouts.component';
 
-interface MediaDetailProps extends BoxProps {
+interface AssetDetailProps extends BoxProps {
   /** Asset to render details of */
   asset: Asset;
 
   /** Collection containing the asset */
   collection: Collection;
 
-  /** Initial tab to display. One of the labels of the detail tabs */
-  initialTab?: string;
-
-  /** Action to be performed on submit */
-  action?: 'create' | 'update' | 'import';
-
+  /** Single validation  */
   errors?: SingleValidationError;
 
-  onCancelCreate?: () => void;
-
-  sessionId?: string;
-
-  onCreate?: (asset: Asset) => void;
+  /** Collection containing the asset */
+  onCommitEdits: (
+    metadata: AssetMetadata
+  ) => Promise<undefined | SingleValidationError>;
 }
 
 /**
  * Panel displayed when an asset is selected in a collection view and we want to show the its media and metadata in a side-area.
  */
-export const AssetDetail: FC<MediaDetailProps> = ({
+export const AssetDetail: FC<AssetDetailProps> = ({
   asset,
   collection,
-  action = 'update',
-  initialTab,
-  onCancelCreate,
-  sessionId,
-  errors: additionalErrors,
-  onCreate,
+  onCommitEdits,
+  errors,
   ...props
 }) => {
-  const showMedia =
-    collection.type === CollectionType.ASSET_COLLECTION && action !== 'create';
-  const [tabId, setTabId] = useState(
-    initialTab || (showMedia && 'Media') || undefined
+  const inspector = (
+    <RecordInspector
+      asset={asset}
+      collection={collection}
+      errors={errors}
+      onCommitEdits={onCommitEdits}
+    />
   );
-  const [edits, setEdits] = useState<AssetMetadata | undefined>(
-    action === 'create' ? {} : undefined
-  );
-  const rpc = useRPC();
-  const isEditing = !!edits;
-  const metadata = useMemo(
-    () => ({ ...asset.metadata, ...edits }),
-    [asset.metadata, edits]
-  );
-  const displayError = useErrorDisplay();
-  const [editErrors, setEditErrors] = useState<SingleValidationError>();
-
-  /** Begin an edit session */
-  const handleStartEditing = useCallback(() => {
-    setTabId('Metadata');
-    setEdits({});
-    setEditErrors(undefined);
-  }, []);
-
-  /** Attempt to commit editing of the asset */
-  const updateAsset = useCallback(async () => {
-    const res = await rpc(UpdateAssetMetadata, {
-      assetId: asset.id,
-      payload: mapValues(metadata, (item) => item.rawValue)
-    });
-    if (res.status === 'error') {
-      if (res.error === FetchError.DOES_NOT_EXIST) {
-        return displayError(
-          `Something unexpected happened. We weren't able to update this record.`
-        );
-      }
-
-      setEditErrors(res.error);
-    } else {
-      setEdits(undefined);
-    }
-  }, [asset.id, displayError, metadata, rpc]);
-
-  /** Create the asset */
-  const createAsset = useCallback(async () => {
-    const res = await rpc(CreateAsset, {
-      collection: collection.id,
-      metadata: mapValues(metadata, (item) => item.rawValue)
-    });
-
-    if (res.status === 'error') {
-      if (res.error === FetchError.DOES_NOT_EXIST) {
-        return displayError(
-          `Something unexpected happened. We weren't able to update this record.`
-        );
-      }
-
-      setEditErrors(res.error);
-    } else {
-      setEdits(undefined);
-      setEditErrors(undefined);
-      onCreate?.(res.value);
-    }
-  }, [collection.id, displayError, metadata, onCreate, rpc]);
-
-  /** Update the metadata for an imported asset */
-  const updateIngestedAsset = useCallback(async () => {
-    if (!sessionId) {
-      return;
-    }
-
-    const res = await rpc(UpdateIngestedMetadata, {
-      assetId: asset.id,
-      metadata: mapValues(metadata, (md) => md.rawValue),
-      sessionId
-    });
-
-    if (res.status === 'error') {
-      if (res.error === FetchError.DOES_NOT_EXIST) {
-        return displayError(
-          `Something unexpected happened. We weren't able to update this record.`
-        );
-      }
-
-      setEditErrors(res.error);
-    } else {
-      setEdits(undefined);
-      setEditErrors(undefined);
-    }
-  }, [asset.id, displayError, metadata, rpc, sessionId]);
-
-  const handleCancelEditing = useCallback(() => {
-    setEdits(undefined);
-    setEditErrors(undefined);
-
-    if (action === 'create') {
-      onCancelCreate?.();
-    }
-  }, [action, onCancelCreate]);
-
-  const handleSave =
-    action === 'create'
-      ? createAsset
-      : action === 'import'
-      ? updateIngestedAsset
-      : updateAsset;
-
-  const assetErrors = (editErrors || additionalErrors) && {
-    ...additionalErrors,
-    ...editErrors
-  };
 
   return (
-    <Flex
-      sx={{
-        flexDirection: 'column',
-        overflow: 'hidden',
-        minHeight: 0
-      }}
-      {...props}
-    >
-      <Tabs currentTab={tabId} onTabChange={setTabId}>
-        {/* Media Panel */}
-        {showMedia && (
-          <IconTab label="Media" icon={CollectionIcon}>
-            <Flex
-              sx={{
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                overflow: 'auto',
-                flex: 1,
-                flexBasis: 0,
-                p: 3
-              }}
-            >
-              {asset.media.map((item) => (
-                <Box sx={{ '&:not(:first-of-type)': { mt: 3 } }}>
-                  <Image key={item.id} src={item.rendition} />
-                  <Text sx={{ textTransform: 'capitalize', fontSize: 1 }}>
-                    {item.mimeType.split('/')[0]} ({item.mimeType.split('/')[1]}
-                    )
-                    <Text sx={{ float: 'right' }}>
-                      {megabytes(item.fileSize)}MB
-                    </Text>
-                  </Text>{' '}
-                </Box>
-              ))}
-            </Flex>
-          </IconTab>
-        )}
-
-        {/* Metadata Panel */}
-        <IconTab label="Metadata" icon={CardList}>
-          <Box sx={{ overflow: 'auto', flex: 1 }}>
-            <Grid
-              gap={4}
-              repeat="fit"
-              sx={{
-                p: 3
-              }}
-            >
-              {action === 'update' && (
-                <Box>
-                  <Label>Record ID</Label>
-                  <Text sx={{ userSelect: 'all' }}>{asset.id}</Text>
-                </Box>
-              )}
-
-              {collection.schema.map((property) => (
-                <Box key={property.id}>
-                  <SchemaField
-                    property={property}
-                    editing={isEditing}
-                    value={metadata[property.id]}
-                    onChange={(change) =>
-                      setEdits((edits) => ({ ...edits, [property.id]: change }))
-                    }
-                  />
-
-                  {assetErrors?.[property.id] && (
-                    <ValidationError errors={assetErrors?.[property.id]} />
-                  )}
-                </Box>
-              ))}
-            </Grid>
+    <PrimaryDetailLayout sx={{}} detail={inspector} {...props}>
+      <AutoSizer>
+        {({ height, width }) => (
+          <Box
+            style={{ height, width }}
+            sx={{
+              willChange: 'height width',
+              flexDirection: 'row',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {asset.media.map((file) => (
+              <Box
+                key={file.id}
+                style={{
+                  height,
+                  maxWidth: asset.media.length > 1 ? width * 0.75 : '100%'
+                }}
+                sx={{
+                  verticalAlign: 'top',
+                  display: 'inline-flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  willChange: 'width height',
+                  minWidth: '400px',
+                  p: 4
+                }}
+              >
+                <Image
+                  sx={{
+                    flexShrink: 0,
+                    objectFit: 'contain'
+                  }}
+                  src={file.rendition}
+                />
+              </Box>
+            ))}
           </Box>
-        </IconTab>
-      </Tabs>
-
-      {/* Save / edit controls */}
-      <Flex
-        sx={{
-          flexDirection: 'row',
-          justifyContent: 'flex-end',
-          borderTop: 'primary',
-          p: 3
-        }}
-      >
-        {isEditing && (
-          <>
-            <Button
-              sx={{ mr: 5 }}
-              variant="primaryTransparent"
-              onClick={handleCancelEditing}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>
-              {action === 'create' ? 'Create' : 'Save Changes'}
-            </Button>
-          </>
         )}
-        {!isEditing && (
-          <Button onClick={handleStartEditing}>Edit Metadata</Button>
-        )}
-      </Flex>
-    </Flex>
+      </AutoSizer>
+    </PrimaryDetailLayout>
   );
-};
-
-const megabytes = (bytes: number, precision = 2) => {
-  const mb = bytes / 1024 / 1024;
-  const factor = 10 ** precision;
-
-  return Math.floor(mb * factor) / factor;
 };

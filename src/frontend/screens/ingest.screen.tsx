@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Flex, Text } from 'theme-ui';
 import {
   Asset,
+  AssetMetadata,
   GetCollection,
   SchemaProperty
 } from '../../common/asset.interfaces';
@@ -14,7 +15,8 @@ import {
   ListIngestAssets,
   CommitIngestSession,
   GetIngestSession,
-  CancelIngestSession
+  CancelIngestSession,
+  UpdateIngestedMetadata
 } from '../../common/ingest.interfaces';
 import { required } from '../../common/util/assert';
 import {
@@ -31,15 +33,20 @@ import {
   ProgressCell
 } from '../ui/components/grid-cell.component';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
-import { AssetDetail } from '../ui/components/asset-detail.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { BottomBar } from '../ui/components/page-layouts.component';
+import { RecordInspector } from '../ui/components/inspector.component';
+import { useErrorDisplay } from '../ui/hooks/error.hooks';
+import { mapValues } from 'lodash';
 
 /**
  * Screen for managing, editing and accepting a bulk import.
  */
 export const ArchiveIngestScreen: FC = () => {
+  const rpc = useRPC();
+  const errors = useErrorDisplay();
+
   const sessionId = required(useParams().sessionId, 'Expected sessionId param');
   const assets = useList(ListIngestAssets, () => ({ sessionId }), [sessionId]);
   const session = unwrapGetResult(useGet(GetIngestSession, sessionId));
@@ -57,6 +64,26 @@ export const ArchiveIngestScreen: FC = () => {
     }
   }, [assets, selection]);
 
+  /** Update the metadata for an imported asset */
+  const updateIngestedAsset = useCallback(
+    async (change: AssetMetadata): Promise<undefined> => {
+      if (!sessionId || !selectedAsset?.id) {
+        return;
+      }
+
+      const metadata = { ...selectedAsset.metadata, ...change };
+
+      const res = await rpc(UpdateIngestedMetadata, {
+        assetId: selectedAsset.id,
+        metadata: mapValues(metadata, (md) => md.rawValue),
+        sessionId
+      });
+
+      errors.guard(res);
+    },
+    [errors, rpc, selectedAsset, sessionId]
+  );
+
   const gridColumns = useMemo(() => {
     if (collection) {
       return getGridColumns(collection.schema);
@@ -69,15 +96,16 @@ export const ArchiveIngestScreen: FC = () => {
     return null;
   }
   1;
+
   const detailView =
     selectedAsset && collection ? (
-      <AssetDetail
-        asset={selectedAsset}
+      <RecordInspector
+        hideRecordId
         sx={{ width: '100%', height: '100%' }}
+        asset={selectedAsset}
         collection={collection}
         errors={selectedAsset.validationErrors ?? undefined}
-        sessionId={sessionId}
-        action="import"
+        onCommitEdits={updateIngestedAsset}
       />
     ) : undefined;
 
@@ -97,24 +125,24 @@ export const ArchiveIngestScreen: FC = () => {
           </Text>
         </Flex>
         <DataGrid
-          sx={{ flex: 1, width: '100%', height: '100%', borderTop: 'light' }}
+          sx={{ flex: 1, width: '100%', borderTop: 'light' }}
           columns={gridColumns}
           data={assets}
         />
-      </PrimaryDetailLayout>
 
-      <BottomBar
-        actions={
-          <>
-            <Button variant="primaryTransparent" onClick={cancelImport}>
-              Cancel Import
-            </Button>
-            <Button disabled={!allowComplete} onClick={completeImport}>
-              Complete Import
-            </Button>
-          </>
-        }
-      />
+        <BottomBar
+          actions={
+            <>
+              <Button variant="primaryTransparent" onClick={cancelImport}>
+                Cancel Import
+              </Button>
+              <Button disabled={!allowComplete} onClick={completeImport}>
+                Complete Import
+              </Button>
+            </>
+          }
+        />
+      </PrimaryDetailLayout>
     </>
   );
 };

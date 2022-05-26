@@ -33,7 +33,7 @@ interface Params {
   onUpdate: (...args: unknown[]) => void;
 }
 
-export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
+export const WithMedia: FC<Params> = ({ onUpdate }) => {
   const [metadata, setMetadata] = useState(() => {
     faker.seed(1);
     return someMetadata(SCHEMA);
@@ -48,55 +48,18 @@ export const NarrowWithMedia: FC<Params> = ({ onUpdate }) => {
     <IpcContext.Provider value={{ ipc }}>
       <AssetDetail
         sx={{
-          width: 300,
           border: '1px solid black',
           height: '100vh',
           overflow: 'auto'
         }}
-        asset={someAsset({ metadata })}
+        asset={someAsset({ metadata, media: MEDIA_FILES })}
         collection={{
           id: 'someCollection',
           title: 'Some Collection',
           type: CollectionType.ASSET_COLLECTION,
           schema: SCHEMA
         }}
-        initialTab="Metadata"
-      />
-    </IpcContext.Provider>
-  );
-};
-
-export const CreateMode: FC<Params> = ({ onUpdate }) => {
-  const [metadata, setMetadata] = useState(() => {
-    faker.seed(1);
-    return someMetadata(SCHEMA);
-  });
-
-  const ipc = useIpcFixture((change) => {
-    setMetadata(assetMetadata(change.payload));
-    onUpdate(change);
-  });
-
-  return (
-    <IpcContext.Provider value={{ ipc }}>
-      <AssetDetail
-        sx={{
-          width: 300,
-          border: '1px solid black',
-          height: '100vh',
-          overflow: 'auto'
-        }}
-        asset={someAsset({
-          media: MEDIA_FILES,
-          metadata
-        })}
-        collection={{
-          id: 'someCollection',
-          title: 'Some Collection',
-          type: CollectionType.ASSET_COLLECTION,
-          schema: SCHEMA
-        }}
-        action="create"
+        onCommitEdits={async () => undefined}
       />
     </IpcContext.Provider>
   );

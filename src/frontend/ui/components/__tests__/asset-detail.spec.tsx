@@ -21,7 +21,7 @@ import { error, ok } from '../../../../common/util/error';
 import { Dict } from '../../../../common/util/types';
 import { IpcContext } from '../../../ipc/ipc.hooks';
 import { MockIpc } from '../../../ipc/mock-ipc';
-import { AssetDetail } from '../asset-detail.component';
+import { RecordInspector } from '../inspector.component';
 import { fieldDisplayTestId } from '../schema-form.component';
 
 const SCHEMA: SchemaProperty[] = [
@@ -41,7 +41,7 @@ const SCHEMA: SchemaProperty[] = [
   }
 ];
 
-describe(AssetDetail, () => {
+describe(RecordInspector, () => {
   test('Editing an asset and saving changes submits a change request, then resets the editing state', async () => {
     const fixture = setup();
     const asset = someAsset({
@@ -51,7 +51,11 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail asset={asset} collection={fixture.collection} />
+        <RecordInspector
+          onCommitEdits={async () => undefined}
+          asset={asset}
+          collection={fixture.collection}
+        />
       </fixture.context>
     );
 
@@ -80,7 +84,11 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail asset={asset} collection={fixture.collection} />
+        <RecordInspector
+          onCommitEdits={async () => undefined}
+          asset={asset}
+          collection={fixture.collection}
+        />
       </fixture.context>
     );
 
@@ -107,7 +115,11 @@ describe(AssetDetail, () => {
 
     const tree = render(
       <fixture.context>
-        <AssetDetail asset={asset} collection={fixture.collection} />
+        <RecordInspector
+          onCommitEdits={async () => undefined}
+          asset={asset}
+          collection={fixture.collection}
+        />
       </fixture.context>
     );
 
