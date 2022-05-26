@@ -1,6 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, HTMLAttributes, useCallback, useEffect, useState } from 'react';
+import { BoxProps, Text } from 'theme-ui';
 import { FrontendPlatform } from '../../common/frontend-config';
 import {
   MaximizationState,
@@ -255,6 +256,42 @@ const WindowControls = () => {
         />
       </div>
     </div>
+  );
+};
+
+export const WindowTitle: FC<{ showVersion?: boolean } & BoxProps> = ({
+  showVersion,
+  children,
+  ...props
+}) => {
+  const { title, version, releaseDate } = useFrontendConfig();
+  return (
+    <WindowDragArea
+      sx={{
+        py: 5,
+        px: 4,
+        bg: 'gray1',
+        position: 'relative'
+      }}
+      {...props}
+    >
+      <Text sx={{ fontWeight: 600 }}>{children || title}</Text>
+      {showVersion && (
+        <Text
+          sx={{
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            fontSize: 0,
+            textAlign: 'right',
+            p: 1,
+            px: 3
+          }}
+        >
+          v{version} ({releaseDate.replace(/T\d\d.*/, '')})
+        </Text>
+      )}
+    </WindowDragArea>
   );
 };
 

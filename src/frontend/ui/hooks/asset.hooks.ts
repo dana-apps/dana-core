@@ -42,6 +42,12 @@ export function useAssets(collectionId: string) {
           title: 'New Asset',
           size: WindowSize.NARROW
         });
+      },
+      openDetailView: (asset: Asset) => {
+        windows.open({
+          path: `/asset-detail?collectionId=${collectionId}&assetId=${asset.id}`,
+          title: asset.title
+        });
       }
     }),
     [collectionId, errors, rpc, windows]
