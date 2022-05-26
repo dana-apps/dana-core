@@ -6,7 +6,7 @@ import {
   QuestionCircleFill
 } from 'react-bootstrap-icons';
 
-import { CloseModal } from '../../common/ui.interfaces';
+import { ReturnModalValue } from '../../common/ui.interfaces';
 import { required } from '../../common/util/assert';
 import { useFrontendConfig } from '../config';
 import { useRPC } from '../ipc/ipc.hooks';
@@ -29,12 +29,20 @@ export const ModalScreen = () => {
   );
   const rpc = useRPC();
 
-  const handleConfirm = () => {
-    rpc(CloseModal, { returnId: modalConfig.returnId, action: 'confirm' });
+  const handleConfirm = async () => {
+    await rpc(ReturnModalValue, {
+      returnId: modalConfig.returnId,
+      action: 'confirm'
+    });
+    window.close();
   };
 
-  const handleCancel = () => {
-    rpc(CloseModal, { returnId: modalConfig.returnId, action: 'cancel' });
+  const handleCancel = async () => {
+    await rpc(ReturnModalValue, {
+      returnId: modalConfig.returnId,
+      action: 'cancel'
+    });
+    window.close();
   };
 
   return (
