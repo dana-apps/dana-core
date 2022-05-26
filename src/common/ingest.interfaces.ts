@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { string, z } from 'zod';
 import { RequestType, ResponseType, RpcInterface } from './ipc.interfaces';
 import { Asset, SingleValidationError } from './asset.interfaces';
 import { FetchError, Result } from './util/error';
@@ -194,3 +194,11 @@ export type ListIngestAssetsRequest = RequestType<typeof ListIngestAssets>;
 export type ListIngestAssetsResponse = ResponseType<typeof ListIngestAssets>;
 
 export type FileImportResult<T = unknown> = Result<T, IngestError>;
+
+export const ExportCollection = RpcInterface({
+  id: 'ingest/export-pack',
+  request: z.object({
+    collectionId: z.string()
+  }),
+  response: z.unknown()
+});

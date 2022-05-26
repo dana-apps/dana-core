@@ -178,7 +178,10 @@ export class MediaFileService {
    * @param mediaFile Media file to get the storage path of.
    * @returns Absolute path for the file represented by a MediaFile instance
    */
-  getMediaPath(archive: ArchivePackage, mediaFile: MediaFile) {
+  getMediaPath(
+    archive: ArchivePackage,
+    mediaFile: Pick<Media, 'mimeType' | 'id'>
+  ) {
     const ext = mime.getExtension(mediaFile.mimeType);
     return path.join(archive.blobPath, mediaFile.id + '.' + ext);
   }
