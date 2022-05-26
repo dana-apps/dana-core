@@ -42,6 +42,9 @@ export interface DataGridProps<T extends Resource> extends BoxProps {
 
   /** If provided, menu items to display in the context menu */
   contextMenuItems?: (targets: string[]) => ContextMenuChoice[];
+
+  /** If provided, menu items to display in the context menu */
+  onDoubleClickItem?: (item: T) => void;
 }
 
 /**
@@ -54,6 +57,7 @@ export function DataGrid<T extends Resource>({
   columns,
   fontSize: fontSizeParam = 1,
   contextMenuItems,
+  onDoubleClickItem,
   ...props
 }: DataGridProps<T>) {
   const { theme } = useThemeUI();
@@ -190,6 +194,7 @@ export function DataGrid<T extends Resource>({
                   value={{
                     width,
                     columns: columns as GridColumn<Resource>[],
+                    onDoubleClickItem,
                     contextMenuItems,
                     rowHeight,
                     columnOffsets,
@@ -289,22 +294,27 @@ function Row<T extends Resource>({
   index
 }: ListChildComponentProps<CellData<T>>) {
   const { current: selection, setSelection } = SelectionContext.useContainer();
-  const { columnSizes, width, contextMenuItems } = useContext(GridContext);
+  const { columnSizes, width, contextMenuItems, onDoubleClickItem } =
+    useContext(GridContext);
   const colData = cursor.get(index);
   const plainBg = index % 2 === 1 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
+
+  const contextMenu = useContextMenu({
+    options: contextMenuItems && colData ? contextMenuItems([colData.id]) : []
+  });
 
   const sx: ThemeUIStyleObject = {
     display: 'flex',
     flexDirection: 'row',
     bg: selected ? 'primary' : plainBg,
     color: selected ? 'primaryContrast' : undefined,
+    outline:
+      contextMenu.visible && !selected
+        ? '2px solid var(--theme-ui-colors-muted)'
+        : undefined,
     position: 'relative'
   };
-
-  const contextMenu = useContextMenu({
-    options: contextMenuItems && colData ? contextMenuItems([colData.id]) : []
-  });
 
   if (!colData || !columnSizes) {
     return <div sx={sx} style={style} />;
@@ -315,6 +325,7 @@ function Row<T extends Resource>({
       sx={sx}
       style={{ ...style, minWidth: width }}
       onClick={() => setSelection(colData.id)}
+      onDoubleClick={onDoubleClickItem && (() => onDoubleClickItem(colData))}
       {...contextMenu.triggerProps}
     >
       {columns.map((column, i) => (
@@ -324,10 +335,6 @@ function Row<T extends Resource>({
             variant:
               contextMenu.visible && !selected ? 'listItems.active' : undefined,
             overflow: 'hidden',
-            outline:
-              contextMenu.visible && !selected
-                ? '2px solid var(--theme-ui-colors-muted)'
-                : undefined,
             py: 1,
             px: 2,
             height: '100%',
@@ -452,6 +459,7 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
 );
 
 const GridContext = createContext<{
+  onDoubleClickItem?: (item: any) => void;
   columns: GridColumn<Resource>[];
   onResize: (index: number, size: number) => void;
   contextMenuItems?: (targets: string[]) => ContextMenuChoice[];

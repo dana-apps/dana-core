@@ -160,7 +160,7 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
   const metadata = { ...asset.metadata, ...edits };
 
   return (
-    <Box>
+    <Box {...props}>
       <Flex
         sx={{
           p: 4,
@@ -191,7 +191,6 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
           bg: 'background',
           '> :not(:last-child)': { mb: 5 }
         }}
-        {...props}
       >
         {!hideRecordId && (
           <Box>

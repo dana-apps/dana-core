@@ -3,7 +3,7 @@
 import { mapValues } from 'lodash';
 import { useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Box, Text } from 'theme-ui';
+import { Button, Flex, Text } from 'theme-ui';
 import {
   AssetMetadata,
   CreateAsset,
@@ -13,14 +13,12 @@ import { required } from '../../common/util/assert';
 import { useGet, useRPC } from '../ipc/ipc.hooks';
 import { MetadataInspector } from '../ui/components/inspector.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
-import { useWindows } from '../ui/hooks/window.hooks';
 import { WindowDragArea } from '../ui/window';
 
 export const CreateAssetScreen = () => {
   const [params] = useSearchParams();
   const errors = useErrorDisplay();
   const rpc = useRPC();
-  const windows = useWindows();
 
   const collectionId = required(
     params.get('collectionId'),
@@ -48,8 +46,8 @@ export const CreateAssetScreen = () => {
   }
 
   return (
-    <WindowDragArea>
-      <Box
+    <Flex sx={{ height: '100vh', width: '100%', flexDirection: 'column' }}>
+      <WindowDragArea
         sx={{
           p: 4,
           borderBottom: 'primary',
@@ -64,10 +62,10 @@ export const CreateAssetScreen = () => {
         >
           New Asset
         </Text>
-      </Box>
+      </WindowDragArea>
 
       <MetadataInspector
-        sx={{ p: 4, overflow: 'auto' }}
+        sx={{ overflow: 'auto', flex: 1 }}
         hideRecordId
         isEditing
         collection={collection}
@@ -78,9 +76,18 @@ export const CreateAssetScreen = () => {
           title: 'New Asset'
         }}
         onEdit={setMetadata}
-        onCommitEdits={createAsset}
-        onCancelEdits={windows.close}
       />
-    </WindowDragArea>
+
+      <Flex
+        sx={{
+          justifyContent: 'flex-end',
+          flexDirection: 'row',
+          p: 4
+        }}
+      >
+        <span sx={{ ml: 4 }} />
+        {<Button onClick={createAsset}>Create</Button>}
+      </Flex>
+    </Flex>
   );
 };

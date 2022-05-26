@@ -20,7 +20,7 @@ import {
   NavListSection,
   ArchiveWindowLayout
 } from '../ui/components/page-layouts.component';
-import { WindowDragArea, WindowInset } from '../ui/window';
+import { WindowDragArea, WindowInset, WindowTitle } from '../ui/window';
 import { useContextMenu } from '../ui/hooks/menu.hooks';
 import {
   CreateCollection,
@@ -135,29 +135,7 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
       }
       main={
         <Flex sx={{ height: '100%', flexDirection: 'column' }}>
-          <WindowDragArea
-            sx={{
-              py: 5,
-              px: 4,
-              bg: 'gray1',
-              position: 'relative'
-            }}
-          >
-            <Text sx={{ fontWeight: 600 }}>{title}</Text>
-            <Text
-              sx={{
-                position: 'absolute',
-                right: 0,
-                bottom: 0,
-                fontSize: 0,
-                textAlign: 'right',
-                p: 1,
-                px: 3
-              }}
-            >
-              v{config.version} ({config.releaseDate.replace(/T\d\d.*/, '')})
-            </Text>
-          </WindowDragArea>
+          <WindowTitle showVersion />
 
           <Outlet />
         </Flex>
