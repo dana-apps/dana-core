@@ -1,8 +1,9 @@
 /** @jsxImportSource theme-ui */
 
-import { FC, useCallback, useMemo, useState } from 'react';
+import { FC, useCallback, useMemo } from 'react';
 import {
   Asset,
+  AssetMetadata,
   DeleteAssets,
   GetCollection,
   ListAssets,
@@ -11,14 +12,12 @@ import {
 import { required } from '../../common/util/assert';
 import {
   iterateListCursor,
-  ListCursor,
   unwrapGetResult,
   useGet,
   useList,
   useRPC
 } from '../ipc/ipc.hooks';
 import { DataGrid, GridColumn } from '../ui/components/grid.component';
-import { AssetDetail } from '../ui/components/asset-detail.component';
 import {
   BottomBar,
   PrimaryDetailLayout
@@ -31,68 +30,28 @@ import { Gear, Plus } from 'react-bootstrap-icons';
 import { MetadataItemCell } from '../ui/components/grid-cell.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
 import { useModal } from '../ui/hooks/modal.hooks';
+import { RecordInspector } from '../ui/components/inspector.component';
+import { useAssets } from '../ui/hooks/asset.hooks';
 
 /**
  * Screen for viewing the assets in a collection.
  */
 export const CollectionScreen: FC = () => {
   const navigate = useNavigate();
+  const selection = SelectionContext.useContainer();
 
   const collectionId = required(
     useParams().collectionId,
     'Expected collectionId param'
   );
   const collection = unwrapGetResult(useGet(GetCollection, collectionId));
-  const fetchedAssets = useList(
+  const assets = useList(
     ListAssets,
     () => (collection ? { collectionId: collection.id } : 'skip'),
     [collection]
   );
-  const selection = SelectionContext.useContainer();
-  const [pendingAsset, setPendingAsset] = useState<Asset>();
 
   const assetContextMenu = useAssetContextMenu();
-
-  const assets = useMemo((): ListCursor<Asset> | undefined => {
-    if (!fetchedAssets) {
-      return;
-    }
-
-    if (!pendingAsset) {
-      return fetchedAssets;
-    }
-
-    return {
-      ...fetchedAssets,
-      totalCount: fetchedAssets.totalCount + 1,
-      get: (i) => (i === 0 ? pendingAsset : fetchedAssets.get(i - 1)),
-      isLoaded: (i) => (i === 0 ? true : fetchedAssets.isLoaded(i - 1)),
-      fetchMore: (start, end) =>
-        fetchedAssets.fetchMore(Math.max(start - 1, 0), end - 1),
-      setVisibleRange: (start, end) =>
-        fetchedAssets.setVisibleRange(Math.max(start - 1, 0), end - 1)
-    };
-  }, [fetchedAssets, pendingAsset]);
-
-  const newAsset = useCallback(() => {
-    setPendingAsset({
-      id: '$pending',
-      title: '[New Item]',
-      media: [],
-      metadata: {}
-    });
-    selection.setSelection('$pending');
-  }, [selection]);
-
-  const onCancelCreateAsset = () => {
-    setPendingAsset(undefined);
-    selection.setSelection(undefined);
-  };
-
-  const onCreateAsset = (asset: Asset) => {
-    setPendingAsset(undefined);
-    selection.setSelection(asset.id);
-  };
 
   const configMenu = useContextMenu({
     on: 'click',
@@ -107,6 +66,7 @@ export const CollectionScreen: FC = () => {
     ]
   });
 
+  const assetOps = useAssets(collectionId);
   const gridColumns = useMemo(() => {
     return collection ? getGridColumns(collection.schema) : [];
   }, [collection]);
@@ -119,19 +79,29 @@ export const CollectionScreen: FC = () => {
     }
   }, [assets, selection]);
 
+  const handleCommitEdits = useCallback(
+    async (change: AssetMetadata) => {
+      if (selectedAsset) {
+        return assetOps.updateMetadata(selectedAsset, change);
+      }
+
+      return undefined;
+    },
+    [assetOps, selectedAsset]
+  );
+
   if (!assets || !collection) {
     return null;
   }
 
   const detailView = selectedAsset ? (
-    <AssetDetail
+    <RecordInspector
       sx={{ width: '100%', height: '100%' }}
       key={selectedAsset.id}
       collection={collection}
       asset={selectedAsset}
-      action={selectedAsset.id === '$pending' ? 'create' : 'update'}
-      onCancelCreate={onCancelCreateAsset}
-      onCreate={onCreateAsset}
+      onCommitEdits={handleCommitEdits}
+      editMedia
     />
   ) : undefined;
 
@@ -151,7 +121,7 @@ export const CollectionScreen: FC = () => {
         <BottomBar
           actions={
             <>
-              <IconButton onClick={newAsset} aria-label="Add">
+              <IconButton onClick={assetOps.createNewAsset} aria-label="Add">
                 <Plus />
               </IconButton>
               <IconButton aria-label="Settings" {...configMenu.triggerProps}>

@@ -11,6 +11,7 @@ import {
 } from '../../common/ingest.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { error, FetchError, ok, okIfExists } from '../../common/util/error';
+import { createFileFilter } from '../../common/util/file';
 import { AssetService } from '../asset/asset.service';
 import { CollectionService } from '../asset/collection.service';
 import type { ElectronRouter } from '../electron/router';
@@ -87,13 +88,6 @@ export async function initIngest(
   router.bindArchiveRpc(
     StartIngest,
     async (archive, { basePath, targetCollectionId }) => {
-      const createFilter = (label: string, exts: string[]) => {
-        return {
-          name: `${label} (${exts.join(', ')})`,
-          extensions: exts.map((ext) => ext.replace(/^\./, ''))
-        };
-      };
-
       if (!basePath) {
         // Electron's types are wrong – it's fine for this to be undefined
         const openRes = await dialog.showOpenDialog(
@@ -102,15 +96,15 @@ export async function initIngest(
             title: 'Import assets',
             message: 'Select a directory of assets and metadata to import',
             filters: [
-              createFilter('Any format', [
+              createFileFilter('Any format', [
                 AssetIngestService.PACKAGE_TYPE,
                 ...AssetIngestService.SPREADSHEET_TYPES
               ]),
-              createFilter(
+              createFileFilter(
                 'Metadata listing',
                 AssetIngestService.SPREADSHEET_TYPES
               ),
-              createFilter('Dana asset package', [
+              createFileFilter('Dana asset package', [
                 AssetIngestService.PACKAGE_TYPE
               ])
             ],

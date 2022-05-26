@@ -45,6 +45,20 @@ export const ShowModal = RpcInterface({
   })
 });
 
+export const ShowFilePickerModal = RpcInterface({
+  id: 'window/show-file-picker',
+  request: z.object({
+    title: z.string(),
+    message: z.string(),
+    confirmButtonLabel: z.string().optional(),
+    filters: z
+      .object({ extensions: z.string().array(), name: z.string() })
+      .array()
+      .optional()
+  }),
+  response: z.string().array().optional()
+});
+
 export const CloseModal = RpcInterface({
   id: 'window/close-modal',
   request: z.object({

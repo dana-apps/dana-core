@@ -340,3 +340,23 @@ export type UpdateAssetMetadataRequest = RequestType<
   typeof UpdateAssetMetadata
 >;
 export type UpdateAssetError = ErrorType<typeof UpdateAssetMetadata>;
+
+export const AddAssetMedia = RpcInterface({
+  id: 'assets/media/add',
+  request: z.object({
+    assetId: z.string(),
+    mediaFilePath: z.string()
+  }),
+  response: Media,
+  error: z.nativeEnum(FetchError)
+});
+
+export const RemoveAssetMedia = RpcInterface({
+  id: 'assets/media/remove',
+  request: z.object({
+    assetId: z.string(),
+    mediaId: z.string()
+  }),
+  response: z.unknown(),
+  error: z.nativeEnum(FetchError)
+});

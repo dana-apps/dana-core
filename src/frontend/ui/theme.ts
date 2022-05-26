@@ -106,6 +106,9 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
         borderRadius: '4px',
         color: 'inherit',
         backgroundColor: 'var(--theme-ui-colors-background)'
+      },
+      input: {
+        padding: '8px'
       }
     },
     listItems: {
@@ -146,8 +149,8 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
         ...controlHover,
         fontSize: 1,
         padding: 3,
-        paddingLeft: 4,
-        paddingRight: 4,
+        paddingLeft: 6,
+        paddingRight: 6,
         color: scaleGet(theme.colors, 'primaryContrast'),
         backgroundColor: scaleGet(theme.fonts, 'primary'),
         borderRadius: scaleGet(theme.radii, 'control'),
@@ -165,8 +168,11 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
       }),
       primaryTransparent: (theme) => ({
         ...controlHover,
-        color: scaleGet(theme.fonts, 'body'),
-        backgroundColor: scaleGet(theme.colors, 'transparent')
+        color: scaleGet(theme.colors, 'primary'),
+        backgroundColor: 'rgba(0,0,0,0)',
+        '> *': {
+          verticalAlign: 'middle'
+        }
       })
     },
     styles: {

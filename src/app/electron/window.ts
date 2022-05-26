@@ -1,5 +1,13 @@
 import { randomUUID } from 'crypto';
-import { app, BrowserWindow, ipcMain, Menu, protocol, session } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  protocol,
+  session
+} from 'electron';
 import EventEmitter from 'eventemitter3';
 import { uniqueId } from 'lodash';
 import { platform } from 'os';
@@ -20,7 +28,8 @@ import {
   ShowContextMenu,
   ShowContextMenuResult,
   ShowModal,
-  CloseModal
+  CloseModal,
+  ShowFilePickerModal
 } from '../../common/ui.interfaces';
 import { error, ok } from '../../common/util/error';
 import { getFrontendPlatform } from '../util/platform';
@@ -358,5 +367,21 @@ export async function initWindows(router: ElectronRouter) {
     return window
       ? ok<MaximizationState>(getMaximizationState(window))
       : error('UNKNOWN_WINDOW');
+  });
+
+  router.bindRpc(ShowFilePickerModal, async (req, _2, _3, contents) => {
+    const window = BrowserWindow.fromWebContents(contents);
+    if (!window) {
+      return error('UNKNOWN_WINDOW');
+    }
+
+    const res = await dialog.showOpenDialog(window, {
+      buttonLabel: req.confirmButtonLabel,
+      filters: req.filters,
+      message: req.message,
+      title: req.title
+    });
+
+    return ok(res.canceled ? undefined : res.filePaths);
   });
 }

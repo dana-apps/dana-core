@@ -145,7 +145,44 @@ export class AssetService extends EventEmitter<AssetEvents> {
     return res;
   }
 
-  async setMetadataAndMedia(
+  async addMedia(archive: ArchivePackage, assetId: string, filePath: string) {
+    const res = await archive.useDb(async (db) => {
+      const asset = await db.findOne(AssetEntity, assetId);
+      if (!asset) {
+        return error({ filePath, error: FetchError.DOES_NOT_EXIST });
+      }
+
+      const media = await this.mediaService.putFile(archive, filePath);
+      if (media.status !== 'ok') {
+        return media;
+      }
+
+      asset.mediaFiles.add(media.value);
+      return ok(
+        await this.mediaService
+          .getMedia(archive, [media.value.id])
+          .then((x) => x[0])
+      );
+    });
+
+    this.emit('change', { updated: [assetId], created: [], deleted: [] });
+
+    return res;
+  }
+
+  async removeMedia(
+    archive: ArchivePackage,
+    assetId: string,
+    mediaFileIds: string[]
+  ) {
+    const res = this.mediaService.deleteFiles(archive, mediaFileIds);
+
+    this.emit('change', { updated: [assetId], created: [], deleted: [] });
+
+    return res;
+  }
+
+  private async setMetadataAndMedia(
     archive: ArchivePackage,
     collectionId: string,
     asset: AssetEntity,

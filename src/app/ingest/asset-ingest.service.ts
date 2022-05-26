@@ -160,7 +160,9 @@ export class AssetIngestService extends EventEmitter<Events> {
           validationErrors: entity.validationErrors,
           media: await this.mediaService.getMedia(
             archive,
-            entity.files.getIdentifiers()
+            entity.files
+              .toArray()
+              .flatMap((file) => (file.media ? [file.media.id] : []))
           )
         }))
       )
