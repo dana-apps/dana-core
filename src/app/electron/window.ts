@@ -28,7 +28,7 @@ import {
   ShowContextMenu,
   ShowContextMenuResult,
   ShowModal,
-  CloseModal,
+  ReturnModalValue,
   ShowFilePickerModal,
   CreateWindow,
   WindowSize
@@ -245,7 +245,9 @@ function showWindowAfterFirstRender(
         // Showing devtools immediately after loading the window seems to break devtools and result in a blank pane.
         // Wait for a few seconds before opening in order to keep electron happy.
         setTimeout(() => {
-          window.webContents.openDevTools();
+          if (!window.isDestroyed()) {
+            window.webContents.openDevTools();
+          }
         }, 2000);
       }
     };
@@ -345,7 +347,7 @@ export async function initWindows(router: ElectronRouter) {
 
   router.bindRpc(ShowModal, async (req, documentId) => {
     const returnId = randomUUID();
-    const window = await createFrontendWindow({
+    await createFrontendWindow({
       title: req.title,
       router,
       size: WindowSize.DIALOG,
@@ -371,7 +373,7 @@ export async function initWindows(router: ElectronRouter) {
     });
   });
 
-  router.bindRpc(CloseModal, async (req) => {
+  router.bindRpc(ReturnModalValue, async (req) => {
     visibleModals.emit(req.returnId, { action: req.action });
     return ok();
   });

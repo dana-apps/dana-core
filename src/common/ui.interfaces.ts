@@ -60,8 +60,8 @@ export const ShowFilePickerModal = RpcInterface({
   response: z.string().array().optional()
 });
 
-export const CloseModal = RpcInterface({
-  id: 'window/close-modal',
+export const ReturnModalValue = RpcInterface({
+  id: 'window/return-model-value',
   request: z.object({
     returnId: z.string(),
     action: z.enum(['confirm', 'cancel'])
