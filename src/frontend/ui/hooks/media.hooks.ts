@@ -14,6 +14,14 @@ const MediaFileFilters = MediaTypes.map((type) =>
   createFileFilter(type.name, type.extensions)
 );
 
+const AllFilters = [
+  createFileFilter(
+    'All Media',
+    MediaTypes.map((f) => f.extensions[0])
+  ),
+  ...MediaFileFilters
+];
+
 export function useMediaFiles() {
   const rpc = useRPC();
   const error = useErrorDisplay();
@@ -26,7 +34,7 @@ export function useMediaFiles() {
           await rpc(ShowFilePickerModal, {
             title: 'Add media',
             message: 'Select a media file to add',
-            filters: MediaFileFilters,
+            filters: AllFilters,
             confirmButtonLabel: 'Add'
           })
         );

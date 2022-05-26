@@ -8,7 +8,7 @@ interface MediaType {
 
 export const MediaTypes: MediaType[] = [
   { name: 'PNG Image', mimeType: 'image/png', extensions: ['png'] },
-  { name: 'JPEG Image', mimeType: 'image/jpeg', extensions: ['jpg', 'jpeg'] },
+  { name: 'JPEG Image', mimeType: 'image/jpeg', extensions: ['jpeg', 'jpg'] },
   { name: 'TIFF Image', mimeType: 'image/tiff', extensions: ['tiff', 'tif'] }
 
   // TODO:
