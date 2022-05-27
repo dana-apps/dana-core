@@ -1,6 +1,6 @@
 {
   "name": "dana-core",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "author": "Common Knowledge <hello@commonknowledge.coop>",
   "main": "build/electron/main.cjs",
