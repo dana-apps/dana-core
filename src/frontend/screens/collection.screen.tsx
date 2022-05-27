@@ -116,6 +116,7 @@ export const CollectionScreen: FC = () => {
           columns={gridColumns}
           data={assets}
           contextMenuItems={assetContextMenu}
+          onDoubleClickItem={assetOps.openDetailView}
         />
 
         <BottomBar
