@@ -65,13 +65,8 @@ export const AssetDetailScreen = () => {
 
   return (
     <>
-      <WindowTitle />
-      <PrimaryDetailLayout
-        sx={{ width: '100vw', height: '100vh' }}
-        detail={inspector}
-      >
-        <AssetDetail sx={{ borderTop: 'light' }} asset={asset} />
-      </PrimaryDetailLayout>
+      <WindowTitle sx={{ borderBottom: 'none' }} />
+      <AssetDetail sx={{ borderTop: 'light', bg: 'gray1' }} asset={asset} />
     </>
   );
 };
