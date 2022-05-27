@@ -53,13 +53,6 @@ export const WithMedia: FC<Params> = ({ onUpdate }) => {
           overflow: 'auto'
         }}
         asset={someAsset({ metadata, media: MEDIA_FILES })}
-        collection={{
-          id: 'someCollection',
-          title: 'Some Collection',
-          type: CollectionType.ASSET_COLLECTION,
-          schema: SCHEMA
-        }}
-        onCommitEdits={async () => undefined}
       />
     </IpcContext.Provider>
   );
