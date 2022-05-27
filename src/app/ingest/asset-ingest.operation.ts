@@ -383,7 +383,7 @@ export class AssetIngestOperation implements IngestSession {
    * @returns The provided value, converted to the expected type if possible
    */
   async convertTypeForImport(property: SchemaProperty, value: unknown) {
-    return Promise.all(
+    const converted = await Promise.all(
       arrayify(value).map(async (val) => {
         const castedValue = await this.assetService.castOrCreateProperty(
           this.archive,
@@ -394,6 +394,8 @@ export class AssetIngestOperation implements IngestSession {
         return castedValue.status === 'error' ? val : castedValue.value;
       })
     );
+
+    return converted.filter((x) => x !== undefined);
   }
 
   /**
