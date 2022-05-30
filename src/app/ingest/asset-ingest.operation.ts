@@ -1,12 +1,10 @@
 import path, { basename, dirname, extname, join } from 'path';
-import { z } from 'zod';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
 import { Logger } from 'tslog';
 import { compact, keyBy, mapValues } from 'lodash';
 import { ObjectQuery } from '@mikro-orm/core';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
-import AdmZip from 'adm-zip';
 
 import {
   IngestError,

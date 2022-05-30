@@ -1,9 +1,7 @@
 import AdmZip from 'adm-zip';
 import path, { basename, join } from 'path';
 import { z } from 'zod';
-import { Media } from '../../common/media.interfaces';
 import { Dict } from '../../common/util/types';
-import { ArchivePackage } from '../package/archive-package';
 
 /**
  * A DanaPack file is a zipped bundle of asset metadata and media files with a defined internal file structure.

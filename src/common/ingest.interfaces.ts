@@ -1,4 +1,4 @@
-import { string, z } from 'zod';
+import { z } from 'zod';
 import { RequestType, ResponseType, RpcInterface } from './ipc.interfaces';
 import { Asset, SingleValidationError } from './asset.interfaces';
 import { FetchError, Result } from './util/error';

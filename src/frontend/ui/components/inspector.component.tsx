@@ -4,7 +4,6 @@ import { FC, useCallback, useState } from 'react';
 import { Plus, X } from 'react-bootstrap-icons';
 import {
   Label,
-  Grid,
   Box,
   Text,
   Flex,
