@@ -27,6 +27,7 @@ export class AssetExportService {
 
     const output: SaveDanapackOpts = {
       filepath: outpath,
+      collection: collectionId,
       records: {}
     };
 

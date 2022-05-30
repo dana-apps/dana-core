@@ -8,12 +8,14 @@ import {
 import { IngestPhase } from '../../../common/ingest.interfaces';
 import { error, ok } from '../../../common/util/error';
 import { collectEvents, waitUntilEvent } from '../../../test/event';
+import { requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { AssetsChangedEvent, AssetService } from '../../asset/asset.service';
 import { CollectionService } from '../../asset/collection.service';
 import { assetMetadata, assetMetadataItem } from '../../asset/test-utils';
 import { MediaFile } from '../../media/media-file.entity';
 import { MediaFileService } from '../../media/media-file.service';
+import { AssetExportService } from '../asset-export.service';
 import {
   AssetImportEntity,
   FileImport,
@@ -31,15 +33,7 @@ describe('AssetImportOperation', () => {
 
   test('imports assets', async () => {
     const fixture = await setup();
-    await fixture.givenACollectionMetadataSchema([
-      {
-        type: SchemaPropertyType.FREE_TEXT,
-        id: 'internalPropertyId',
-        label: 'property',
-        repeated: false,
-        required: true
-      }
-    ]);
+    await fixture.givenACollectionMetadataSchema(BASIC_EXAMPLE_SCHEMA);
 
     const sessionRun =
       await fixture.givenThatAnImportSessionHasRunSuccessfuly();
@@ -511,6 +505,40 @@ describe('AssetImportOperation', () => {
       IngestPhase.COMPLETED
     ]);
   });
+
+  test('Imports a danapack exported from a collection', async () => {
+    const exportInstance = await setup();
+    const importInstance = await setup();
+    const exportedFile = exportInstance.temp() + '.danapack';
+
+    await exportInstance.givenThatAFileHasBeenImportedToTheMainCollection();
+
+    requireSuccess(
+      await exportInstance.exportService.exportCollection(
+        exportInstance.archive,
+        exportInstance.rootCollection.id,
+        exportedFile
+      )
+    );
+
+    await importInstance.givenThatAFileHasBeenImportedToTheMainCollection(
+      exportedFile
+    );
+
+    const exportedAssets = await exportInstance.assetService.listAssets(
+      exportInstance.archive,
+      exportInstance.rootCollection.id
+    );
+    const importedAssets = await importInstance.assetService.listAssets(
+      importInstance.archive,
+      importInstance.rootCollection.id
+    );
+
+    expect(importedAssets.total).toBe(2);
+    expect(importedAssets.items.map((item) => item.metadata)).toEqual(
+      expect.arrayContaining(exportedAssets.items.map((item) => item.metadata))
+    );
+  });
 });
 
 const setup = async () => {
@@ -519,6 +547,11 @@ const setup = async () => {
   const mediaService = new MediaFileService();
   const collectionService = new CollectionService();
   const assetService = new AssetService(collectionService, mediaService);
+  const exportService = new AssetExportService(
+    collectionService,
+    assetService,
+    mediaService
+  );
   const importService = new AssetIngestService(
     mediaService,
     assetService,
@@ -528,41 +561,56 @@ const setup = async () => {
     archive
   );
 
+  const givenThatAnImportSessionHasRunSuccessfuly = async (
+    example: string = BASIC_EXAMPLE,
+    collection = rootCollection.id
+  ) => {
+    const session = await importService.beginSession(
+      archive,
+      example,
+      collection
+    );
+
+    await waitUntilEvent(importService, 'importRunCompleted', session);
+    return session;
+  };
+
+  const givenACollectionMetadataSchema = async (
+    schema: SchemaProperty[],
+    collectionId = rootCollection.id
+  ) => {
+    await collectionService.updateCollectionSchema(
+      archive,
+      collectionId,
+      schema
+    );
+  };
+
   return {
     archive,
     mediaService,
     importService,
+    exportService,
     assetService,
     collectionService,
     rootCollection,
-    givenACollectionMetadataSchema: async (
-      schema: SchemaProperty[],
-      collectionId = rootCollection.id
-    ) => {
-      await collectionService.updateCollectionSchema(
-        archive,
-        collectionId,
-        schema
-      );
-    },
+    temp,
+    givenACollectionMetadataSchema,
     statusEvents: <T>(fn: (event: ImportStateChanged) => T) => {
       return collectEvents(importService, 'status', fn);
     },
     editEvents: <T>(fn: (event: ImportStateChanged) => T) => {
       return collectEvents(importService, 'edit', fn);
     },
-    givenThatAnImportSessionHasRunSuccessfuly: async (
-      example: string = BASIC_EXAMPLE,
-      collection = rootCollection.id
+    givenThatAnImportSessionHasRunSuccessfuly,
+    givenThatAFileHasBeenImportedToTheMainCollection: async (
+      path: string = BASIC_EXAMPLE,
+      schema = BASIC_EXAMPLE_SCHEMA
     ) => {
-      const session = await importService.beginSession(
-        archive,
-        example,
-        collection
-      );
+      await givenACollectionMetadataSchema(schema);
+      const session = await givenThatAnImportSessionHasRunSuccessfuly(path);
 
-      await waitUntilEvent(importService, 'importRunCompleted', session);
-      return session;
+      requireSuccess(await importService.commitSession(archive, session.id));
     }
   };
 };
@@ -572,5 +620,15 @@ const BASIC_EXAMPLE = path.join(
   'fixtures',
   'basic-fixture.danapack'
 );
+
+const BASIC_EXAMPLE_SCHEMA: SchemaProperty[] = [
+  {
+    type: SchemaPropertyType.FREE_TEXT,
+    id: 'internalPropertyId',
+    label: 'property',
+    repeated: false,
+    required: true
+  }
+];
 
 const CSV_EXAMPLE = path.join(__dirname, 'fixtures', 'controlled-db.csv');
