@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - v3-demo
 
 jobs:
   release:
@@ -33,8 +34,8 @@ jobs:
         if: steps.yarn-cache.outputs.cache-hit != 'true'
         run: yarn
 
-      - name: Run tests
-        run: yarn test
+#       - name: Run tests
+#         run: yarn test
 
       - name: Configure release
         run: node scripts/prerelease
