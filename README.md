@@ -1,6 +1,6 @@
 # dana-core
 
-Tools for processing and accessing different information types
+Tools for processing and accessing different information types.
 
 Executables can be downloaded from https://github.com/commonknowledge/dana-core/releases
 
