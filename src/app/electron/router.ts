@@ -1,4 +1,5 @@
 import { IpcMain, WebContents } from 'electron';
+import { LoggerWithoutCallSite } from 'tslog';
 import {
   ResponseType,
   RpcInterface,
@@ -17,6 +18,8 @@ import { ArchiveService } from '../package/archive.service';
 export class ElectronRouter {
   private _windows: Array<{ archiveId?: string; window: WebContents }> = [];
   constructor(private ipc: IpcMain, private archiveService: ArchiveService) {}
+
+  private log = new LoggerWithoutCallSite({ name: 'router' });
 
   /**
    * Route calls to an RPC method to a handler function.
@@ -41,6 +44,8 @@ export class ElectronRouter {
         archiveId?: string,
         range?: PageRange
       ): Promise<Result> => {
+        this.log.info(descriptor.id, event.sender.id);
+
         // The schema validators aren't strictly needed in the electron app, but we use them here anyway
         // to ensure consistent behaviour with any future Web UI.
         const validatedRequest = descriptor.request.parse(request);
@@ -122,6 +127,11 @@ export class ElectronRouter {
 
     // If the event is sent to a specific archive, only send it to that window, otherwise send to all.
     for (const { archiveId, window } of this._windows) {
+      if (window.isDestroyed()) {
+        // Guard against race conditions when an event is triggered as a window closes
+        continue;
+      }
+
       if (typeof targetArchiveIdOrWindow === 'string') {
         if (archiveId === targetArchiveIdOrWindow) {
           window.send(descriptor.id, eventPayload);

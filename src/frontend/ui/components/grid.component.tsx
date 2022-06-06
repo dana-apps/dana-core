@@ -305,14 +305,11 @@ function Row<T extends Resource>({
   });
 
   const sx: ThemeUIStyleObject = {
+    variant: contextMenu.visible && !selected ? 'listItems.active' : undefined,
     display: 'flex',
     flexDirection: 'row',
     bg: selected ? 'primary' : plainBg,
     color: selected ? 'primaryContrast' : undefined,
-    outline:
-      contextMenu.visible && !selected
-        ? '2px solid var(--theme-ui-colors-muted)'
-        : undefined,
     position: 'relative'
   };
 
@@ -332,8 +329,6 @@ function Row<T extends Resource>({
         <div
           key={column.id}
           sx={{
-            variant:
-              contextMenu.visible && !selected ? 'listItems.active' : undefined,
             overflow: 'hidden',
             py: 1,
             px: 2,

@@ -175,7 +175,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
     assetId: string,
     mediaFileIds: string[]
   ) {
-    const res = this.mediaService.deleteFiles(archive, mediaFileIds);
+    const res = await this.mediaService.deleteFiles(archive, mediaFileIds);
 
     this.emit('change', { updated: [assetId], created: [], deleted: [] });
 
