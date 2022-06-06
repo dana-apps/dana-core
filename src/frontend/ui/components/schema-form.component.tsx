@@ -285,22 +285,32 @@ const ReadonlyDisplay: FC<{
   property: SchemaProperty;
 }> = ({ value, property, ...props }) => {
   const getValue = () => {
+    const sx = {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      display: 'block'
+    };
+
     if (!value || value.rawValue.length === 0) {
-      return <i data-testid={fieldDisplayTestId(property)}>None</i>;
+      return (
+        <div sx={sx} data-testid={fieldDisplayTestId(property)}>
+          None
+        </div>
+      );
     }
 
     if (!property.repeated) {
       return (
-        <span data-testid={fieldDisplayTestId(property)}>
+        <div sx={sx} data-testid={fieldDisplayTestId(property)}>
           {value.presentationValue[0]?.label ?? <i>None</i>}
-        </span>
+        </div>
       );
     }
 
     return (
       <ul sx={{ my: 0, pl: 5 }}>
         {value.presentationValue.map((item, i) => (
-          <li data-testid={fieldDisplayTestId(property, i)} key={i}>
+          <li sx={sx} data-testid={fieldDisplayTestId(property, i)} key={i}>
             {item?.label}
           </li>
         ))}
@@ -309,7 +319,7 @@ const ReadonlyDisplay: FC<{
   };
 
   return (
-    <Box {...props}>
+    <Box sx={{ position: 'relative' }} {...props}>
       <Label>{property.label}</Label>
 
       <Text>{getValue()}</Text>
