@@ -108,6 +108,13 @@ export const RecordInspector: FC<RecordInspectorProps> = ({
 
   return (
     <Box sx={{ bg: 'gray1', height: '100%', overflowY: 'auto' }} {...props}>
+      {showMedia && (
+        <AssetFilesList
+          onAddFile={editMedia ? handleAddFile : undefined}
+          onDeleteFile={editMedia ? handleRemoveFile : undefined}
+          asset={asset}
+        />
+      )}
       <MetadataInspector
         asset={asset}
         collection={collection}
@@ -120,13 +127,6 @@ export const RecordInspector: FC<RecordInspectorProps> = ({
         onCancelEdits={handleCancelEditing}
         onCommitEdits={handleCommitEditing}
       />
-      {showMedia && (
-        <AssetFilesList
-          onAddFile={editMedia ? handleAddFile : undefined}
-          onDeleteFile={editMedia ? handleRemoveFile : undefined}
-          asset={asset}
-        />
-      )}
     </Box>
   );
 };
