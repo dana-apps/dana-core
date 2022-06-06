@@ -383,15 +383,23 @@ export class AssetIngestOperation implements IngestSession {
   async convertTypeForImport(property: SchemaProperty, value: unknown) {
     return Promise.all(
       arrayify(value).map(async (val) => {
-        const castedValue = await this.assetService.castOrCreateProperty(
+        const castedValue = await this.assetService.castOrCreatePropertyValue(
           this.archive,
           property,
           val
         );
 
-        return castedValue.status === 'error' ? val : castedValue.value;
+        if (castedValue.status === 'error') {
+          return [val];
+        }
+
+        if (castedValue.value === undefined) {
+          return [];
+        }
+
+        return [castedValue.value];
       })
-    );
+    ).then((x) => x.flat());
   }
 
   /**

@@ -377,7 +377,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
    * @param value Value to cast to the type represented by `value`
    * @returns A result value indicating whether the cast was successful and if so, the casted value.
    */
-  castOrCreateProperty(
+  castOrCreatePropertyValue(
     archive: ArchivePackage,
     property: SchemaProperty,
     value: unknown

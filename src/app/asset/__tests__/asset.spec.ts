@@ -2,6 +2,7 @@ import {
   SchemaProperty,
   SchemaPropertyType
 } from '../../../common/asset.interfaces';
+import { ok } from '../../../common/util/error';
 import { collectEvents } from '../../../test/event';
 import { requireFailure, requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
@@ -185,7 +186,7 @@ describe(AssetService, () => {
         ]);
 
         const res = requireSuccess(
-          await fixture.service.castOrCreateProperty(
+          await fixture.service.castOrCreatePropertyValue(
             fixture.archive,
             property,
             123
@@ -207,7 +208,7 @@ describe(AssetService, () => {
         ]);
 
         const res = requireSuccess(
-          await fixture.service.castOrCreateProperty(
+          await fixture.service.castOrCreatePropertyValue(
             fixture.archive,
             property,
             ' '
@@ -239,7 +240,7 @@ describe(AssetService, () => {
         );
 
         const res = requireSuccess(
-          await fixture.service.castOrCreateProperty(
+          await fixture.service.castOrCreatePropertyValue(
             fixture.archive,
             property,
             'Value'
@@ -268,7 +269,7 @@ describe(AssetService, () => {
         ]);
 
         const res = requireSuccess(
-          await fixture.service.castOrCreateProperty(
+          await fixture.service.castOrCreatePropertyValue(
             fixture.archive,
             property,
             'Value'
@@ -297,7 +298,7 @@ describe(AssetService, () => {
         ]);
 
         const res = requireSuccess(
-          await fixture.service.castOrCreateProperty(
+          await fixture.service.castOrCreatePropertyValue(
             fixture.archive,
             property,
             ' '

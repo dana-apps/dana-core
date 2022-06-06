@@ -418,7 +418,7 @@ describe('AssetImportOperation', () => {
       ]
     );
 
-    fixture.assetService.castOrCreateProperty = (_, _property, value) => {
+    fixture.assetService.castOrCreatePropertyValue = (_, _property, value) => {
       if (typeof value === 'string') {
         return ok(value.toUpperCase());
       }
@@ -453,7 +453,8 @@ describe('AssetImportOperation', () => {
       ]
     );
 
-    fixture.assetService.castOrCreateProperty = () => error('Cannot be casted');
+    fixture.assetService.castOrCreatePropertyValue = () =>
+      error('Cannot be casted');
 
     const session = await fixture.givenThatAnImportSessionHasRunSuccessfuly();
     const assets = await fixture.importService.listSessionAssets(
