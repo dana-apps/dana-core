@@ -1,5 +1,6 @@
 import AdmZip from 'adm-zip';
-import path, { basename, join } from 'path';
+import zipPath from 'path/posix';
+import systemPath from 'path';
 import { z } from 'zod';
 import { Dict } from '../../common/util/types';
 
@@ -28,13 +29,13 @@ export function openDanapack(filepath: string) {
   const entries = Object.fromEntries(
     zip
       .getEntries()
-      .map((e) => [join(...e.entryName.split(path.sep).slice(1)), e])
+      .map((e) => [zipPath.join(...e.entryName.split('/').slice(1)), e])
   ) as Dict<AdmZip.IZipEntry>;
 
   return {
     zipFile: zip,
     metadataEntry: entries['metadata.json'],
-    entries
+    getMedia: (slug: string) => entries[zipPath.join('media', slug)]
   };
 }
 
@@ -49,7 +50,7 @@ export async function saveDanapack({
   collection,
   records
 }: SaveDanapackOpts) {
-  const rootDir = basename(filepath);
+  const rootDir = systemPath.basename(filepath);
   const md: MetadataFileSchema = {
     collection,
     assets: {}
@@ -65,7 +66,7 @@ export async function saveDanapack({
 
     if (record.files) {
       for (const [slug, path] of Object.entries(record.files)) {
-        zip.addLocalFile(path, join(rootDir, 'media', slug));
+        zip.addLocalFile(path, zipPath.join(rootDir, 'media', slug));
       }
     }
   }
@@ -75,7 +76,7 @@ export async function saveDanapack({
     'utf-8'
   );
 
-  zip.addFile(join(rootDir, 'metadata.json'), metadata);
+  zip.addFile(zipPath.join(rootDir, 'metadata.json'), metadata);
   await zip.writeZipPromise(filepath);
 }
 

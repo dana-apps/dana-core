@@ -545,7 +545,7 @@ export class AssetIngestOperation implements IngestSession {
         }
 
         try {
-          const packEntry = pack.entries[join('media', file.path)];
+          const packEntry = pack.getMedia(file.path);
           const res = await this.mediaService.putFile(this.archive, {
             extension: extname(file.path),
             extractTo: (dest) => {
