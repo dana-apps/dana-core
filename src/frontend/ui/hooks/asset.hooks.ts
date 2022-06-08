@@ -1,6 +1,7 @@
 import { mapValues } from 'lodash';
 import { useMemo } from 'react';
 import {
+  AccessControl,
   Asset,
   AssetMetadata,
   SingleValidationError,
@@ -20,11 +21,15 @@ export function useAssets(collectionId: string) {
     () => ({
       updateMetadata: async (
         asset: Asset,
-        edits: AssetMetadata
+        edits: { metadata?: AssetMetadata; accessControl?: AccessControl }
       ): Promise<undefined | SingleValidationError> => {
-        const metadata = { ...asset.metadata, ...edits };
+        const metadata = edits.metadata && {
+          ...asset.metadata,
+          ...edits.metadata
+        };
         const res = await rpc(UpdateAssetMetadata, {
           assetId: asset.id,
+          accessControl: edits.accessControl,
           payload: mapValues(metadata, (item) => item.rawValue)
         });
 

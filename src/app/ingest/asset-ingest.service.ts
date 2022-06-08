@@ -149,6 +149,7 @@ export class AssetIngestService extends EventEmitter<Events> {
         res.items.map(async (entity) => ({
           id: entity.id,
           title: entity.id,
+          accessControl: entity.accessControl,
           metadata: mapValues(entity.metadata, (rawValue) => ({
             rawValue,
             presentationValue: rawValue.map((x) => ({
@@ -194,6 +195,7 @@ export class AssetIngestService extends EventEmitter<Events> {
           session.targetCollectionId,
           {
             metadata: assetImport.metadata,
+            accessControl: assetImport.accessControl,
             media: compact(
               assetImport.files.getItems().map((item) => item.media)
             )

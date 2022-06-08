@@ -22,7 +22,7 @@ import {
 import { AssetIngestService } from './asset-ingest.service';
 import { Dict } from '../../common/util/types';
 import { CollectionService } from '../asset/collection.service';
-import { SchemaProperty } from '../../common/asset.interfaces';
+import { AccessControl, SchemaProperty } from '../../common/asset.interfaces';
 import { AssetService } from '../asset/asset.service';
 import { error, FetchError, ok } from '../../common/util/error';
 import { arrayify } from '../../common/util/collection';
@@ -350,6 +350,7 @@ export class AssetIngestOperation implements IngestSession {
         path: locator,
         session: this.session,
         phase: IngestPhase.READ_FILES,
+        accessControl: AccessControl.RESTRICTED,
         validationErrors: validationResult.success
           ? undefined
           : validationResult.errors
@@ -616,7 +617,11 @@ export class AssetIngestOperation implements IngestSession {
    * @param metadata Dictionary mapping property ids to metadata values
    * @returns Result indicating whether the edit is valid or invalid.
    */
-  async updateImportedAsset(assetId: string, metadata: Dict<unknown[]>) {
+  async updateImportedAsset(
+    assetId: string,
+    metadata: Dict<unknown[]>,
+    accessControl: AccessControl
+  ) {
     const res = await this.archive.useDb(async (db) => {
       const asset = await db.findOne(AssetImportEntity, assetId);
       if (!asset) {
@@ -624,6 +629,7 @@ export class AssetIngestOperation implements IngestSession {
       }
 
       asset.metadata = metadata;
+      asset.accessControl = accessControl;
 
       const [validationResult] =
         await this.collectionService.validateItemsForCollection(

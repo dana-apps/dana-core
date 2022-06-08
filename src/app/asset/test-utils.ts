@@ -1,6 +1,7 @@
 import faker from '@faker-js/faker';
 import { mapValues, times } from 'lodash';
 import {
+  AccessControl,
   Asset,
   AssetMetadata,
   AssetMetadataItem,
@@ -16,6 +17,7 @@ export const someAsset = (props: Partial<Asset> = {}): Asset => ({
   media: [],
   metadata: {},
   title: faker.word.noun(),
+  accessControl: AccessControl.RESTRICTED,
   ...props
 });
 

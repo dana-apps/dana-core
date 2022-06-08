@@ -1,6 +1,7 @@
 import { EventEmitter } from 'eventemitter3';
 import {
   AggregatedValidationError,
+  AccessControl,
   Asset,
   CollectionType,
   ReferentialIntegrityError,
@@ -27,6 +28,9 @@ interface CreateAssetOpts {
 
   /** Media to associate with the asset */
   media?: MediaFile[];
+
+  /** Access control rights on the file */
+  accessControl: AccessControl;
 }
 
 /**
@@ -54,14 +58,15 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async createAsset(
     archive: ArchivePackage,
     collectionId: string,
-    { metadata, media = [] }: CreateAssetOpts
+    { metadata, media = [], accessControl }: CreateAssetOpts
   ) {
     const res = await archive.useDb(async (db) => {
       const collection = await db.findOne(AssetCollectionEntity, collectionId);
       const asset = db.create(AssetEntity, {
         mediaFiles: [],
         collection,
-        metadata: {}
+        metadata: {},
+        accessControl
       });
 
       const validationResult = await this.setMetadataAndMedia(
@@ -109,7 +114,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async updateAsset(
     archive: ArchivePackage,
     assetId: string,
-    { metadata, media }: Partial<CreateAssetOpts>
+    { metadata, media, accessControl }: Partial<CreateAssetOpts>
   ) {
     const res = await archive.useDb(async (db) => {
       const asset = await db.findOne(
@@ -119,6 +124,10 @@ export class AssetService extends EventEmitter<AssetEvents> {
       );
       if (!asset) {
         return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      if (accessControl) {
+        asset.accessControl = accessControl;
       }
 
       const validationResult = await this.setMetadataAndMedia(
@@ -681,6 +690,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
               archive,
               entity.mediaFiles.getIdentifiers()
             ),
+        accessControl: entity.accessControl,
         metadata: shallow
           ? {}
           : Object.fromEntries(

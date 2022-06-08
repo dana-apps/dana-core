@@ -8,6 +8,7 @@ import {
   Entity
 } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
+import { AccessControl } from '../../common/asset.interfaces';
 
 import { IngestError, IngestPhase } from '../../common/ingest.interfaces';
 import { Dict } from '../../common/util/types';
@@ -53,6 +54,10 @@ export class AssetImportEntity {
   /** Unique and deterministic string representing the source of the ingested asset */
   @Property({ type: 'string', nullable: false })
   path!: string;
+
+  /** Unique and deterministic string representing the source of the ingested asset */
+  @Property({ type: 'string', nullable: true })
+  accessControl!: AccessControl;
 
   /** Import session that this asset is managed by */
   @ManyToOne(() => ImportSessionEntity, {

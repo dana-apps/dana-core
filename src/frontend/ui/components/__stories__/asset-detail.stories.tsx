@@ -41,7 +41,7 @@ export const WithMedia: FC<Params> = ({ onUpdate }) => {
   });
 
   const ipc = useIpcFixture((change) => {
-    setMetadata(assetMetadata(change.payload));
+    setMetadata(assetMetadata(change.payload ?? {}));
     onUpdate(change);
   });
 

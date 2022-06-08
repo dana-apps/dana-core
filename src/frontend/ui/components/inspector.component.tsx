@@ -10,13 +10,16 @@ import {
   Image,
   BoxProps,
   IconButton,
-  Button
+  Button,
+  Select
 } from 'theme-ui';
 import {
+  AccessControl,
   Asset,
   AssetMetadata,
   Collection,
   CollectionType,
+  getAccessControlLabel,
   SingleValidationError
 } from '../../../common/asset.interfaces';
 import { Media } from '../../../common/media.interfaces';
@@ -42,10 +45,9 @@ interface RecordInspectorProps extends BoxProps {
 
   /** Commit */
   onCommitEdits: (
-    metadata: AssetMetadata
+    metadata: MetadataInspectorData
   ) => Promise<SingleValidationError | undefined>;
 }
-
 /**
  * Panel displayed when an asset is selected in a collection view and we want to show the its media and metadata in a side-area.
  */
@@ -61,12 +63,14 @@ export const RecordInspector: FC<RecordInspectorProps> = ({
   const mediaFiles = useMediaFiles();
 
   const showMedia = collection.type === CollectionType.ASSET_COLLECTION;
-  const [edits, setEdits] = useState<AssetMetadata>();
+  const [edits, setEdits] = useState<MetadataInspectorData>();
   const [editErrors, setEditErrors] = useState<SingleValidationError>();
 
   /** Begin an edit session */
   const handleStartEditing = useCallback(() => {
-    setEdits({});
+    setEdits({
+      metadata: {}
+    });
     setEditErrors(undefined);
   }, []);
 
@@ -134,13 +138,20 @@ interface MetadataInspectorProps extends BoxProps {
   asset: Asset;
   collection: Collection;
   isEditing?: boolean;
-  edits?: AssetMetadata;
+  edits?: MetadataInspectorData;
   errors?: Record<string, string[]>;
   hideRecordId?: boolean;
   onStartEditing?: () => void;
   onCommitEdits?: () => void;
   onCancelEdits?: () => void;
-  onEdit?: (updated: (prev?: AssetMetadata) => AssetMetadata) => void;
+  onEdit?: (
+    updated: (prev?: MetadataInspectorData) => MetadataInspectorData
+  ) => void;
+}
+
+export interface MetadataInspectorData {
+  accessControl?: AccessControl;
+  metadata: AssetMetadata;
 }
 
 export const MetadataInspector: FC<MetadataInspectorProps> = ({
@@ -156,7 +167,8 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
   errors,
   ...props
 }) => {
-  const metadata = { ...asset.metadata, ...edits };
+  const metadata = { ...asset.metadata, ...edits?.metadata };
+  const accessControl = edits?.accessControl ?? asset.accessControl;
 
   return (
     <Box {...props}>
@@ -198,6 +210,31 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
           </Box>
         )}
 
+        <Box>
+          <Label>Access Control</Label>
+
+          {isEditing ? (
+            <Select
+              value={accessControl}
+              onChange={(event) =>
+                onEdit?.((prev) => ({
+                  metadata: {},
+                  ...prev,
+                  accessControl: event.target.value as AccessControl
+                }))
+              }
+            >
+              {Object.values(AccessControl).map((ac) => (
+                <option key={ac} value={ac}>
+                  {getAccessControlLabel(ac)}
+                </option>
+              ))}
+            </Select>
+          ) : (
+            getAccessControlLabel(asset.accessControl)
+          )}
+        </Box>
+
         {collection.schema.map((property) => (
           <Box key={property.id}>
             <SchemaField
@@ -205,7 +242,10 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
               editing={isEditing}
               value={metadata[property.id]}
               onChange={(change) =>
-                onEdit?.((edits) => ({ ...edits, [property.id]: change }))
+                onEdit?.((edits) => ({
+                  ...edits,
+                  metadata: { ...edits?.metadata, [property.id]: change }
+                }))
               }
             />
 
@@ -214,25 +254,30 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
             )}
           </Box>
         ))}
-
-        {isEditing && onCommitEdits && (
-          <Flex
-            sx={{
-              justifyContent: 'flex-end',
-              flexDirection: 'row'
-            }}
-          >
-            {onCancelEdits && (
-              <Button onClick={onCancelEdits} variant="primaryTransparent">
-                Cancel
-              </Button>
-            )}
-
-            <span sx={{ ml: 4 }} />
-            {<Button onClick={onCommitEdits}>Save</Button>}
-          </Flex>
-        )}
       </Box>
+
+      {isEditing && onCommitEdits && (
+        <Flex
+          sx={{
+            justifyContent: 'flex-end',
+            flexDirection: 'row',
+            position: 'sticky',
+            bottom: 0,
+            bg: 'gray1',
+            p: 4,
+            borderTop: 'light'
+          }}
+        >
+          {onCancelEdits && (
+            <Button onClick={onCancelEdits} variant="primaryTransparent">
+              Cancel
+            </Button>
+          )}
+
+          <span sx={{ ml: 4 }} />
+          {<Button onClick={onCommitEdits}>Save</Button>}
+        </Flex>
+      )}
     </Box>
   );
 };

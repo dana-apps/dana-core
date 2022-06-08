@@ -1,6 +1,7 @@
 import { compact, mapValues } from 'lodash';
 import path from 'path';
 import {
+  AccessControl,
   defaultSchemaProperty,
   SchemaProperty,
   SchemaPropertyType
@@ -344,10 +345,14 @@ describe('AssetImportOperation', () => {
 
     const sessionsEmittingEdit = fixture.editEvents((e) => e.session);
     for (const asset of assets.items) {
-      await session.updateImportedAsset(asset.id, {
-        ...mapValues(asset.metadata, (x) => x.rawValue),
-        extra: ['Some Value']
-      });
+      await session.updateImportedAsset(
+        asset.id,
+        {
+          ...mapValues(asset.metadata, (x) => x.rawValue),
+          extra: ['Some Value']
+        },
+        AccessControl.RESTRICTED
+      );
     }
 
     assets = await fixture.importService.listSessionAssets(

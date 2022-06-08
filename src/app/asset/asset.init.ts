@@ -58,8 +58,11 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
 
   router.bindArchiveRpc(
     UpdateAssetMetadata,
-    (archive, { assetId, payload }) => {
-      return assetService.updateAsset(archive, assetId, { metadata: payload });
+    (archive, { assetId, payload, accessControl }) => {
+      return assetService.updateAsset(archive, assetId, {
+        metadata: payload,
+        accessControl
+      });
     }
   );
 

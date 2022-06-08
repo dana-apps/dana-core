@@ -1,26 +1,19 @@
 /** @jsxImportSource theme-ui */
 
-import { mapValues } from 'lodash';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button, Flex, Text } from 'theme-ui';
-import {
-  AssetMetadata,
-  CreateAsset,
-  GetAsset,
-  GetCollection
-} from '../../common/asset.interfaces';
+import { GetAsset, GetCollection } from '../../common/asset.interfaces';
 import { required } from '../../common/util/assert';
-import { useGet, useRPC } from '../ipc/ipc.hooks';
+import { useGet } from '../ipc/ipc.hooks';
 import { AssetDetail } from '../ui/components/asset-detail.component';
 import {
-  MetadataInspector,
+  MetadataInspectorData,
   RecordInspector
 } from '../ui/components/inspector.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { useAssets } from '../ui/hooks/asset.hooks';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
-import { WindowInset, WindowTitle } from '../ui/window';
+import { WindowTitle } from '../ui/window';
 
 export const AssetDetailScreen = () => {
   const [params] = useSearchParams();
@@ -39,7 +32,7 @@ export const AssetDetailScreen = () => {
   const asset = errors.guard(useGet(GetAsset, assetId));
 
   const handleEdit = useCallback(
-    async (edits: AssetMetadata) => {
+    async (edits: MetadataInspectorData) => {
       if (asset) {
         return assetOps.updateMetadata(asset, edits);
       }

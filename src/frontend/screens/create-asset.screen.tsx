@@ -5,13 +5,17 @@ import { useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Flex, Text } from 'theme-ui';
 import {
+  AccessControl,
   AssetMetadata,
   CreateAsset,
   GetCollection
 } from '../../common/asset.interfaces';
 import { required } from '../../common/util/assert';
 import { useGet, useRPC } from '../ipc/ipc.hooks';
-import { MetadataInspector } from '../ui/components/inspector.component';
+import {
+  MetadataInspector,
+  MetadataInspectorData
+} from '../ui/components/inspector.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
 import { WindowDragArea } from '../ui/window';
 
@@ -25,21 +29,25 @@ export const CreateAssetScreen = () => {
     'Missing collection id'
   );
 
-  const [metadata, setMetadata] = useState<AssetMetadata>({});
+  const [props, setProps] = useState<MetadataInspectorData>({
+    metadata: {},
+    accessControl: AccessControl.RESTRICTED
+  });
   const collection = errors.guard(useGet(GetCollection, collectionId));
 
   const createAsset = useCallback(async () => {
     const ok = errors.guard(
       await rpc(CreateAsset, {
         collection: collectionId,
-        metadata: mapValues(metadata, (md) => md.rawValue)
+        metadata: mapValues(props.metadata, (md) => md.rawValue),
+        accessControl: props.accessControl ?? AccessControl.RESTRICTED
       })
     );
 
     if (ok) {
       window.close();
     }
-  }, [collectionId, errors, metadata, rpc]);
+  }, [collectionId, errors, props, rpc]);
 
   if (!collection) {
     return null;
@@ -72,10 +80,12 @@ export const CreateAssetScreen = () => {
         asset={{
           id: 'new asset',
           media: [],
-          metadata,
+          metadata: {},
+          accessControl: AccessControl.RESTRICTED,
           title: 'New Asset'
         }}
-        onEdit={setMetadata}
+        edits={props}
+        onEdit={setProps}
       />
 
       <Flex

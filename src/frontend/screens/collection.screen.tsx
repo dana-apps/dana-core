@@ -32,7 +32,10 @@ import { Gear, Plus } from 'react-bootstrap-icons';
 import { MetadataItemCell } from '../ui/components/grid-cell.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
 import { useModal } from '../ui/hooks/window.hooks';
-import { RecordInspector } from '../ui/components/inspector.component';
+import {
+  MetadataInspectorData,
+  RecordInspector
+} from '../ui/components/inspector.component';
 import { useAssets } from '../ui/hooks/asset.hooks';
 
 /**
@@ -99,7 +102,7 @@ export const CollectionScreen: FC = () => {
   }, [assets, selection]);
 
   const handleCommitEdits = useCallback(
-    async (change: AssetMetadata) => {
+    async (change: MetadataInspectorData) => {
       if (selectedAsset) {
         return assetOps.updateMetadata(selectedAsset, change);
       }
