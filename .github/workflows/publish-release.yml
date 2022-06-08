@@ -1,0 +1,34 @@
+name: Publish Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v1
+
+      - name: Install Node.js, NPM and Yarn
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+
+      - name: Cache node_modules
+        id: yarn-cache
+        uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-electron-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn
+
+      - name: Release library
+        run: |
+          echo //registry.npmjs.org/:_authToken=$NPM_TOKEN > ~/.npmrc
+          npm publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
