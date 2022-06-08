@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { RequestType, ResponseType, RpcInterface } from './ipc.interfaces';
-import { Asset, SingleValidationError } from './asset.interfaces';
+import {
+  AccessControl,
+  Asset,
+  SingleValidationError
+} from './asset.interfaces';
 import { FetchError, Result } from './util/error';
 import { ResourceList } from './resource';
 
@@ -130,7 +134,8 @@ export const UpdateIngestedMetadata = RpcInterface({
   request: z.object({
     assetId: z.string(),
     sessionId: z.string(),
-    metadata: z.record(z.array(z.unknown()))
+    metadata: z.record(z.array(z.unknown())),
+    accessControl: z.nativeEnum(AccessControl)
   }),
   response: z.object({})
 });

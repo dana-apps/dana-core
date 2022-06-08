@@ -2,6 +2,7 @@ import { Embeddable, Property } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import {
+  AccessControl,
   AssetMetadataItem,
   ControlledDatabaseSchemaProperty,
   ScalarSchemaProperty,
@@ -49,6 +50,9 @@ export abstract class SchemaPropertyValue {
   constructor() {
     if (typeof this.repeated === 'undefined') {
       this.repeated = false;
+    }
+    if (typeof this.visible === 'undefined') {
+      this.visible = true;
     }
   }
 
@@ -280,6 +284,7 @@ export class ControlledDatabaseSchemaPropertyValue
       context.archive,
       this.databaseId,
       {
+        accessControl: AccessControl.RESTRICTED,
         metadata
       }
     );

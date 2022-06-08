@@ -153,13 +153,13 @@ export async function initIngest(
 
   router.bindArchiveRpc(
     UpdateIngestedMetadata,
-    async (archive, { assetId, sessionId, metadata }) => {
+    async (archive, { assetId, sessionId, metadata, accessControl }) => {
       const session = assetIngest.getSession(archive, sessionId);
       if (!session) {
         return error(FetchError.DOES_NOT_EXIST);
       }
 
-      return session.updateImportedAsset(assetId, metadata);
+      return session.updateImportedAsset(assetId, metadata, accessControl);
     }
   );
 

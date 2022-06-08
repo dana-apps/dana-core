@@ -1,4 +1,5 @@
 import {
+  AccessControl,
   defaultSchemaProperty,
   SchemaPropertyType
 } from '../../../common/asset.interfaces';
@@ -96,6 +97,7 @@ describe(CollectionService, () => {
 
     const testAsset = requireSuccess(
       await fixture.assets.createAsset(fixture.archive, root.id, {
+        accessControl: AccessControl.RESTRICTED,
         metadata: {}
       })
     );
@@ -186,6 +188,7 @@ describe(CollectionService, () => {
 
       const dbRecord = requireSuccess(
         await fixture.assets.createAsset(fixture.archive, db.id, {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {
             title: ['My Database Record']
           }
@@ -196,6 +199,7 @@ describe(CollectionService, () => {
         fixture.archive,
         fixture.assetCollection.id,
         {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {
             dbRef: [dbRecord.id]
           }
@@ -213,6 +217,7 @@ describe(CollectionService, () => {
         fixture.archive,
         fixture.assetCollection.id,
         {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {
             dbRef: ['this is not a valid id']
           }

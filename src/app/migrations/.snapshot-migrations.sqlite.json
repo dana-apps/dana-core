@@ -190,6 +190,15 @@
           "nullable": false,
           "mappedType": "text"
         },
+        "access_control": {
+          "name": "access_control",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
         "session_id": {
           "name": "session_id",
           "type": "text",
@@ -300,6 +309,15 @@
           "primary": false,
           "nullable": false,
           "mappedType": "json"
+        },
+        "access_control": {
+          "name": "access_control",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "text"
         }
       },
       "name": "asset",

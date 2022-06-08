@@ -8,7 +8,10 @@ import {
   Property
 } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
-import { SchemaPropertyType } from '../../common/asset.interfaces';
+import {
+  AccessControl,
+  SchemaPropertyType
+} from '../../common/asset.interfaces';
 import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 import { SchemaPropertyValue } from './metadata.entity';
@@ -40,6 +43,12 @@ export class AssetEntity {
    */
   @Property({ type: 'json', nullable: false })
   metadata: Dict<unknown[]> = {};
+
+  /**
+   * Key-value metadata properties. Keys are the id of schema property
+   */
+  @Property({ type: 'string', nullable: false })
+  accessControl: AccessControl = AccessControl.RESTRICTED;
 }
 
 /**

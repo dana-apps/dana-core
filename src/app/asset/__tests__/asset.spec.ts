@@ -1,4 +1,5 @@
 import {
+  AccessControl,
   defaultSchemaProperty,
   SchemaProperty,
   SchemaPropertyType
@@ -55,6 +56,7 @@ describe(AssetService, () => {
         fixture.archive,
         fixture.rootCollection.id,
         {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {
             requiredProperty: ['1'],
             optionalProperty: ['2'],
@@ -135,6 +137,7 @@ describe(AssetService, () => {
       fixture.archive,
       fixture.rootCollection.id,
       {
+        accessControl: AccessControl.RESTRICTED,
         metadata: {}
       }
     );
@@ -155,6 +158,7 @@ describe(AssetService, () => {
         fixture.archive,
         fixture.rootCollection.id,
         {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {
             requiredProperty: ['1']
           }
@@ -241,6 +245,7 @@ describe(AssetService, () => {
 
         const referencedAsset = requireSuccess(
           await fixture.service.createAsset(fixture.archive, db.id, {
+            accessControl: AccessControl.RESTRICTED,
             metadata: { title: ['Value'] }
           })
         );
@@ -338,6 +343,7 @@ describe(AssetService, () => {
 
       const targetRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {}
         })
       );
@@ -345,7 +351,10 @@ describe(AssetService, () => {
         await fixture.service.createAsset(
           fixture.archive,
           fixture.rootCollection.id,
-          { metadata: { [dbProperty.id]: [targetRecord.id] } }
+          {
+            accessControl: AccessControl.RESTRICTED,
+            metadata: { [dbProperty.id]: [targetRecord.id] }
+          }
         )
       );
 
@@ -380,6 +389,7 @@ describe(AssetService, () => {
 
       const targetRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {}
         })
       );
@@ -388,7 +398,10 @@ describe(AssetService, () => {
         await fixture.service.createAsset(
           fixture.archive,
           fixture.rootCollection.id,
-          { metadata: { [dbProperty.id]: [targetRecord.id] } }
+          {
+            accessControl: AccessControl.RESTRICTED,
+            metadata: { [dbProperty.id]: [targetRecord.id] }
+          }
         )
       );
 
@@ -423,12 +436,14 @@ describe(AssetService, () => {
 
       const targetRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {}
         })
       );
 
       const anotherRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
+          accessControl: AccessControl.RESTRICTED,
           metadata: {}
         })
       );
@@ -437,7 +452,10 @@ describe(AssetService, () => {
         await fixture.service.createAsset(
           fixture.archive,
           fixture.rootCollection.id,
-          { metadata: { [dbProperty.id]: [targetRecord.id, anotherRecord.id] } }
+          {
+            accessControl: AccessControl.RESTRICTED,
+            metadata: { [dbProperty.id]: [targetRecord.id, anotherRecord.id] }
+          }
         )
       );
 
@@ -473,11 +491,13 @@ describe(AssetService, () => {
       const targetRecords = [
         requireSuccess(
           await fixture.service.createAsset(fixture.archive, targetDb.id, {
+            accessControl: AccessControl.RESTRICTED,
             metadata: {}
           })
         ),
         requireSuccess(
           await fixture.service.createAsset(fixture.archive, targetDb.id, {
+            accessControl: AccessControl.RESTRICTED,
             metadata: {}
           })
         )
@@ -490,6 +510,7 @@ describe(AssetService, () => {
           fixture.archive,
           fixture.rootCollection.id,
           {
+            accessControl: AccessControl.RESTRICTED,
             metadata: {
               [dbProperty.id]: targedRecordIds
             }

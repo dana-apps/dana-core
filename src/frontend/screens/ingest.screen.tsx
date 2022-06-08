@@ -36,7 +36,10 @@ import { DataGrid, GridColumn } from '../ui/components/grid.component';
 import { PrimaryDetailLayout } from '../ui/components/page-layouts.component';
 import { SelectionContext } from '../ui/hooks/selection.hooks';
 import { BottomBar } from '../ui/components/page-layouts.component';
-import { RecordInspector } from '../ui/components/inspector.component';
+import {
+  MetadataInspectorData,
+  RecordInspector
+} from '../ui/components/inspector.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
 import { mapValues } from 'lodash';
 
@@ -66,16 +69,17 @@ export const ArchiveIngestScreen: FC = () => {
 
   /** Update the metadata for an imported asset */
   const updateIngestedAsset = useCallback(
-    async (change: AssetMetadata): Promise<undefined> => {
+    async (change: MetadataInspectorData): Promise<undefined> => {
       if (!sessionId || !selectedAsset?.id) {
         return;
       }
 
-      const metadata = { ...selectedAsset.metadata, ...change };
+      const metadata = { ...selectedAsset.metadata, ...change.metadata };
 
       const res = await rpc(UpdateIngestedMetadata, {
         assetId: selectedAsset.id,
         metadata: mapValues(metadata, (md) => md.rawValue),
+        accessControl: change.accessControl ?? selectedAsset.accessControl,
         sessionId
       });
 
