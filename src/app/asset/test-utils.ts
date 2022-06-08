@@ -4,6 +4,7 @@ import {
   Asset,
   AssetMetadata,
   AssetMetadataItem,
+  defaultSchemaProperty,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
@@ -22,10 +23,9 @@ export const someSchemaProperty = (
   props: Partial<SchemaProperty> = {}
 ): SchemaProperty => {
   const base = {
+    ...defaultSchemaProperty(),
     id: faker.datatype.uuid(),
-    label: faker.word.noun(),
-    required: false,
-    repeated: false
+    label: faker.word.noun()
   };
 
   if (!props.type || props.type === SchemaPropertyType.FREE_TEXT) {

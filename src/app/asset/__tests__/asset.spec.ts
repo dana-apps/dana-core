@@ -1,8 +1,8 @@
 import {
+  defaultSchemaProperty,
   SchemaProperty,
   SchemaPropertyType
 } from '../../../common/asset.interfaces';
-import { ok } from '../../../common/util/error';
 import { collectEvents } from '../../../test/event';
 import { requireFailure, requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
@@ -17,6 +17,7 @@ import {
 
 const SCHEMA: SchemaProperty[] = [
   {
+    ...defaultSchemaProperty(),
     id: 'optionalProperty',
     label: 'Optional Property',
     type: SchemaPropertyType.FREE_TEXT,
@@ -24,6 +25,7 @@ const SCHEMA: SchemaProperty[] = [
     required: false
   },
   {
+    ...defaultSchemaProperty(),
     id: 'requiredProperty',
     label: 'Some Property',
     type: SchemaPropertyType.FREE_TEXT,
@@ -31,6 +33,7 @@ const SCHEMA: SchemaProperty[] = [
     required: true
   },
   {
+    ...defaultSchemaProperty(),
     id: 'repeatedProperty',
     label: 'Some Property',
     type: SchemaPropertyType.FREE_TEXT,
@@ -177,6 +180,7 @@ describe(AssetService, () => {
         const fixture = await setup();
         const [property] = await fixture.givenTheSchema([
           {
+            ...defaultSchemaProperty(),
             type: SchemaPropertyType.FREE_TEXT,
             id: 'dbRecord',
             label: 'Label',
@@ -199,6 +203,7 @@ describe(AssetService, () => {
         const fixture = await setup();
         const [property] = await fixture.givenTheSchema([
           {
+            ...defaultSchemaProperty(),
             type: SchemaPropertyType.FREE_TEXT,
             id: 'dbRecord',
             label: 'Label',
@@ -224,6 +229,7 @@ describe(AssetService, () => {
         const db = await fixture.givenALabelRecordDatabase();
         const [property] = await fixture.givenTheSchema([
           {
+            ...defaultSchemaProperty(),
             type: SchemaPropertyType.CONTROLLED_DATABASE,
             databaseId: db.id,
             id: 'dbRecord',
@@ -259,6 +265,7 @@ describe(AssetService, () => {
         const db = await fixture.givenALabelRecordDatabase();
         const [property] = await fixture.givenTheSchema([
           {
+            ...defaultSchemaProperty(),
             type: SchemaPropertyType.CONTROLLED_DATABASE,
             databaseId: db.id,
             id: 'dbRecord',
@@ -288,6 +295,7 @@ describe(AssetService, () => {
         const db = await fixture.givenALabelRecordDatabase();
         const [property] = await fixture.givenTheSchema([
           {
+            ...defaultSchemaProperty(),
             type: SchemaPropertyType.CONTROLLED_DATABASE,
             databaseId: db.id,
             id: 'dbRecord',
@@ -613,6 +621,7 @@ async function setup() {
         title: 'Some Database',
         schema: [
           {
+            ...defaultSchemaProperty(),
             id: 'title',
             type: SchemaPropertyType.FREE_TEXT,
             label: 'Title',

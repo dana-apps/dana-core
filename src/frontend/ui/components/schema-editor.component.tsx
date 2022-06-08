@@ -273,6 +273,23 @@ export const SchemaEditor: FC<SchemaEditorProps> = ({
                 )}
               />
             </Box>
+            <Box>
+              <Switch
+                sx={{
+                  'input:checked ~ &': {
+                    backgroundColor: 'var(--theme-ui-colors-primary)'
+                  }
+                }}
+                label="Visible to Public"
+                checked={item.visible}
+                onChange={changeCallback(
+                  item.id,
+                  (prev, event: ChangeEvent<HTMLInputElement>) => {
+                    prev.visible = event.currentTarget.checked;
+                  }
+                )}
+              />
+            </Box>
           </Flex>
 
           <Box>

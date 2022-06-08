@@ -77,6 +77,9 @@ const BaseSchemaProperty = z.object({
   /** Does the property support multiple occurances? */
   repeated: z.boolean(),
 
+  /** Is the the property visible to the public? */
+  visible: z.boolean(),
+
   /** Underlying type of the property? */
   type: z.nativeEnum(SchemaPropertyType)
 });
@@ -154,11 +157,12 @@ export type SchemaProperty = z.TypeOf<typeof SchemaProperty>;
  * @param i Index of the property in the schema – used to generate a unique label.
  * @returns A new schema property with default values.
  */
-export const defaultSchemaProperty = (i: number): SchemaProperty => ({
+export const defaultSchemaProperty = (i?: number): SchemaProperty => ({
   id: v4(),
-  label: `Property ${i}`,
+  label: `Property ${i ?? ''}`,
   required: false,
   repeated: false,
+  visible: true,
   type: SchemaPropertyType.FREE_TEXT
 });
 

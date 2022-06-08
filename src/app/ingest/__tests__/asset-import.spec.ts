@@ -1,6 +1,7 @@
 import { compact, mapValues } from 'lodash';
 import path from 'path';
 import {
+  defaultSchemaProperty,
   SchemaProperty,
   SchemaPropertyType
 } from '../../../common/asset.interfaces';
@@ -59,6 +60,7 @@ describe('AssetImportOperation', () => {
     const fixture = await setup();
     await fixture.givenACollectionMetadataSchema([
       {
+        ...defaultSchemaProperty(),
         type: SchemaPropertyType.FREE_TEXT,
         id: 'missingProperty',
         repeated: false,
@@ -237,6 +239,7 @@ describe('AssetImportOperation', () => {
         title: 'Other collection',
         schema: [
           {
+            ...defaultSchemaProperty(),
             label: 'property',
             id: 'p',
             type: SchemaPropertyType.FREE_TEXT,
@@ -272,6 +275,7 @@ describe('AssetImportOperation', () => {
     const fixture = await setup();
     await fixture.givenACollectionMetadataSchema([
       {
+        ...defaultSchemaProperty(),
         label: 'property',
         id: 'p',
         repeated: false,
@@ -313,6 +317,7 @@ describe('AssetImportOperation', () => {
     const fixture = await setup();
     await fixture.givenACollectionMetadataSchema([
       {
+        ...defaultSchemaProperty(),
         label: 'property',
         id: 'p',
         type: SchemaPropertyType.FREE_TEXT,
@@ -320,6 +325,7 @@ describe('AssetImportOperation', () => {
         repeated: true
       },
       {
+        ...defaultSchemaProperty(),
         label: 'extraProperty',
         id: 'extra',
         type: SchemaPropertyType.FREE_TEXT,
@@ -358,6 +364,7 @@ describe('AssetImportOperation', () => {
     const fixture = await setup();
     await fixture.givenACollectionMetadataSchema([
       {
+        ...defaultSchemaProperty(),
         label: 'property',
         id: 'p',
         type: SchemaPropertyType.FREE_TEXT,
@@ -365,6 +372,7 @@ describe('AssetImportOperation', () => {
         repeated: true
       },
       {
+        ...defaultSchemaProperty(),
         label: 'extraProperty',
         id: 'extra',
         type: SchemaPropertyType.FREE_TEXT,
@@ -382,6 +390,7 @@ describe('AssetImportOperation', () => {
       fixture.rootCollection.id,
       [
         {
+          ...defaultSchemaProperty(),
           label: 'property',
           id: 'p',
           type: SchemaPropertyType.FREE_TEXT,
@@ -389,6 +398,7 @@ describe('AssetImportOperation', () => {
           repeated: true
         },
         {
+          ...defaultSchemaProperty(),
           label: 'extraProperty',
           id: 'extra',
           type: SchemaPropertyType.FREE_TEXT,
@@ -409,6 +419,7 @@ describe('AssetImportOperation', () => {
       fixture.rootCollection.id,
       [
         {
+          ...defaultSchemaProperty(),
           label: 'property',
           id: 'property',
           type: SchemaPropertyType.FREE_TEXT,
@@ -444,6 +455,7 @@ describe('AssetImportOperation', () => {
       fixture.rootCollection.id,
       [
         {
+          ...defaultSchemaProperty(),
           label: 'property',
           id: 'property',
           type: SchemaPropertyType.FREE_TEXT,
@@ -474,6 +486,7 @@ describe('AssetImportOperation', () => {
       fixture.rootCollection.id,
       [
         {
+          ...defaultSchemaProperty(),
           label: 'Title',
           id: 'title',
           type: SchemaPropertyType.FREE_TEXT,
@@ -481,6 +494,7 @@ describe('AssetImportOperation', () => {
           repeated: true
         },
         {
+          ...defaultSchemaProperty(),
           label: 'Style',
           id: 'style',
           type: SchemaPropertyType.FREE_TEXT,
@@ -624,6 +638,7 @@ const BASIC_EXAMPLE = path.join(
 
 const BASIC_EXAMPLE_SCHEMA: SchemaProperty[] = [
   {
+    ...defaultSchemaProperty(),
     type: SchemaPropertyType.FREE_TEXT,
     id: 'internalPropertyId',
     label: 'property',
