@@ -83,6 +83,12 @@ export abstract class SchemaPropertyValue {
   repeated!: boolean;
 
   /**
+   * True if the property is visible to public.
+   */
+  @Property({ type: 'boolean', default: true })
+  visible!: boolean;
+
+  /**
    * Override to define how raw values in the database are converted into `AssetMetadataItem` values for presentation
    * in the UI
    */

@@ -1,4 +1,7 @@
-import { SchemaPropertyType } from '../../../common/asset.interfaces';
+import {
+  defaultSchemaProperty,
+  SchemaPropertyType
+} from '../../../common/asset.interfaces';
 import { UnwrapPromise } from '../../../common/util/types';
 import { requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
@@ -21,6 +24,7 @@ describe(CollectionService, () => {
 
     await fixture.service.updateCollectionSchema(fixture.archive, root.id, [
       {
+        ...defaultSchemaProperty(),
         id: 'dogtype',
         label: 'Dog Type',
         required: true,
@@ -80,6 +84,7 @@ describe(CollectionService, () => {
     requireSuccess(
       await fixture.service.updateCollectionSchema(fixture.archive, root.id, [
         {
+          ...defaultSchemaProperty(),
           id: 'dogtype',
           label: 'Dog Type',
           required: false,
@@ -100,6 +105,7 @@ describe(CollectionService, () => {
       root.id,
       [
         {
+          ...defaultSchemaProperty(),
           id: 'dogtype',
           label: 'Dog Type',
           required: true,
@@ -121,6 +127,7 @@ describe(CollectionService, () => {
       root.id,
       [
         {
+          ...defaultSchemaProperty(),
           id: 'dogtype',
           label: 'Dog Type',
           required: true,
@@ -143,6 +150,7 @@ describe(CollectionService, () => {
           title: 'Some Database',
           schema: [
             {
+              ...defaultSchemaProperty(),
               id: 'title',
               label: 'Title',
               type: SchemaPropertyType.FREE_TEXT,
@@ -158,6 +166,7 @@ describe(CollectionService, () => {
         fixture.assetCollection.id,
         [
           {
+            ...defaultSchemaProperty(),
             id: 'dbRef',
             label: 'Database Reference',
             type: SchemaPropertyType.CONTROLLED_DATABASE,

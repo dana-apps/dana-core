@@ -10,6 +10,7 @@ import {
 } from '../../../../app/asset/test-utils';
 import {
   CollectionType,
+  defaultSchemaProperty,
   GetCollection,
   SchemaProperty,
   SchemaPropertyType,
@@ -112,6 +113,7 @@ const MEDIA_FILES: Media[] = [
 
 const SCHEMA: SchemaProperty[] = [
   {
+    ...defaultSchemaProperty(),
     id: 'someProperty',
     label: 'Some Property',
     required: true,
@@ -119,6 +121,7 @@ const SCHEMA: SchemaProperty[] = [
     type: SchemaPropertyType.FREE_TEXT
   },
   {
+    ...defaultSchemaProperty(),
     id: 'databaseRef',
     label: 'Database Reference',
     required: false,
