@@ -1,3 +1,4 @@
+import { EventEmitter } from 'eventemitter3';
 import { createReadStream } from 'fs';
 import { copyFile, stat, unlink } from 'fs/promises';
 import mime from 'mime';
@@ -18,7 +19,7 @@ interface Extractable {
   extractTo: (path: string) => void | Promise<void>;
 }
 
-export class MediaFileService {
+export class MediaFileService extends EventEmitter<MediaEvents> {
   private static RENDITION_URI_PREFIX = 'media://';
   private log = new Logger({ name: 'MediaFileService' });
 
@@ -41,8 +42,10 @@ export class MediaFileService {
    * @param source File path to the source file
    * @returns A MediaFile instance representing the file
    */
-  putFile(archive: ArchivePackage, source: string | Extractable) {
-    return archive.useDb(async (db): Promise<FileImportResult<MediaFile>> => {
+  async putFile(archive: ArchivePackage, source: string | Extractable) {
+    const res = await archive.useDb(async (db): Promise<
+      FileImportResult<MediaFile>
+    > => {
       if (typeof source === 'string') {
         const sourcePath = source;
         source = {
@@ -78,6 +81,10 @@ export class MediaFileService {
 
       return ok(mediaFile);
     });
+
+    this.emit('change', { archive });
+
+    return res;
   }
 
   /**
@@ -141,6 +148,8 @@ export class MediaFileService {
         }
       }
     });
+
+    this.emit('change', { archive });
 
     return results;
   }
@@ -253,4 +262,12 @@ export class MediaFileService {
       fileSize: stats.size
     };
   }
+}
+
+interface MediaChangeEvent {
+  archive: ArchivePackage;
+}
+
+interface MediaEvents {
+  change: [MediaChangeEvent];
 }

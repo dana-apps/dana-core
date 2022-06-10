@@ -90,6 +90,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
     if (res.status === 'ok') {
       this.emit('change', {
+        archive,
         created: [res.value.id],
         updated: [],
         deleted: []
@@ -97,6 +98,13 @@ export class AssetService extends EventEmitter<AssetEvents> {
     }
 
     return res;
+  }
+
+  async allIds(archive: ArchivePackage) {
+    return archive.useDb(async (db) => {
+      const ids = await db.createQueryBuilder(AssetEntity).select('id');
+      return ids.map((x) => x.id);
+    });
   }
 
   /**
@@ -148,6 +156,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
     if (res.status === 'ok') {
       this.emit('change', {
+        archive,
         updated: [res.value.id],
         created: [],
         deleted: []
@@ -177,7 +186,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
       );
     });
 
-    this.emit('change', { updated: [assetId], created: [], deleted: [] });
+    this.emit('change', {
+      archive,
+      updated: [assetId],
+      created: [],
+      deleted: []
+    });
 
     return res;
   }
@@ -189,7 +203,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
   ) {
     const res = await this.mediaService.deleteFiles(archive, mediaFileIds);
 
-    this.emit('change', { updated: [assetId], created: [], deleted: [] });
+    this.emit('change', {
+      archive,
+      updated: [assetId],
+      created: [],
+      deleted: []
+    });
 
     return res;
   }
@@ -615,7 +634,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
         await em.flush();
       });
 
-      this.emit('change', { updated: [], created: [], deleted: deletedIds });
+      this.emit('change', {
+        archive,
+        updated: [],
+        created: [],
+        deleted: deletedIds
+      });
 
       await this.mediaService.deleteFiles(archive, mediaFileIds);
       return ok();
@@ -797,6 +821,8 @@ interface AssetEvents {
 
 /** Emitted when the assets managed by the archive have changed */
 export interface AssetsChangedEvent {
+  archive: ArchivePackage;
+
   /** Ids of newly created assets */
   created: string[];
 

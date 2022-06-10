@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { Dict } from './types';
 
 /**
@@ -47,4 +48,11 @@ export function arrayify<T>(val: T | null | undefined | T[]): T[] {
   }
 
   return [val];
+}
+
+export function hashJson(x: unknown) {
+  const json = JSON.stringify(x);
+  const hasher = createHash('sha256');
+  hasher.write(json);
+  return hasher.digest().toString('base64url');
 }

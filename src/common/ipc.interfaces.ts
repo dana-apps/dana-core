@@ -51,6 +51,11 @@ export interface PageRange {
   limit: number;
 }
 
+export const PageRangeAll = {
+  offset: 0,
+  limit: Infinity
+};
+
 /**
  * Represent a backend RPC service called by the frontend.
  **/

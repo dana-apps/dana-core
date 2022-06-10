@@ -121,6 +121,20 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     };
   }
 
+  async allCollections(archive: ArchivePackage, range: PageRange | undefined) {
+    const listedCollections = await archive.list(
+      AssetCollectionEntity,
+      {},
+      { range }
+    );
+    return {
+      ...listedCollections,
+      items: await Promise.all(
+        listedCollections.items.map((c) => this.toCollectionValue(archive, c))
+      )
+    };
+  }
+
   /**
    * Return the root controlled databases collection of the archive. Created if it does not yet exist.
    *
@@ -140,7 +154,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
         ...opts
       });
       db.persistAndFlush(collection);
-      this.emit('change', { created: [collection.id] });
+      this.emit('change', { archive, created: [collection.id] });
 
       return this.toCollectionValue(archive, collection);
     });
@@ -174,7 +188,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
       Object.assign(collection, props);
       db.persistAndFlush(collection);
 
-      this.emit('change', { updated: [collectionId] });
+      this.emit('change', { archive, updated: [collectionId] });
 
       return ok(await this.toCollectionValue(archive, collection));
     });
@@ -249,7 +263,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
 
       collection.schema = schema.map(SchemaPropertyValue.fromJson);
       await db.persistAndFlush(collection);
-      this.emit('change', { updated: [collectionId] });
+      this.emit('change', { archive, updated: [collectionId] });
 
       return ok();
     });
@@ -522,6 +536,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
 }
 
 export interface CollectionsChangedEvent {
+  archive: ArchivePackage;
   created?: string[];
   updated?: string[];
   deleted?: string[];

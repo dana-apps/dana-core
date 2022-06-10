@@ -74,6 +74,10 @@ export class ArchivePackage {
     return this.useDb<T>(cb);
   }
 
+  get syncConfig(): { url: string; auth: string } | undefined {
+    return undefined;
+  }
+
   /**
    * Convenience for getting a database entity by id.
    */
