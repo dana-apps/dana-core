@@ -74,7 +74,7 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
       }
 
       mediaFile.sha256 = await hashStream(createReadStream(destPath));
-      await this.createImageRendition(archive, mediaFile, 'png');
+      await this.createRenditions(archive, mediaFile);
 
       await mediaRepository.persistAndFlush(mediaFile);
       this.log.info('Created media file', mediaFile.id);
@@ -112,6 +112,10 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
         files.map((file) => this.entityToValue(archive, file))
       );
     });
+  }
+
+  createRenditions(archive: ArchivePackage, mediaFile: MediaFile) {
+    return this.createImageRendition(archive, mediaFile, 'png');
   }
 
   /**
@@ -256,7 +260,8 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
     const stats = await stat(this.getMediaPath(archive, entity));
 
     return {
-      ...entity,
+      id: entity.id,
+      mimeType: entity.mimeType,
       type: 'image',
       rendition: this.getRenditionUri(archive, entity),
       fileSize: stats.size

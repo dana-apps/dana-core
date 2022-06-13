@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AccessControl, Asset, Collection } from './asset.interfaces';
 import { Media } from './media.interfaces';
+import { hashJson } from './util/collection';
 
 export const SyncedCollection = Collection.and(
   z.object({
@@ -61,3 +62,12 @@ export const AcceptMediaRequest = z.object({
   metadata: AcceptedMedia
 });
 export type AcceptMediaRequest = z.TypeOf<typeof AcceptMediaRequest>;
+
+export const hashMedia = ({ assetId, mimeType, sha256 }: AcceptedMedia) =>
+  hashJson({ assetId, mimeType, sha256 });
+
+export const hashAsset = ({
+  accessControl,
+  collection,
+  metadata
+}: AcceptedAsset) => hashJson({ accessControl, collection, metadata });

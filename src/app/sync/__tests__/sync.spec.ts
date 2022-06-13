@@ -1,49 +1,71 @@
+import { mapValues, sortBy } from 'lodash';
 import path from 'path';
 import {
   SchemaProperty,
   SchemaPropertyType,
   defaultSchemaProperty,
-  AccessControl
+  AccessControl,
+  Collection,
+  getRawAssetMetadata
 } from '../../../common/asset.interfaces';
 import { requireSuccess } from '../../../test/result';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { AssetService } from '../../asset/asset.service';
 import { CollectionService } from '../../asset/collection.service';
+import { someMetadata } from '../../asset/test-utils';
+import { required } from '../../entry/lib';
+import { MediaFile } from '../../media/media-file.entity';
 import { MediaFileService } from '../../media/media-file.service';
 import { SyncClient, SyncTransport } from '../sync-client.service';
 import { SyncServer } from '../sync-server.service';
 
 describe('Sync to cms', () => {
-  test('Syncs an archive to the cms', async () => {
-    const fixture = await setup();
+  test('Populates an empty remote archive', async () => {
+    const { client, server, sync } = await setup();
 
-    const mediaA = requireSuccess(
-      await fixture.client.mediaService.putFile(fixture.client.archive, MEDIA_A)
-    );
-    const mediaB = requireSuccess(
-      await fixture.client.mediaService.putFile(fixture.client.archive, MEDIA_B)
-    );
+    const assetA = await client.addAsset({ mediaFiles: [MEDIA_A] });
+    const assetB = await client.addAsset({ mediaFiles: [MEDIA_B] });
 
-    await fixture.client.assets.createAsset(
-      fixture.client.archive,
-      fixture.client.rootCollection.id,
-      {
-        metadata: { requiredProperty: ['1'] },
-        media: [mediaA],
-        accessControl: AccessControl.PUBLIC
-      }
-    );
-    await fixture.client.assets.createAsset(
-      fixture.client.archive,
-      fixture.client.rootCollection.id,
-      {
-        metadata: { requiredProperty: ['2'] },
-        media: [mediaB],
-        accessControl: AccessControl.PUBLIC
-      }
+    await sync();
+
+    const serverAssets = await server.assets.listAssets(
+      server.archive,
+      server.rootCollection.id
     );
 
-    await fixture.sync();
+    expect(sortBy(serverAssets.items, 'id')).toEqual(
+      sortBy([assetA, assetB], 'id')
+    );
+  });
+
+  test('Propagates delta changes after initial sync', async () => {
+    const { client, server, sync } = await setup();
+
+    const assetA = await client.addAsset({ mediaFiles: [MEDIA_A] });
+    const assetB = await client.addAsset({ mediaFiles: [MEDIA_B] });
+
+    await sync();
+
+    const assetANew = requireSuccess(
+      await client.assets.updateAsset(client.archive, assetA.id, {
+        metadata: getRawAssetMetadata(assetA.metadata)
+      })
+    );
+
+    await client.assets.deleteAssets(client.archive, [assetB.id]);
+
+    const assetC = await client.addAsset({ mediaFiles: [MEDIA_B] });
+
+    await sync();
+
+    const serverAssets = await server.assets.listAssets(
+      server.archive,
+      server.rootCollection.id
+    );
+
+    expect(sortBy(serverAssets.items, 'id')).toEqual(
+      sortBy([assetANew, assetC], 'id')
+    );
   });
 });
 
@@ -155,6 +177,42 @@ async function setupInstance(schema?: SchemaProperty[]) {
           }
         ]
       });
+    },
+    async addAsset(
+      opts: {
+        accessControl?: AccessControl;
+        metadata?: Record<string, unknown[]>;
+        mediaFiles?: string[];
+        collection?: Collection;
+      } = {}
+    ) {
+      const media: MediaFile[] = [];
+
+      for (const m of opts.mediaFiles ?? []) {
+        const mediaRes = requireSuccess(await mediaService.putFile(archive, m));
+        media?.push(mediaRes);
+      }
+
+      const colllection = required(
+        await collectionService.getCollection(
+          archive,
+          (opts.collection ?? rootCollection).id
+        ),
+        'Collection does not exist'
+      );
+
+      const metadata = {
+        ...mapValues(someMetadata(colllection.schema), (x) => x.rawValue),
+        ...opts.metadata
+      };
+
+      return requireSuccess(
+        await assets.createAsset(archive, colllection.id, {
+          accessControl: opts.accessControl ?? AccessControl.PUBLIC,
+          metadata,
+          media
+        })
+      );
     },
     archive,
     collectionService,

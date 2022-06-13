@@ -5,62 +5,26 @@ import { Readable } from 'stream';
 import { createReadStream, createWriteStream } from 'fs';
 import { RequiredEntityData } from '@mikro-orm/core';
 import { Logger } from 'tslog';
-import { mkdir } from 'fs/promises';
+import { mkdir, rename, unlink } from 'fs/promises';
 
 import {
   AcceptAssetRequest,
   AcceptedAsset,
   AcceptedMedia,
   AcceptMediaRequest,
+  hashAsset,
+  hashMedia,
   SyncedCollection,
   SyncRequest
 } from '../../common/sync.interfaces';
 import { ok, error, FetchError } from '../../common/util/error';
 import { required } from '../../common/util/assert';
-import { hashJson } from '../../common/util/collection';
 import { AssetCollectionEntity, AssetEntity } from '../asset/asset.entity';
 import { MediaFile } from '../media/media-file.entity';
 import { ArchivePackage } from '../package/archive-package';
 import { hashStream, streamEnded } from '../util/stream-utils';
 import { MediaFileService } from '../media/media-file.service';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
-
-class SyncTransaction {
-  constructor(
-    readonly collections: SyncedCollection[],
-    private onTimeout: () => void
-  ) {}
-
-  timeout?: NodeJS.Timeout;
-  id = randomUUID();
-  deleteAssets?: Set<string>;
-  deleteMedia?: Set<string>;
-  assets?: AcceptedAsset[];
-  createdAssets?: Set<string>;
-  createdCollections?: Set<string>;
-  putMedia: AcceptedMedia[] = [];
-  tmpLocation = path.join(tmpdir(), 'dana-sync', this.id);
-
-  getTmpfile(slug: string) {
-    return path.join(this.tmpLocation, slug);
-  }
-
-  touch() {
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-
-    this.timeout = setTimeout(this.onTimeout, 30_000);
-    return this;
-  }
-
-  stop() {
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-      this.timeout = undefined;
-    }
-  }
-}
 
 export class SyncServer {
   constructor(private media: MediaFileService) {}
@@ -69,53 +33,55 @@ export class SyncServer {
   private logger = new Logger({ name: 'sync-server' });
 
   async beginSync(archive: ArchivePackage, syncRequest: SyncRequest) {
-    const assets = await this.beginEntitySync(
-      archive,
-      AssetEntity,
-      syncRequest.assets,
-      async (x) =>
-        hashJson(
-          required(
-            await archive.get(AssetEntity, x),
+    return archive.useDb(async (db) => {
+      const assets = await this.beginEntitySync(
+        archive,
+        AssetEntity,
+        syncRequest.assets,
+        async (x) => {
+          const asset = required(
+            await db.findOne(AssetEntity, x, { populate: ['collection'] }),
             'Expected entity to exist'
-          )
-        )
-    );
+          );
 
-    const media = await this.beginEntitySync(
-      archive,
-      MediaFile,
-      syncRequest.media,
-      async (x) =>
-        hashJson(
-          required(await archive.get(MediaFile, x), 'Expected entity to exist')
-        )
-    );
+          return hashAsset({ ...asset, collection: asset.collection.id });
+        }
+      );
 
-    const t: SyncTransaction = new SyncTransaction(
-      syncRequest.collections,
-      () => this.closeTransaction(t)
-    );
-    this.transactions.set(t.id, t.touch());
-    const existingCollections = await archive.useDb((db) =>
-      existingSet(db, AssetCollectionEntity)
-    );
+      const media = await this.beginEntitySync(
+        archive,
+        MediaFile,
+        syncRequest.media,
+        async (x) => {
+          const file = required(
+            await db.findOne(MediaFile, x, { populate: ['asset'] }),
+            'Expected entity to exist'
+          );
+          if (!file.asset) {
+            return undefined;
+          }
 
-    t.deleteAssets = assets.deleted;
-    t.deleteMedia = media.deleted;
-    t.createdAssets = assets.created;
-    t.createdCollections = new Set(
-      syncRequest.collections
-        .filter((x) => !existingCollections.has(x.id))
-        .map((x) => x.id)
-    );
+          return hashMedia({ ...file, assetId: file.asset.id });
+        }
+      );
 
-    await mkdir(t.tmpLocation, { recursive: true });
+      const t: SyncTransaction = new SyncTransaction(
+        syncRequest.collections,
+        () => this.closeTransaction(t)
+      );
+      this.transactions.set(t.id, t.touch());
 
-    return ok({
-      id: t.id,
-      wantMedia: Array.from(media.want),
-      wantAssets: Array.from(assets.want)
+      t.deleteAssets = assets.deleted;
+      t.deleteMedia = media.deleted;
+      t.createdAssets = assets.created;
+
+      await mkdir(t.tmpLocation, { recursive: true });
+
+      return ok({
+        id: t.id,
+        wantMedia: Array.from(media.want),
+        wantAssets: Array.from(assets.want)
+      });
     });
   }
 
@@ -177,9 +143,19 @@ export class SyncServer {
             }
           }
 
+          const existingCollections = await archive.useDb((db) =>
+            existingSet(db, AssetCollectionEntity)
+          );
+
+          const createdCollections = new Set(
+            t.collections
+              .filter((x) => !existingCollections.has(x.id))
+              .map((x) => x.id)
+          );
+
           await this.commitEntitySync(
             db,
-            t.createdCollections ?? new Set(),
+            createdCollections,
             AssetCollectionEntity,
             'collections',
             t.collections,
@@ -192,7 +168,7 @@ export class SyncServer {
           );
 
           if (t.deleteAssets && t.deleteAssets.size > 0) {
-            const deleted = await db.nativeDelete(AssetCollectionEntity, {
+            const deleted = await db.nativeDelete(AssetEntity, {
               id: Array.from(t.deleteAssets)
             });
 
@@ -230,6 +206,16 @@ export class SyncServer {
               };
             }
           );
+
+          if (t.putMedia && t.putMedia.length > 0) {
+            for (const file of t.putMedia) {
+              await rename(
+                t.getTmpfile(file.id),
+                this.media.getMediaPath(archive, file)
+              );
+              await this.media.createRenditions(archive, file);
+            }
+          }
         })
       );
 
@@ -240,6 +226,16 @@ export class SyncServer {
 
       this.logger.info('Sync transaction completed:', t.id);
       return ok();
+    } catch (err) {
+      if (t.putMedia) {
+        for (const file of t.putMedia) {
+          try {
+            await unlink(this.media.getMediaPath(archive, file));
+          } catch {}
+        }
+      }
+
+      throw err;
     } finally {
       this.closeTransaction(t);
     }
@@ -298,7 +294,7 @@ export class SyncServer {
     archive: ArchivePackage,
     entity: new () => E,
     items: V[],
-    hash: (x: string) => Promise<string>
+    hash: (x: string) => Promise<string | undefined>
   ) {
     const want = new Set<string>();
     const deleted = new Set<string>();
@@ -315,7 +311,12 @@ export class SyncServer {
           continue;
         }
 
-        if ((await hash(item.id)) !== item.sha256) {
+        const itemHash = await hash(item.id);
+        if (!itemHash) {
+          continue;
+        }
+
+        if (itemHash !== item.sha256) {
           want.add(item.id);
         }
       }
@@ -332,6 +333,45 @@ export class SyncServer {
       created,
       deleted
     };
+  }
+}
+
+class SyncTransaction {
+  constructor(
+    readonly collections: SyncedCollection[],
+    private onTimeout: () => void
+  ) {}
+
+  id = randomUUID();
+  timeout?: NodeJS.Timeout;
+
+  assets?: AcceptedAsset[];
+  createdAssets?: Set<string>;
+  deleteAssets?: Set<string>;
+
+  putMedia: AcceptedMedia[] = [];
+  deleteMedia?: Set<string>;
+
+  tmpLocation = path.join(tmpdir(), 'dana-sync', this.id);
+
+  getTmpfile(slug: string) {
+    return path.join(this.tmpLocation, slug);
+  }
+
+  touch() {
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
+
+    this.timeout = setTimeout(this.onTimeout, 30_000);
+    return this;
+  }
+
+  stop() {
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = undefined;
+    }
   }
 }
 

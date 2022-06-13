@@ -6,6 +6,8 @@ import {
   AcceptedAsset,
   AcceptedMedia,
   AcceptMediaRequest,
+  hashAsset,
+  hashMedia,
   SyncRequest,
   SyncResponse
 } from '../../common/sync.interfaces';
@@ -123,8 +125,14 @@ export class SyncClient {
 
     return this.transport.beginSync(archive, {
       collections,
-      assets: assets.items.map((asset) => this.toSynced(this.assetJson(asset))),
-      media: media.items.map((media) => this.toSynced(this.mediaJson(media)))
+      assets: assets.items.map((asset) => ({
+        id: asset.id,
+        sha256: hashAsset(this.assetJson(asset))
+      })),
+      media: media.items.map((asset) => ({
+        id: asset.id,
+        sha256: hashMedia(this.mediaJson(asset))
+      }))
     });
   }
 
@@ -142,12 +150,5 @@ export class SyncClient {
       ...e,
       assetId: required(e.asset?.id, 'Expected asset relation in entity')
     });
-  }
-
-  private toSynced(e: { id: string }) {
-    return {
-      id: e.id,
-      sha256: hashJson(e)
-    };
   }
 }

@@ -1,10 +1,11 @@
-import { startCase } from 'lodash';
+import { mapValues, startCase } from 'lodash';
 import { v4 } from 'uuid';
 import { z } from 'zod';
 import { ErrorType, RequestType, RpcInterface } from './ipc.interfaces';
 import { Media } from './media.interfaces';
 import { ResourceList } from './resource';
 import { FetchError } from './util/error';
+import { Dict } from './util/types';
 
 const AssetMetadataItem = z.object({
   rawValue: z.array(z.unknown().optional()),
@@ -73,6 +74,10 @@ export const Asset = z.object({
 });
 export type Asset = z.TypeOf<typeof Asset>;
 export type AssetMetadata = Asset['metadata'];
+
+export function getRawAssetMetadata(metadata: Dict<AssetMetadataItem>) {
+  return mapValues(metadata, (x) => x.rawValue);
+}
 
 /**
  * Enum value for possible schema property types.
