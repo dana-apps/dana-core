@@ -22,6 +22,7 @@ import { MediaFile } from '../media/media-file.entity';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { stat } from 'fs/promises';
+import { AccessControl } from '../entry/lib';
 
 export interface SyncTransport {
   beginSync(
@@ -116,10 +117,14 @@ export class SyncClient {
       PageRangeAll
     );
 
-    const assets = await archive.list(AssetEntity, {}, { range: PageRangeAll });
+    const assets = await archive.list(
+      AssetEntity,
+      { $not: { accessControl: AccessControl.RESTRICTED } },
+      { range: PageRangeAll }
+    );
     const media = await archive.list(
       MediaFile,
-      {},
+      { asset: { accessControl: AccessControl.PUBLIC } },
       { range: PageRangeAll, populate: ['asset'] }
     );
 

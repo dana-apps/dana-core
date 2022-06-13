@@ -67,6 +67,34 @@ describe('Sync to cms', () => {
       sortBy([assetANew, assetC], 'id')
     );
   });
+
+  test('Respects access control settings when syncing to cms', async () => {
+    const { client, server, sync } = await setup();
+
+    const publicAsset = await client.addAsset({
+      mediaFiles: [MEDIA_A],
+      accessControl: AccessControl.PUBLIC
+    });
+    await client.addAsset({
+      mediaFiles: [MEDIA_B],
+      accessControl: AccessControl.RESTRICTED
+    });
+    const metadataOnlyAsset = await client.addAsset({
+      mediaFiles: [MEDIA_B],
+      accessControl: AccessControl.METADATA_ONLY
+    });
+
+    await sync();
+
+    const serverAssets = await server.assets.listAssets(
+      server.archive,
+      server.rootCollection.id
+    );
+
+    expect(sortBy(serverAssets.items, 'id')).toEqual(
+      sortBy([publicAsset, { ...metadataOnlyAsset, media: [] }], 'id')
+    );
+  });
 });
 
 const MEDIA_A = path.resolve(__dirname, './media/a.png');
