@@ -12,7 +12,6 @@ import {
   SyncResponse
 } from '../../common/sync.interfaces';
 import { PageRangeAll } from '../../common/ipc.interfaces';
-import { hashJson } from '../../common/util/collection';
 import { Result } from '../../common/util/error';
 import { required } from '../../common/util/assert';
 import { Scheduler } from '../../common/util/scheduler';
@@ -54,6 +53,10 @@ export class SyncClient {
   private scheduler = new Scheduler();
 
   sync(archive: ArchivePackage) {
+    if (!archive.syncConfig) {
+      return;
+    }
+
     return this.scheduler.run(async () => {
       const sync = await this.prepareSync(archive);
       if (sync.status !== 'ok') {

@@ -1,4 +1,3 @@
-import { node } from './.electron-vendors.cache.json';
 import { join, resolve } from 'path';
 import { builtinModules } from 'module';
 import { dependencies } from './package.json';
@@ -12,7 +11,7 @@ const SRC_ROOT = resolve('src');
 const config = {
   mode: process.env.MODE,
   build: {
-    target: `node${node}`,
+    target: `node14`,
     outDir: join('lib'),
     minify: false,
     lib: {

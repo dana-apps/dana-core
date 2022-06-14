@@ -6,24 +6,24 @@ import { z } from 'zod';
 
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
-import { SyncServer } from './sync-server.service';
+import { SyncServer, SyncServerConfig } from './sync-server.service';
 import {
   AcceptAssetRequest,
   AcceptMediaRequest,
   SyncRequest
 } from '../../common/sync.interfaces';
 
-export interface CreateSyncOpts {
+export interface CreateSyncOpts extends SyncServerConfig {
   archive: ArchivePackage;
   secretKey: string;
 }
 
 export function createSyncServer(
   media: MediaFileService,
-  { secretKey, archive }: CreateSyncOpts
+  { secretKey, archive, ...config }: CreateSyncOpts
 ): RequestListener {
   const server = express();
-  const syncer = new SyncServer(media);
+  const syncer = new SyncServer(media, config);
 
   server.use((req, res, next) => {
     if (req.get('authorization') !== `Bearer ${secretKey}`) {
@@ -69,8 +69,8 @@ export function createSyncServer(
       try {
         const data = AcceptMediaRequest.safeParse(metadata);
         if (!data.success) {
-          res.writeHead(400);
-          res.json(data.error);
+          console.error(data.error);
+          res.status(400).json(data.error);
           return;
         }
 
@@ -90,6 +90,8 @@ export function createSyncServer(
         metadata = JSON.parse(val);
       }
     });
+
+    req.pipe(bb);
   });
 
   server.post('/:id/commit', async (req, res) => {
@@ -109,8 +111,8 @@ function validateRequest(type: z.Schema, key?: string): express.RequestHandler {
     const parseRes = type.safeParse(key ? req.body[key] : req.body);
 
     if (!parseRes.success) {
-      res.writeHead(400);
-      return res.json(parseRes.error);
+      console.error(parseRes.error);
+      return res.status(400).json(parseRes.error);
     }
 
     if (key) {

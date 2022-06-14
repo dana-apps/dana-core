@@ -11,7 +11,7 @@ import { ArchiveOpeningError } from '../../common/interfaces/archive.interfaces'
 import { required } from '../../common/util/assert';
 import { error, ok } from '../../common/util/error';
 import { discoverModuleExports } from '../util/module-utils';
-import { ArchivePackage } from './archive-package';
+import { ArchivePackage, ArchiveSyncConfig } from './archive-package';
 
 /**
  * Manages get/open/create/close operations on archive packages.
@@ -19,6 +19,10 @@ import { ArchivePackage } from './archive-package';
 export class ArchiveService extends EventEmitter<ArchiveEvents> {
   private _archives = new Map<string, ArchivePackage>();
   private log = new Logger({ name: 'ArchiveService' });
+
+  constructor(private hooks: ArchiveHooks = {}) {
+    super();
+  }
 
   /**
    * Open an archive, start any processes associated with it and add it to the list of open archives.
@@ -61,7 +65,11 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
 
     const normalizedLocation = path.normalize(location);
 
-    const archive = new ArchivePackage(normalizedLocation, db);
+    const archive = new ArchivePackage(
+      normalizedLocation,
+      db,
+      await this.hooks.getCmsSyncConfig?.(normalizedLocation)
+    );
     this._archives.set(normalizedLocation, archive);
 
     this.emit('opened', {
@@ -148,4 +156,8 @@ function readSchema() {
       class: m.exports[0]
     }))
   };
+}
+
+interface ArchiveHooks {
+  getCmsSyncConfig?(path: string): Promise<ArchiveSyncConfig | undefined>;
 }

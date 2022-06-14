@@ -20,19 +20,12 @@ import { Logger } from 'tslog';
 import { stat } from 'fs/promises';
 import { MediaFileService } from '../media/media-file.service';
 import { WindowSize } from '../../common/ui.interfaces';
+import { initSync } from '../sync/sync.init';
 
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
   const app = await initApp();
   const log = new Logger({ name: 'App' });
-
-  await initUpdates();
-  await initWindows(app.router);
-  await initDevtools();
-  await initSystray();
-  await initRouter();
-  await initArchives();
-  await showInitialScreen();
 
   /** Setup the business logic of the app */
   const media = initMedia();
@@ -43,6 +36,11 @@ async function main() {
     media.fileService,
     assets.assetService,
     assets.collectionService
+  );
+  const sync = initSync(
+    assets.collectionService,
+    assets.assetService,
+    media.fileService
   );
 
   ipcMain.on('restart', () => {
@@ -57,6 +55,14 @@ async function main() {
     }
   });
 
+  await initUpdates();
+  await initWindows(app.router);
+  await initDevtools();
+  await initSystray();
+  await initRouter();
+  await initArchives();
+  await showInitialScreen();
+
   /**
    * Setup electon bindings for archives.
    */
@@ -64,12 +70,14 @@ async function main() {
     // When an archive document is opened, show its window.
     app.archiveService.on('opened', ({ archive }) => {
       showArchiveWindow(archive);
+      sync.syncClient.sync(archive);
     });
 
     // When an archive document is opened, add it to the autoload array.
     app.archiveService.on('opened', async ({ archive }) => {
       updateUserConfig((config) => {
-        config.autoload[archive.location] = {
+        config.archives[archive.location] = {
+          ...config.archives[archive.location],
           autoload: DEFAULT_AUTOLOAD_ARCHIVES
         };
       });
@@ -118,12 +126,12 @@ async function main() {
     // Open any autoloaded archives
     const settings = await getUserConfig();
 
-    for (const [location, opts] of Object.entries(settings.autoload)) {
+    for (const [location, opts] of Object.entries(settings.archives)) {
       try {
         await stat(location);
       } catch {
         await updateUserConfig((prev) => {
-          delete prev.autoload[location];
+          delete prev.archives[location];
         });
       }
 

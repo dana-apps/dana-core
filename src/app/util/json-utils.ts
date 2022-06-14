@@ -67,12 +67,11 @@ export function readJsonSync<T>(
   let data;
   try {
     data = readFileSync(path);
+    const json = parse(data);
+    return schema.parse(json);
   } catch {
     return defaultVal;
   }
-
-  const json = parse(data);
-  return schema.parse(json);
 }
 
 /**

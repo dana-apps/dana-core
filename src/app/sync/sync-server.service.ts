@@ -1,11 +1,10 @@
 import { randomUUID } from 'crypto';
 import path from 'path';
-import { tmpdir } from 'os';
 import { Readable } from 'stream';
 import { createReadStream, createWriteStream } from 'fs';
 import { RequiredEntityData } from '@mikro-orm/core';
 import { Logger } from 'tslog';
-import { mkdir, rename, unlink } from 'fs/promises';
+import { mkdir, rename, rm, rmdir, unlink } from 'fs/promises';
 
 import {
   AcceptAssetRequest,
@@ -17,7 +16,7 @@ import {
   SyncedCollection,
   SyncRequest
 } from '../../common/sync.interfaces';
-import { ok, error, FetchError } from '../../common/util/error';
+import { ok, error, FetchError, Result } from '../../common/util/error';
 import { required } from '../../common/util/assert';
 import { AssetCollectionEntity, AssetEntity } from '../asset/asset.entity';
 import { MediaFile } from '../media/media-file.entity';
@@ -26,13 +25,26 @@ import { hashStream, streamEnded } from '../util/stream-utils';
 import { MediaFileService } from '../media/media-file.service';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
 
+export interface SyncServerConfig {
+  syncValidator?: (request: SyncRequest) => Result<void, string>;
+}
+
 export class SyncServer {
-  constructor(private media: MediaFileService) {}
+  constructor(
+    private media: MediaFileService,
+    private config: SyncServerConfig = {}
+  ) {}
 
   private transactions = new Map<string, SyncTransaction>();
   private logger = new Logger({ name: 'sync-server' });
 
   async beginSync(archive: ArchivePackage, syncRequest: SyncRequest) {
+    const validationResult =
+      this.config.syncValidator && this.config.syncValidator(syncRequest);
+    if (validationResult?.status === 'error') {
+      return validationResult;
+    }
+
     return archive.useDb(async (db) => {
       const assets = await this.beginEntitySync(
         archive,
@@ -67,6 +79,7 @@ export class SyncServer {
 
       const t: SyncTransaction = new SyncTransaction(
         syncRequest.collections,
+        archive.location,
         () => this.closeTransaction(t)
       );
       this.transactions.set(t.id, t.touch());
@@ -237,15 +250,16 @@ export class SyncServer {
 
       throw err;
     } finally {
-      this.closeTransaction(t);
+      await this.closeTransaction(t);
     }
   }
 
-  private closeTransaction(t: SyncTransaction) {
+  private async closeTransaction(t: SyncTransaction) {
     this.logger.info('Closing sync transaction', t.id);
 
     t.stop();
     this.transactions.delete(t.id);
+    await rm(t.tmpLocation, { recursive: true });
   }
 
   private async commitEntitySync<
@@ -339,6 +353,7 @@ export class SyncServer {
 class SyncTransaction {
   constructor(
     readonly collections: SyncedCollection[],
+    private baseDir: string,
     private onTimeout: () => void
   ) {}
 
@@ -352,7 +367,7 @@ class SyncTransaction {
   putMedia: AcceptedMedia[] = [];
   deleteMedia?: Set<string>;
 
-  tmpLocation = path.join(tmpdir(), 'dana-sync', this.id);
+  tmpLocation = path.join(this.baseDir, 'sync', this.id);
 
   getTmpfile(slug: string) {
     return path.join(this.tmpLocation, slug);

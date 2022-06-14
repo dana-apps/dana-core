@@ -14,9 +14,15 @@ const CONFIG_FILE = path.join(CONFIG_DIR, 'settings.json');
  */
 const UserConfig = z.object({
   /** List of archives to automatically open on load */
-  autoload: z.record(
+  archives: z.record(
     z.object({
-      autoload: z.boolean()
+      autoload: z.boolean(),
+      syncConfig: z
+        .object({
+          url: z.string(),
+          auth: z.string()
+        })
+        .optional()
     })
   ),
   flags: z.record(z.unknown()).optional()
@@ -24,7 +30,7 @@ const UserConfig = z.object({
 export type UserConfig = z.TypeOf<typeof UserConfig>;
 
 let config = readJsonSync(CONFIG_FILE, UserConfig, {
-  autoload: {}
+  archives: {}
 });
 
 /**

@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { debounce } from 'lodash';
-import fetch, { FormData, BodyInit } from 'node-fetch';
+import fetch from 'cross-fetch';
+import FormData from 'form-data';
 import { Readable } from 'stream';
 import { error, Result } from '../../common/util/error';
 import { AssetService } from '../asset/asset.service';
@@ -8,6 +9,7 @@ import { CollectionService } from '../asset/collection.service';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { SyncClient, SyncTransport } from './sync-client.service';
+import { Dict } from '../../common/util/types';
 
 const SYNC_DISABLED_ERROR = 'Sync not configured';
 
@@ -71,27 +73,28 @@ async function syncRequest<T>(
   }
 
   let body: BodyInit | undefined;
-  let contentType: string | undefined;
+  const headers: Dict = {};
 
   if (file) {
-    const formData = new FormData() as any;
+    const formData = new FormData();
     formData.append('data', JSON.stringify(data));
     formData.append('file_' + randomUUID(), file.stream, {
       knownLength: file.size
     });
-    body = formData;
-    contentType = formData;
+    body = formData as unknown as BodyInit;
+    Object.assign(headers, formData.getHeaders());
   } else if (data) {
     body = JSON.stringify(data);
-    contentType = 'application/json';
+    headers['content-type'] = 'application/json';
   }
 
+  console.log(body);
   const res = await fetch(syncConfig.url + endpoint, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${syncConfig.auth}`,
       accept: 'application/json',
-      'content-type': contentType as string
+      ...headers
     },
     body
   });

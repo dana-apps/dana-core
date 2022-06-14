@@ -175,6 +175,20 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
   }
 
   /**
+   * Returns the local filesystem path to a rendition for a stored file.
+   *
+   * @param archive The archive to resolve a rendition for
+   * @param mediaFile Media file to return a rendition path
+   * @returns Path to the media file's rendition
+   */
+  resolveRendition(archive: ArchivePackage, mediaFile: MediaFile) {
+    return MediaFileService.resolveRenditionUri(
+      archive,
+      this.getRenditionUri(archive, mediaFile)
+    );
+  }
+
+  /**
    * List all media files in an archive
    *
    * @param archive Archive to list media from
