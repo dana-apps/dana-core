@@ -44,7 +44,7 @@ export const NavListSection: FC<NavListSectionProps> = ({
   </Box>
 );
 
-interface NavListItemProps {
+export interface NavListItemProps {
   /** Label presented to user */
   title: string;
 

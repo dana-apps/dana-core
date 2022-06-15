@@ -50,7 +50,7 @@ describe(AssetService, () => {
     const asset = requireSuccess(
       await fixture.service.createAsset(
         fixture.archive,
-        fixture.rootCollection.id,
+        fixture.assetCollection.id,
         {
           metadata: {
             requiredProperty: ['1'],
@@ -72,7 +72,7 @@ describe(AssetService, () => {
     expect(
       await fixture.service.listAssets(
         fixture.archive,
-        fixture.rootCollection.id
+        fixture.assetCollection.id
       )
     ).toEqual(
       expect.objectContaining({
@@ -108,7 +108,7 @@ describe(AssetService, () => {
     expect(
       await fixture.service.listAssets(
         fixture.archive,
-        fixture.rootCollection.id
+        fixture.assetCollection.id
       )
     ).toEqual(
       expect.objectContaining({
@@ -130,7 +130,7 @@ describe(AssetService, () => {
 
     const res = await fixture.service.createAsset(
       fixture.archive,
-      fixture.rootCollection.id,
+      fixture.assetCollection.id,
       {
         metadata: {}
       }
@@ -150,7 +150,7 @@ describe(AssetService, () => {
     const asset = requireSuccess(
       await fixture.service.createAsset(
         fixture.archive,
-        fixture.rootCollection.id,
+        fixture.assetCollection.id,
         {
           metadata: {
             requiredProperty: ['1']
@@ -336,7 +336,7 @@ describe(AssetService, () => {
       const referencingRecord = requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           { metadata: { [dbProperty.id]: [targetRecord.id] } }
         )
       );
@@ -379,7 +379,7 @@ describe(AssetService, () => {
       const referencingRecord = requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           { metadata: { [dbProperty.id]: [targetRecord.id] } }
         )
       );
@@ -428,7 +428,7 @@ describe(AssetService, () => {
       const referencingRecord = requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           { metadata: { [dbProperty.id]: [targetRecord.id, anotherRecord.id] } }
         )
       );
@@ -480,7 +480,7 @@ describe(AssetService, () => {
       requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           {
             metadata: {
               [dbProperty.id]: targedRecordIds
@@ -507,7 +507,7 @@ async function setup() {
   const collectionService = new CollectionService();
   const mediaService = new MediaFileService();
   const service = new AssetService(collectionService, mediaService);
-  const rootCollection = await collectionService.getRootAssetCollection(
+  const assetCollection = await collectionService.getRootAssetCollection(
     archive
   );
   const rootDbCollection = await collectionService.getRootDatabaseCollection(
@@ -515,7 +515,7 @@ async function setup() {
   );
   await collectionService.updateCollectionSchema(
     archive,
-    rootCollection.id,
+    assetCollection.id,
     SCHEMA
   );
 
@@ -523,7 +523,7 @@ async function setup() {
     givenTheSchema: async (schema: SchemaProperty[]) => {
       await collectionService.updateCollectionSchema(
         archive,
-        rootCollection.id,
+        assetCollection.id,
         schema
       );
       return schema;
@@ -550,7 +550,7 @@ async function setup() {
     },
     archive,
     collectionService,
-    rootCollection,
+    assetCollection,
     mediaService,
     service
   };
