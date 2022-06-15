@@ -156,7 +156,9 @@ async function setup() {
 
 async function setupInstance(schema?: SchemaProperty[]) {
   const tmp = await getTempfiles();
-  const archive = await getTempPackage(tmp());
+  const archive = await getTempPackage(tmp(), {
+    getCmsSyncConfig: async () => ({ auth: 'dummy', url: 'http://mycms.com' })
+  });
 
   const collectionService = new CollectionService();
   const mediaService = new MediaFileService();

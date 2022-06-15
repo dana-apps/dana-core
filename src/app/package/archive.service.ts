@@ -158,6 +158,6 @@ function readSchema() {
   };
 }
 
-interface ArchiveHooks {
+export interface ArchiveHooks {
   getCmsSyncConfig?(path: string): Promise<ArchiveSyncConfig | undefined>;
 }

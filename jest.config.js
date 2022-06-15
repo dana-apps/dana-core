@@ -6,6 +6,7 @@ module.exports = {
     '\\.(css|scss)$': require.resolve('./src/test/file-mock.ts')
   },
   testPathIgnorePatterns: [
+    '<rootDir>/lib/',
     '/node_modules/',
     '<rootDir>/build/',
     '<rootDir>/dist/'

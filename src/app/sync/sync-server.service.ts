@@ -41,6 +41,7 @@ export class SyncServer {
   async beginSync(archive: ArchivePackage, syncRequest: SyncRequest) {
     const validationResult =
       this.config.syncValidator && this.config.syncValidator(syncRequest);
+
     if (validationResult?.status === 'error') {
       return validationResult;
     }
