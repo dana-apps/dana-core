@@ -195,19 +195,17 @@ function renderIfPresent<T extends Resource[], Return>(
 function useCreateMenu() {
   const rpc = useRPC();
   const error = useErrorDisplay();
-  const root = useGet(GetRootDatabaseCollection);
+  const rootDb = unwrapGetResult(useGet(GetRootDatabaseCollection));
+  const rootAssets = unwrapGetResult(useGet(GetRootAssetsCollection));
   const navigate = useNavigate();
 
-  const createControlledDatabase = async () => {
-    if (!root || root.status !== 'ok') {
-      return;
-    }
-
+  const collectionCreator = (parentId: string, title: string) => async () => {
     const res = await rpc(CreateCollection, {
-      parent: root.value.id,
+      parent: parentId,
       schema: [{ ...defaultSchemaProperty(0), label: 'Title' }],
-      title: 'New Database'
+      title
     });
+
     if (res.status !== 'ok') {
       return error.unexpected(res.error);
     }
@@ -218,10 +216,15 @@ function useCreateMenu() {
   return useContextMenu({
     on: 'click',
     options: [
-      {
+      rootDb && {
         id: 'newControlledDatabase',
         label: 'New Controlled Database',
-        action: createControlledDatabase
+        action: collectionCreator(rootDb.id, 'New Database')
+      },
+      rootAssets && {
+        id: 'newAssetCollection',
+        label: 'New Asset Collection',
+        action: collectionCreator(rootAssets.id, 'New Collection')
       }
     ]
   });
