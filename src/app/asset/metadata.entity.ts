@@ -263,7 +263,11 @@ export class ControlledDatabaseSchemaPropertyValue
 
     const stringValue = toOptionalString(value);
     const metadata = stringValue
-      ? collection.getLabelRecordMetadata(stringValue)
+      ? await context.collections.getLabelRecordMetadata(
+          context.archive,
+          collection.id,
+          stringValue
+        )
       : undefined;
 
     if (!metadata) {

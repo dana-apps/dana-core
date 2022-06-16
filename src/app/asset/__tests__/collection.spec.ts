@@ -73,6 +73,79 @@ describe(CollectionService, () => {
     );
   });
 
+  test('merges with schema from parents', async () => {
+    const fixture = await setup();
+    const root = await fixture.service.getRootAssetCollection(fixture.archive);
+
+    await fixture.service.updateCollectionSchema(fixture.archive, root.id, [
+      {
+        id: 'dogtype',
+        label: 'Dog Type',
+        required: true,
+        repeated: false,
+        type: SchemaPropertyType.FREE_TEXT
+      }
+    ]);
+
+    const collection = await fixture.service.createCollection(
+      fixture.archive,
+      root.id,
+      {
+        title: 'Child collection',
+        schema: [
+          {
+            id: 'fluffiness',
+            label: 'Fluffyness',
+            required: true,
+            repeated: true,
+            type: SchemaPropertyType.FREE_TEXT
+          }
+        ]
+      }
+    );
+
+    expect(collection.schema).toEqual([
+      {
+        id: 'dogtype',
+        label: 'Dog Type',
+        required: true,
+        repeated: false,
+        type: SchemaPropertyType.FREE_TEXT
+      },
+      {
+        id: 'fluffiness',
+        label: 'Fluffyness',
+        required: true,
+        repeated: true,
+        type: SchemaPropertyType.FREE_TEXT
+      }
+    ]);
+
+    const validationResult = await fixture.service.validateItemsForCollection(
+      fixture.archive,
+      collection.id,
+      [
+        {
+          id: 'myLab',
+          metadata: {
+            dogtype: ['Labrador'],
+            fluffiness: ['50%']
+          }
+        }
+      ]
+    );
+
+    expect(validationResult).toEqual(
+      expect.arrayContaining([
+        {
+          id: 'myLab',
+          metadata: { dogtype: ['Labrador'], fluffiness: ['50%'] },
+          success: true
+        }
+      ])
+    );
+  });
+
   test('altering the schema validates it against the existing archive', async () => {
     const fixture = await setup();
     const root = await fixture.service.getRootAssetCollection(fixture.archive);

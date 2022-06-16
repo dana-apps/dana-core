@@ -17,6 +17,7 @@ import { AssetCollectionEntity, AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
 import { SchemaPropertyValue } from './metadata.entity';
 import { never, required } from '../../common/util/assert';
+import { DefaultMap } from '../../common/util/collection';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -400,6 +401,9 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async deleteAssets(archive: ArchivePackage, deletedIds: string[]) {
     return archive.useDb(async (db) => {
       const deletedSet = new Set<unknown>(deletedIds);
+      const schemas = new DefaultMap((key: string) =>
+        this.collectionService.getCollectionSchema(archive, key)
+      );
 
       // Return true if, once `deletedIds` are removed, the property will have at least one remaining value
       const hasRemainingValuesAfterDeletingAssets = (
@@ -450,13 +454,15 @@ export class AssetService extends EventEmitter<AssetEvents> {
                 'Cannot resolve entity by id'
               );
 
+              const referencedSchema = await schemas.get(collection.id);
+
               errors.push({
                 assetId: reference.id,
                 collectionId: collection.id,
                 collectionTitle: collection.title,
                 propertyId: property.id,
                 propertyLabel:
-                  collection.schema.find((x) => x.id === property.id)?.label ??
+                  referencedSchema.find((x) => x.id === property.id)?.label ??
                   property.id,
                 assetTitle: asset.title
               });
@@ -512,11 +518,17 @@ export class AssetService extends EventEmitter<AssetEvents> {
    * @param opts
    * @returns
    */
-  private entityToAsset(
+  private async entityToAsset(
     archive: ArchivePackage,
     entity: AssetEntity,
     opts: GetAssetOpts | undefined
   ) {
+    const schema =
+      opts?.schema ??
+      (await this.collectionService.getCollectionSchema(
+        archive,
+        entity.collection.id
+      ));
     const { shallow } = opts ?? {};
     const titleField = entity.collection.schema.find(
       (x) => x.type === SchemaPropertyType.FREE_TEXT
@@ -541,9 +553,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
           ? {}
           : Object.fromEntries(
               await Promise.all(
-                entity.collection.schema.map(async (property) => [
+                schema.map(async (property) => [
                   property.id,
-                  await property.convertToMetadataItems(
+                  await SchemaPropertyValue.fromJson(
+                    property
+                  ).convertToMetadataItems(
                     {
                       archive,
                       collections: this.collectionService,
@@ -628,6 +642,11 @@ interface GetAssetOpts {
    * avoid an infinite recursion.
    **/
   shallow?: boolean;
+
+  /**
+   * Schema to use to interpret the metadata associated with the asset.
+   */
+  schema?: SchemaProperty[];
 }
 
 interface AssetEvents {

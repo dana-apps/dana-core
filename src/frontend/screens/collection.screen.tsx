@@ -4,8 +4,10 @@ import { FC, useCallback, useMemo } from 'react';
 import {
   Asset,
   AssetMetadata,
+  CollectionType,
   DeleteAssets,
   GetCollection,
+  GetRootAssetsCollection,
   ListAssets,
   SchemaProperty
 } from '../../common/asset.interfaces';
@@ -45,6 +47,7 @@ export const CollectionScreen: FC = () => {
     'Expected collectionId param'
   );
   const collection = unwrapGetResult(useGet(GetCollection, collectionId));
+  const rootAssetsCollection = unwrapGetResult(useGet(GetRootAssetsCollection));
   const assets = useList(
     ListAssets,
     () => (collection ? { collectionId: collection.id } : 'skip'),
@@ -56,13 +59,29 @@ export const CollectionScreen: FC = () => {
   const configMenu = useContextMenu({
     on: 'click',
     options: [
-      {
-        id: 'editSchema',
-        label: 'Edit Schema',
-        action: () => {
-          navigate(`/collection/${collectionId}/schema`);
+      collection &&
+        rootAssetsCollection && {
+          id: 'editSchema',
+          label: 'Edit Schema',
+          action: () => {
+            /**
+             * We currently only expose to users the ability to maintain a single schema for
+             * asset collections as we haven't implemented a UI that reflects schema inheritance.
+             *
+             * Edits to asset collection schemas are therefore done on the root collection, which get
+             * picked up by child collections via inheritance.
+             *
+             * We solve this differently for controlled databases – we instead don't expose the ability to create
+             * 'subcollections' of controlled databases. Controlled databases have a flat structure, so immediate
+             * children of the root controlled database get their own schema.
+             */
+            if (collection.type === CollectionType.CONTROLLED_DATABASE) {
+              navigate(`/collection/${collectionId}/schema`);
+            } else {
+              navigate(`/collection/${rootAssetsCollection.id}/schema`);
+            }
+          }
         }
-      }
     ]
   });
 
