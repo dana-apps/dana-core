@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { assert } from '../common/util/assert';
-import { ErrorResult, Result } from '../common/util/error';
+import { ErrorResult, OkResult, Result } from '../common/util/error';
 
 export function requireSuccess<T>(x: Result<T>) {
   assert(
@@ -13,7 +13,11 @@ export function requireSuccess<T>(x: Result<T>) {
 }
 
 export function requireFailure<T>(x: Result<unknown, T>) {
-  assert(x.status === 'error', 'Expected operation to fail. Got result:', x);
+  assert(
+    x.status === 'error',
+    'Expected operation to fail. Got result:',
+    (x as OkResult).value
+  );
 
   return x.error;
 }

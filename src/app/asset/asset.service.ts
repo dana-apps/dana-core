@@ -463,7 +463,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
     archive: ArchivePackage,
     assetIds: string[],
     collectionId: string
-  ) {
+  ): Promise<Result<object, FetchError | AggregatedValidationError>> {
     const res = await archive.useDb(async (db) => {
       const validationResult = await this.validateMoveAssets(
         archive,
