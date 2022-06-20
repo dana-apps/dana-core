@@ -1,9 +1,13 @@
 import { FC } from 'react';
 import {
   Collection,
-  GetSubcollections
+  GetAsset,
+  GetSubcollections,
+  MoveAssets,
+  ValidateMoveAssets
 } from '../../../common/asset.interfaces';
-import { unwrapGetResult, useListAll } from '../../ipc/ipc.hooks';
+import { unwrapGetResult, useListAll, useRPC } from '../../ipc/ipc.hooks';
+import { DropTarget } from './dnd.component';
 import { NavListItem, NavListItemProps } from './page-layouts.component';
 
 interface CollectionBrowserProps {
@@ -15,6 +19,7 @@ export const CollectionBrowser: FC<CollectionBrowserProps> = ({
   parentId,
   itemProps
 }) => {
+  const rpc = useRPC();
   const assetCollections = unwrapGetResult(
     useListAll(GetSubcollections, () => ({ parent: parentId }), [parentId])
   );
@@ -26,12 +31,32 @@ export const CollectionBrowser: FC<CollectionBrowserProps> = ({
   return (
     <>
       {assetCollections.map((collection) => (
-        <NavListItem
+        <DropTarget
           key={collection.id}
-          title={collection.title}
-          path={`/collection/${collection.id}`}
-          {...itemProps?.(collection)}
-        />
+          types={{
+            asset: {
+              accept: async (assetId) => {
+                return rpc(MoveAssets, {
+                  assetIds: [assetId],
+                  targetCollectionId: collection.id
+                });
+              },
+              validateDrop: async (assetId) => {
+                const result = await rpc(ValidateMoveAssets, {
+                  assetIds: [assetId],
+                  targetCollectionId: collection.id
+                });
+                return result.status === 'ok';
+              }
+            }
+          }}
+        >
+          <NavListItem
+            title={collection.title}
+            path={`/collection/${collection.id}`}
+            {...itemProps?.(collection)}
+          />
+        </DropTarget>
       ))}
     </>
   );

@@ -136,6 +136,7 @@ export const CollectionScreen: FC = () => {
           data={assets}
           contextMenuItems={assetContextMenu}
           onDoubleClickItem={assetOps.openDetailView}
+          dragConfig={(asset) => ({ type: 'asset', id: asset.id })}
         />
 
         <BottomBar

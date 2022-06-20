@@ -323,6 +323,32 @@ export const DeleteAssets = RpcInterface({
 });
 
 /**
+ * Validate moving one or more assets to another collection.
+ */
+export const ValidateMoveAssets = RpcInterface({
+  id: 'assets/validate-move',
+  request: z.object({
+    assetIds: z.array(z.string()),
+    targetCollectionId: z.string()
+  }),
+  response: z.object({}),
+  error: z.nativeEnum(FetchError).or(AggregatedValidationError)
+});
+
+/**
+ * Delete one or more assets.
+ */
+export const MoveAssets = RpcInterface({
+  id: 'assets/move',
+  request: z.object({
+    assetIds: z.array(z.string()),
+    targetCollectionId: z.string()
+  }),
+  response: z.object({}),
+  error: z.nativeEnum(FetchError).or(ReferentialIntegrityError)
+});
+
+/**
  * Update the metadata for an asset.
  *
  * Performs a full update – missing keys are treated as setting the metadata value to null.

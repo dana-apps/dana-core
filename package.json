@@ -54,6 +54,8 @@
     "polished": "^4.1.4",
     "react": "^17.0.2",
     "react-bootstrap-icons": "^1.7.2",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^17.0.2",
     "react-dropzone": "^14.2.1",
     "react-reflex": "^4.0.8",

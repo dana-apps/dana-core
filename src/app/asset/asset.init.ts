@@ -13,7 +13,9 @@ import {
   SearchAsset,
   DeleteAssets,
   AddAssetMedia,
-  RemoveAssetMedia
+  RemoveAssetMedia,
+  MoveAssets,
+  ValidateMoveAssets
 } from '../../common/asset.interfaces';
 import { ChangeEvent } from '../../common/resource';
 import { ok, okIfExists } from '../../common/util/error';
@@ -64,6 +66,24 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
   router.bindArchiveRpc(DeleteAssets, (archive, { assetIds }) => {
     return assetService.deleteAssets(archive, assetIds);
   });
+
+  router.bindArchiveRpc(
+    MoveAssets,
+    (archive, { assetIds, targetCollectionId }) => {
+      return assetService.moveAssets(archive, assetIds, targetCollectionId);
+    }
+  );
+
+  router.bindArchiveRpc(
+    ValidateMoveAssets,
+    (archive, { assetIds, targetCollectionId }) => {
+      return assetService.validateMoveAssets(
+        archive,
+        assetIds,
+        targetCollectionId
+      );
+    }
+  );
 
   router.bindArchiveRpc(
     CreateCollection,
