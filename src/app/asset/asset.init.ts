@@ -147,7 +147,7 @@ export function initAssets(router: ElectronRouter, media: MediaFileService) {
 
     router.emit(ChangeEvent, {
       type: GetAsset.id,
-      ids: updated
+      ids: updated.map((asset) => asset.id)
     });
   });
 

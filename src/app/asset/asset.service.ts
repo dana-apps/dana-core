@@ -91,7 +91,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
     if (res.status === 'ok') {
       this.emit('change', {
         archive,
-        created: [res.value.id],
+        created: [res.value],
         updated: [],
         deleted: []
       });
@@ -157,7 +157,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
     if (res.status === 'ok') {
       this.emit('change', {
         archive,
-        updated: [res.value.id],
+        updated: [res.value],
         created: [],
         deleted: []
       });
@@ -167,31 +167,35 @@ export class AssetService extends EventEmitter<AssetEvents> {
   }
 
   async addMedia(archive: ArchivePackage, assetId: string, filePath: string) {
-    const res = await archive.useDb(async (db) => {
+    const [res, collectionId] = await archive.useDb(async (db) => {
       const asset = await db.findOne(AssetEntity, assetId);
       if (!asset) {
-        return error({ filePath, error: FetchError.DOES_NOT_EXIST });
+        return [error({ filePath, error: FetchError.DOES_NOT_EXIST })];
       }
 
       const media = await this.mediaService.putFile(archive, filePath);
       if (media.status !== 'ok') {
-        return media;
+        return [media];
       }
 
       asset.mediaFiles.add(media.value);
-      return ok(
+      const res = ok(
         await this.mediaService
           .getMedia(archive, [media.value.id])
           .then((x) => x[0])
       );
+
+      return [res, asset.collection.id];
     });
 
-    this.emit('change', {
-      archive,
-      updated: [assetId],
-      created: [],
-      deleted: []
-    });
+    if (res.status === 'ok' && collectionId) {
+      this.emit('change', {
+        archive,
+        updated: [{ id: assetId, collectionId }],
+        created: [],
+        deleted: []
+      });
+    }
 
     return res;
   }
@@ -201,14 +205,17 @@ export class AssetService extends EventEmitter<AssetEvents> {
     assetId: string,
     mediaFileIds: string[]
   ) {
+    const asset = await archive.get(AssetEntity, assetId);
     const res = await this.mediaService.deleteFiles(archive, mediaFileIds);
 
-    this.emit('change', {
-      archive,
-      updated: [assetId],
-      created: [],
-      deleted: []
-    });
+    if (asset) {
+      this.emit('change', {
+        archive,
+        updated: [{ id: asset.id, collectionId: asset.collection.id }],
+        created: [],
+        deleted: []
+      });
+    }
 
     return res;
   }
@@ -638,7 +645,10 @@ export class AssetService extends EventEmitter<AssetEvents> {
         archive,
         updated: [],
         created: [],
-        deleted: deletedIds
+        deleted: assets.map((asset) => ({
+          id: asset.id,
+          collectionId: asset.collection.id
+        }))
       });
 
       await this.mediaService.deleteFiles(archive, mediaFileIds);
@@ -708,6 +718,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
       return {
         id: entity.id,
         title: typeof titleValue === 'string' ? titleValue : entity.id,
+        collectionId: entity.collection.id,
         media: shallow
           ? []
           : await this.mediaService.getMedia(
@@ -824,11 +835,11 @@ export interface AssetsChangedEvent {
   archive: ArchivePackage;
 
   /** Ids of newly created assets */
-  created: string[];
+  created: { id: string; collectionId: string }[];
 
   /** Ids of updated assets */
-  updated: string[];
+  updated: { id: string; collectionId: string }[];
 
   /** Ids of deleted assets */
-  deleted: string[];
+  deleted: { id: string; collectionId: string }[];
 }

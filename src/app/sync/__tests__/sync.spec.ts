@@ -130,7 +130,7 @@ const SCHEMA: SchemaProperty[] = [
 async function setup() {
   const client = await setupInstance(SCHEMA);
   const server = await setupInstance();
-  const syncServer = new SyncServer(server.mediaService);
+  const syncServer = new SyncServer(server.assets, server.mediaService);
 
   const transport: SyncTransport = {
     acceptAssets: (_, id, req) =>

@@ -24,6 +24,8 @@ import { ArchivePackage } from '../package/archive-package';
 import { hashStream, streamEnded } from '../util/stream-utils';
 import { MediaFileService } from '../media/media-file.service';
 import { SqlEntityManager } from '@mikro-orm/sqlite';
+import { AssetService } from '../asset/asset.service';
+import { PageRangeAll } from '../../common/ipc.interfaces';
 
 export interface SyncServerConfig {
   syncValidator?: (request: SyncRequest) => Result<void, string>;
@@ -31,6 +33,7 @@ export interface SyncServerConfig {
 
 export class SyncServer {
   constructor(
+    private assets: AssetService,
     private media: MediaFileService,
     private config: SyncServerConfig = {}
   ) {}
@@ -142,6 +145,18 @@ export class SyncServer {
       return error(FetchError.DOES_NOT_EXIST);
     }
 
+    const { items: deletedAssets } = await archive.list(
+      AssetEntity,
+      { id: Array.from(t.deleteAssets ?? []) },
+      { range: PageRangeAll }
+    );
+    const updatedAssets =
+      t?.assets?.filter((x) => !t?.createdAssets?.has(x.id)) ?? [];
+    const createdAssets =
+      t?.assets?.filter((x) => t?.createdAssets?.has(x.id)) ?? [];
+
+    const createMedia = Array.from(t?.putMedia?.map((x) => x.id) ?? []);
+
     try {
       t.stop();
 
@@ -237,6 +252,28 @@ export class SyncServer {
         this.logger.info('Delete', t.deleteMedia?.size ?? 0, 'files');
         await this.media.deleteFiles(archive, Array.from(t.deleteMedia ?? []));
       }
+
+      this.media.emit('change', {
+        archive,
+        created: createMedia,
+        deleted: [] // handled above
+      });
+
+      this.assets.emit('change', {
+        archive,
+        created: createdAssets.map((x) => ({
+          id: x.id,
+          collectionId: x.collection
+        })),
+        deleted: deletedAssets.map((x) => ({
+          id: x.id,
+          collectionId: x.collection.id
+        })),
+        updated: updatedAssets.map((x) => ({
+          id: x.id,
+          collectionId: x.collection
+        }))
+      });
 
       this.logger.info('Sync transaction completed:', t.id);
       return ok();

@@ -82,7 +82,9 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
       return ok(mediaFile);
     });
 
-    this.emit('change', { archive });
+    if (res.status === 'ok') {
+      this.emit('change', { archive, created: [res.value.id], deleted: [] });
+    }
 
     return res;
   }
@@ -147,13 +149,12 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
           this.log.info('Deleted file', file.id);
         } catch (err) {
           this.log.error('Failed to delete file', file.id, err);
-
           results.push(error(IngestError.IO_ERROR));
         }
       }
     });
 
-    this.emit('change', { archive });
+    this.emit('change', { archive, created: [], deleted: ids });
 
     return results;
   }
@@ -189,13 +190,16 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
   }
 
   /**
-   * List all media files in an archive
+   * List ids of all media files in an archive
    *
    * @param archive Archive to list media from
    * @returns List of media files
    */
-  listMedia(archive: ArchivePackage) {
-    return archive.list(MediaFile);
+  async allIds(archive: ArchivePackage) {
+    const items = await archive.useDb((db) =>
+      db.find(MediaFile, {}, { fields: ['id'] })
+    );
+    return items.map((x) => x.id);
   }
 
   /**
@@ -285,6 +289,8 @@ export class MediaFileService extends EventEmitter<MediaEvents> {
 
 interface MediaChangeEvent {
   archive: ArchivePackage;
+  created: string[];
+  deleted: string[];
 }
 
 interface MediaEvents {

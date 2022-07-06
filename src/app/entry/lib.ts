@@ -1,3 +1,6 @@
+import express from 'express';
+import http from 'http';
+
 import { AssetService } from '../asset/asset.service';
 import { CollectionService } from '../asset/collection.service';
 import { MediaFileService } from '../media/media-file.service';
@@ -22,5 +25,16 @@ export const collections = new CollectionService();
 export const assets = new AssetService(collections, media);
 
 export function createHttpSync(config: CreateSyncOpts) {
-  return createSyncServer(media, config);
+  return createSyncServer(assets, media, config);
+}
+
+export function startHttpSync(config: CreateSyncOpts & { port: string }) {
+  const app = express();
+  app.use(createHttpSync(config));
+
+  return new Promise<http.Server>((resolve) => {
+    const server: http.Server = app.listen(config.port ?? 1121, () =>
+      resolve(server)
+    );
+  });
 }

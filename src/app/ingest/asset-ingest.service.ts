@@ -143,6 +143,21 @@ export class AssetIngestService extends EventEmitter<Events> {
       { populate: ['files.media'], range }
     );
 
+    const ingestOperation = this.archiveSessions
+      .get(archive.id)
+      .sessions.get(sessionId);
+
+    if (!ingestOperation) {
+      return {
+        total: 0,
+        items: [],
+        range: {
+          limit: 0,
+          offset: 0
+        }
+      };
+    }
+
     return {
       ...res,
       items: await Promise.all(
@@ -150,6 +165,7 @@ export class AssetIngestService extends EventEmitter<Events> {
           id: entity.id,
           title: entity.id,
           accessControl: entity.accessControl,
+          collectionId: ingestOperation.targetCollectionId,
           metadata: mapValues(entity.metadata, (rawValue) => ({
             rawValue,
             presentationValue: rawValue.map((x) => ({

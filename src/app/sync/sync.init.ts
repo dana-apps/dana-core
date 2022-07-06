@@ -88,7 +88,6 @@ async function syncRequest<T>(
     headers['content-type'] = 'application/json';
   }
 
-  console.log(body);
   const res = await fetch(syncConfig.url + endpoint, {
     method: 'POST',
     headers: {

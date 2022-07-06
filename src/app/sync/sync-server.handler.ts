@@ -12,6 +12,7 @@ import {
   AcceptMediaRequest,
   SyncRequest
 } from '../../common/sync.interfaces';
+import { AssetService } from '../asset/asset.service';
 
 export interface CreateSyncOpts extends SyncServerConfig {
   archive: ArchivePackage;
@@ -19,11 +20,12 @@ export interface CreateSyncOpts extends SyncServerConfig {
 }
 
 export function createSyncServer(
+  assets: AssetService,
   media: MediaFileService,
   { secretKey, archive, ...config }: CreateSyncOpts
 ): RequestListener {
   const server = express();
-  const syncer = new SyncServer(media, config);
+  const syncer = new SyncServer(assets, media, config);
 
   server.use((req, res, next) => {
     if (req.get('authorization') !== `Bearer ${secretKey}`) {

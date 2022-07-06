@@ -1,6 +1,6 @@
 {
   "name": "dana-core",
-  "version": "0.2.5",
+  "version": "0.2.9",
   "author": "Common Knowledge <hello@commonknowledge.coop>",
   "files": [
     "lib",

@@ -82,7 +82,8 @@ export const CreateAssetScreen = () => {
           media: [],
           metadata: {},
           accessControl: AccessControl.RESTRICTED,
-          title: 'New Asset'
+          title: 'New Asset',
+          collectionId: collection.id
         }}
         edits={props}
         onEdit={setProps}

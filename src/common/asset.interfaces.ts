@@ -70,7 +70,10 @@ export const Asset = z.object({
   media: z.array(Media),
 
   /** Information about access rights */
-  accessControl: z.nativeEnum(AccessControl)
+  accessControl: z.nativeEnum(AccessControl),
+
+  /** Parent collection */
+  collectionId: z.string()
 });
 export type Asset = z.TypeOf<typeof Asset>;
 export type AssetMetadata = Asset['metadata'];

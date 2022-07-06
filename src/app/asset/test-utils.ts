@@ -16,6 +16,7 @@ export const someAsset = (props: Partial<Asset> = {}): Asset => ({
   id: faker.datatype.uuid(),
   media: [],
   metadata: {},
+  collectionId: faker.datatype.uuid(),
   title: faker.word.noun(),
   accessControl: AccessControl.RESTRICTED,
   ...props
