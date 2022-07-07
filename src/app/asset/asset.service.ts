@@ -525,7 +525,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
     });
 
     if (res.status === 'ok') {
-      this.emit('change', { updated: assetIds, created: [], deleted: [] });
+      this.emit('change', {
+        archive,
+        updated: assetIds.map((id) => ({ id, collectionId })),
+        created: [],
+        deleted: []
+      });
     }
 
     return res;
