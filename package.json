@@ -40,7 +40,7 @@
     "@mdx-js/react": "^2.1.1",
     "@mikro-orm/core": "^5.1.1",
     "@mikro-orm/migrations": "^5.1.1",
-    "@mikro-orm/sqlite": "^5.1.1",
+    "@mikro-orm/sqlite": "^5.2.3",
     "@testing-library/user-event": "^14.1.0",
     "adm-zip": "^0.5.9",
     "electron-devtools-installer": "^3.2.0",
