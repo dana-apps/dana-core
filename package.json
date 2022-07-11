@@ -81,7 +81,7 @@
     "@babel/preset-react": "^7.16.7",
     "@babel/preset-typescript": "^7.16.7",
     "@faker-js/faker": "^6.0.0",
-    "@mikro-orm/cli": "^5.1.1",
+    "@mikro-orm/cli": "^5.2.3",
     "@storybook/addon-actions": "^6.4.19",
     "@storybook/addon-essentials": "^6.4.19",
     "@storybook/addon-interactions": "^6.4.19",
