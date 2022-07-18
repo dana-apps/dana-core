@@ -41,7 +41,7 @@
     "@mikro-orm/core": "^5.1.1",
     "@mikro-orm/migrations": "^5.1.1",
     "@mikro-orm/sqlite": "^5.1.1",
-    "@testing-library/user-event": "^14.1.0",
+    "@testing-library/user-event": "^14.2.6",
     "adm-zip": "^0.5.9",
     "electron-devtools-installer": "^3.2.0",
     "electron-is-dev": "^2.0.0",
