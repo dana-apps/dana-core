@@ -465,7 +465,8 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
       id: entity.id,
       schema: schema.map((e) => Object.assign({}, e.toJson())),
       title: entity.title,
-      type: await this.inferCollectionType(archive, entity)
+      type: await this.inferCollectionType(archive, entity),
+      parent: entity.parent?.id
     };
   }
 
@@ -526,8 +527,9 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
           return CollectionType.CONTROLLED_DATABASE;
         }
 
-        await db.populate(entity, ['parent']);
-        entity = entity.parent ?? undefined;
+        entity = entity.parent
+          ? await archive.get(AssetCollectionEntity, entity.parent.id)
+          : undefined;
       }
 
       throw Error('Invalid collection: unknown collection root');

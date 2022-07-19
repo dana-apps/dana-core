@@ -6,7 +6,7 @@ export class Migration20220523155306 extends Migration {
     const collectionUuid = randomUUID();
 
     this.addSql(
-      `insert into asset_collection (id, schema, title, parent_id) select '${collectionUuid}', null, 'Main Collection', id from asset_collection where id = '$root'`
+      `insert into asset_collection (id, schema, title, parent_id) select '${collectionUuid}', '[]', 'Main Collection', id from asset_collection where id = '$root'`
     );
     this.addSql(
       `update asset set collection_id = '${collectionUuid}' where collection_id = '$root'`

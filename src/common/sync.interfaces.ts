@@ -1,13 +1,8 @@
 import { z } from 'zod';
-import { AccessControl, Asset, Collection } from './asset.interfaces';
-import { Media } from './media.interfaces';
+import { AccessControl, Collection } from './asset.interfaces';
 import { hashJson } from './util/collection';
 
-export const SyncedCollection = Collection.and(
-  z.object({
-    parent: z.string().optional()
-  })
-);
+export const SyncedCollection = Collection;
 export type SyncedCollection = z.TypeOf<typeof SyncedCollection>;
 
 export const SyncedAsset = z.object({

@@ -207,7 +207,8 @@ export const Collection = z.object({
   id: z.string(),
   title: z.string(),
   type: z.nativeEnum(CollectionType),
-  schema: z.array(SchemaProperty)
+  schema: z.array(SchemaProperty),
+  parent: z.string().optional()
 });
 export type Collection = z.TypeOf<typeof Collection>;
 

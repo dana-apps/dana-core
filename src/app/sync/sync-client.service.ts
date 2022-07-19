@@ -132,7 +132,7 @@ export class SyncClient {
     );
 
     return this.transport.beginSync(archive, {
-      collections,
+      collections: collections,
       assets: assets.items.map((asset) => ({
         id: asset.id,
         sha256: hashAsset(this.assetJson(asset))
