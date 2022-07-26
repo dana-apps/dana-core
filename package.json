@@ -80,7 +80,7 @@
     "@emotion/react": "^11.8.2",
     "@faker-js/faker": "^6.0.0",
     "@mdx-js/react": "^2.1.1",
-    "@mikro-orm/cli": "^5.1.1",
+    "@mikro-orm/cli": "^5.2.4",
     "@storybook/addon-actions": "^6.4.19",
     "@storybook/addon-essentials": "^6.4.19",
     "@storybook/addon-interactions": "^6.4.19",
