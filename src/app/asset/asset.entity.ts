@@ -8,10 +8,7 @@ import {
   Property
 } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
-import {
-  AccessControl,
-  SchemaPropertyType
-} from '../../common/asset.interfaces';
+import { AccessControl } from '../../common/asset.interfaces';
 import { Dict } from '../../common/util/types';
 import { MediaFile } from '../media/media-file.entity';
 import { SchemaPropertyValue } from './metadata.entity';

@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import {
   Collection,
-  GetAsset,
   GetSubcollections,
   MoveAssets,
   ValidateMoveAssets

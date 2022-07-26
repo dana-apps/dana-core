@@ -3,7 +3,6 @@
 import { FC, useCallback, useMemo } from 'react';
 import {
   Asset,
-  AssetMetadata,
   CollectionType,
   DeleteAssets,
   GetCollection,

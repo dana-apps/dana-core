@@ -36,7 +36,7 @@ import { CollectionBrowser } from '../ui/components/collection-browser.component
 /**
  * The wrapper component for an archive window. Shows the screen's top-level navigation and renders the active route.
  */
-export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
+export const ArchiveScreen: FC<{ title?: string }> = () => {
   const imports = useListAll(ListIngestSession, () => ({}), []);
   const rpc = useRPC();
   const navigate = useNavigate();

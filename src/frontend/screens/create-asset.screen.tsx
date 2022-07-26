@@ -6,7 +6,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Button, Flex, Text } from 'theme-ui';
 import {
   AccessControl,
-  AssetMetadata,
   CreateAsset,
   GetCollection
 } from '../../common/asset.interfaces';
