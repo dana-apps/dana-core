@@ -6,6 +6,7 @@ import {
   FC,
   FocusEvent,
   FormEvent,
+  forwardRef,
   ReactElement,
   ReactNode,
   useCallback,
@@ -21,6 +22,8 @@ import {
   useContextMenu
 } from '../hooks/menu.hooks';
 import { useOnClickOutside } from '../hooks/mouse.hooks';
+import { DropTargetChildProps } from './dnd.component';
+import { useMergedRefs } from '../hooks/state.hooks';
 
 interface NavListSectionProps {
   /** Section header presented to user */
@@ -44,7 +47,7 @@ export const NavListSection: FC<NavListSectionProps> = ({
   </Box>
 );
 
-interface NavListItemProps {
+export interface NavListItemProps extends DropTargetChildProps {
   /** Label presented to user */
   title: string;
 
@@ -69,159 +72,167 @@ interface NavListItemProps {
 /**
  * Link item in a top-level navigation list. Renders active state.
  */
-export const NavListItem: FC<NavListItemProps> = ({
-  path,
-  title: label,
-  defaultEditing = false,
-  onRename,
-  onDelete,
-  status,
-  contextMenuItems = [],
-  ...props
-}) => {
-  const isActive = useLocation().pathname === path;
-  const [editing, setEditing] = useState(defaultEditing);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const contextMenu = useContextMenu({
-    options: [
-      onRename && {
-        id: 'rename',
-        label: 'Rename',
-        action: () => {
-          setEditing(true);
+export const NavListItem: FC<NavListItemProps> = forwardRef(
+  (
+    {
+      path,
+      title: label,
+      defaultEditing = false,
+      onRename,
+      onDelete,
+      status,
+      contextMenuItems = [],
+      dropAccepted,
+      ...props
+    },
+    ref
+  ) => {
+    const isActive = useLocation().pathname === path;
+    const [editing, setEditing] = useState(defaultEditing);
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
+    const contextMenu = useContextMenu({
+      options: [
+        onRename && {
+          id: 'rename',
+          label: 'Rename',
+          action: () => {
+            setEditing(true);
+          }
+        },
+        onDelete && {
+          id: 'delete',
+          label: 'Delete',
+          action: onDelete
+        },
+        ...(contextMenuItems.length > 0
+          ? [ContextSeparator, ...contextMenuItems]
+          : [])
+      ]
+    });
+
+    const finishEditing = useCallback(
+      async (el: HTMLInputElement) => {
+        if (el && onRename && el.value.trim() && el.value.trim() !== label) {
+          await onRename(el.value);
+
+          // Ugly hack: Prevent old value from flickering back in
+          await new Promise((resolve) => setTimeout(resolve, 250));
         }
+        setEditing(false);
       },
-      onDelete && {
-        id: 'delete',
-        label: 'Delete',
-        action: onDelete
-      },
-      ...(contextMenuItems.length > 0
-        ? [ContextSeparator, ...contextMenuItems]
-        : [])
-    ]
-  });
-
-  const finishEditing = useCallback(
-    async (el: HTMLInputElement) => {
-      if (el && onRename && el.value.trim() && el.value.trim() !== label) {
-        await onRename(el.value);
-
-        // Ugly hack: Prevent old value from flickering back in
-        await new Promise((resolve) => setTimeout(resolve, 250));
-      }
-      setEditing(false);
-    },
-    [label, onRename]
-  );
-
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLElement>) => {
-      event.preventDefault();
-      const el = event.currentTarget.querySelector<HTMLInputElement>(
-        'input[name="value"]'
-      );
-
-      if (el) {
-        finishEditing(el);
-      }
-    },
-    [finishEditing]
-  );
-
-  const handleBlur = useCallback(
-    async (event: FocusEvent<HTMLInputElement>) => {
-      finishEditing(event.currentTarget);
-    },
-    [finishEditing]
-  );
-
-  useOnClickOutside(wrapperRef, () => {
-    if (editing && wrapperRef.current) {
-      const input = wrapperRef.current.querySelector<HTMLInputElement>(
-        'input[name="value"]'
-      );
-      if (input) {
-        finishEditing(input);
-      }
-    }
-  });
-
-  const content = (
-    <Flex
-      {...contextMenu.triggerProps}
-      ref={wrapperRef}
-      tabIndex={0}
-      sx={{
-        variant:
-          !isActive && (editing || contextMenu.visible)
-            ? 'listItems.active'
-            : undefined,
-        flexDirection: 'row',
-        alignItems: 'center',
-        bg: isActive ? 'highlight' : undefined,
-        p: 2,
-        px: 3,
-        fontSize: 1,
-        marginTop: '1px',
-        color: isActive ? 'highlightContrast' : undefined,
-        '&:hover': {
-          bg: isActive ? undefined : 'highlightHint'
-        }
-      }}
-      {...props}
-    >
-      {!editing && (
-        <span tabIndex={-1} sx={{ flex: 1 }}>
-          {label}
-        </span>
-      )}
-
-      {editing && (
-        <form onSubmit={handleSubmit}>
-          <input
-            ref={focusOnMount}
-            onBlur={handleBlur}
-            name="value"
-            sx={{
-              flex: 1,
-              p: 0,
-              border: 'none',
-              outline: 'none',
-              bg: 'transparent',
-              letterSpacing: 'inherit',
-              fontSize: 'inherit',
-              fontFamily: 'inherit',
-              fontWeight: 'inherit',
-              color: isActive ? 'highlightContrast' : 'text'
-            }}
-            defaultValue={label}
-          />
-        </form>
-      )}
-
-      {status}
-    </Flex>
-  );
-
-  if (editing) {
-    return (
-      <span sx={{ color: 'inherit', textDecoration: 'inherit' }} {...props}>
-        {content}
-      </span>
+      [label, onRename]
     );
-  } else {
-    return (
-      <NavLink
-        sx={{ color: 'inherit', textDecoration: 'inherit' }}
-        to={path}
+
+    const handleSubmit = useCallback(
+      async (event: FormEvent<HTMLElement>) => {
+        event.preventDefault();
+        const el = event.currentTarget.querySelector<HTMLInputElement>(
+          'input[name="value"]'
+        );
+
+        if (el) {
+          finishEditing(el);
+        }
+      },
+      [finishEditing]
+    );
+
+    const handleBlur = useCallback(
+      async (event: FocusEvent<HTMLInputElement>) => {
+        finishEditing(event.currentTarget);
+      },
+      [finishEditing]
+    );
+
+    useOnClickOutside(wrapperRef, () => {
+      if (editing && wrapperRef.current) {
+        const input = wrapperRef.current.querySelector<HTMLInputElement>(
+          'input[name="value"]'
+        );
+        if (input) {
+          finishEditing(input);
+        }
+      }
+    });
+
+    const refs = useMergedRefs(ref, wrapperRef);
+
+    const content = (
+      <Flex
+        {...contextMenu.triggerProps}
+        ref={refs}
+        tabIndex={0}
+        sx={{
+          variant:
+            (!isActive && (editing || contextMenu.visible)) || dropAccepted
+              ? 'listItems.active'
+              : undefined,
+          flexDirection: 'row',
+          alignItems: 'center',
+          bg: isActive ? 'highlight' : undefined,
+          p: 2,
+          px: 3,
+          fontSize: 1,
+          marginTop: '1px',
+          color: isActive ? 'highlightContrast' : undefined,
+          '&:hover': {
+            bg: isActive ? undefined : 'highlightHint'
+          }
+        }}
         {...props}
       >
-        {content}
-      </NavLink>
+        {!editing && (
+          <span tabIndex={-1} sx={{ flex: 1 }}>
+            {label}
+          </span>
+        )}
+
+        {editing && (
+          <form onSubmit={handleSubmit}>
+            <input
+              ref={focusOnMount}
+              onBlur={handleBlur}
+              name="value"
+              sx={{
+                flex: 1,
+                p: 0,
+                border: 'none',
+                outline: 'none',
+                bg: 'transparent',
+                letterSpacing: 'inherit',
+                fontSize: 'inherit',
+                fontFamily: 'inherit',
+                fontWeight: 'inherit',
+                color: isActive ? 'highlightContrast' : 'text'
+              }}
+              defaultValue={label}
+            />
+          </form>
+        )}
+
+        {status}
+      </Flex>
     );
+
+    if (editing) {
+      return (
+        <span sx={{ color: 'inherit', textDecoration: 'inherit' }} {...props}>
+          {content}
+        </span>
+      );
+    } else {
+      return (
+        <NavLink
+          sx={{ color: 'inherit', textDecoration: 'inherit' }}
+          to={path}
+          {...props}
+        >
+          {content}
+        </NavLink>
+      );
+    }
   }
-};
+);
 
 export interface ArchiveWindowLayoutProps {
   /** Top-level navigation view */

@@ -54,7 +54,7 @@ describe(AssetService, () => {
     const asset = requireSuccess(
       await fixture.service.createAsset(
         fixture.archive,
-        fixture.rootCollection.id,
+        fixture.assetCollection.id,
         {
           accessControl: AccessControl.RESTRICTED,
           metadata: {
@@ -77,7 +77,7 @@ describe(AssetService, () => {
     expect(
       await fixture.service.listAssets(
         fixture.archive,
-        fixture.rootCollection.id
+        fixture.assetCollection.id
       )
     ).toEqual(
       expect.objectContaining({
@@ -113,7 +113,7 @@ describe(AssetService, () => {
     expect(
       await fixture.service.listAssets(
         fixture.archive,
-        fixture.rootCollection.id
+        fixture.assetCollection.id
       )
     ).toEqual(
       expect.objectContaining({
@@ -135,7 +135,7 @@ describe(AssetService, () => {
 
     const res = await fixture.service.createAsset(
       fixture.archive,
-      fixture.rootCollection.id,
+      fixture.assetCollection.id,
       {
         accessControl: AccessControl.RESTRICTED,
         metadata: {}
@@ -156,7 +156,7 @@ describe(AssetService, () => {
     const asset = requireSuccess(
       await fixture.service.createAsset(
         fixture.archive,
-        fixture.rootCollection.id,
+        fixture.assetCollection.id,
         {
           accessControl: AccessControl.RESTRICTED,
           metadata: {
@@ -350,7 +350,7 @@ describe(AssetService, () => {
       const referencingRecord = requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
             metadata: { [dbProperty.id]: [targetRecord.id] }
@@ -397,7 +397,7 @@ describe(AssetService, () => {
       const referencingRecord = requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
             metadata: { [dbProperty.id]: [targetRecord.id] }
@@ -451,7 +451,7 @@ describe(AssetService, () => {
       const referencingRecord = requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
             metadata: { [dbProperty.id]: [targetRecord.id, anotherRecord.id] }
@@ -508,7 +508,7 @@ describe(AssetService, () => {
       requireSuccess(
         await fixture.service.createAsset(
           fixture.archive,
-          fixture.rootCollection.id,
+          fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
             metadata: {
@@ -527,6 +527,78 @@ describe(AssetService, () => {
       ).toHaveProperty('total', 2);
     });
   });
+
+  describe('moving assets', () => {
+    test('assets can be moved between compatible collections', async () => {
+      const fixture = await setup();
+      const otherCollection = await fixture.collectionService.createCollection(
+        fixture.archive,
+        fixture.rootAssetCollection.id,
+        { title: 'Other Collection', schema: [] }
+      );
+      const asset = requireSuccess(
+        await fixture.service.createAsset(
+          fixture.archive,
+          fixture.assetCollection.id,
+          {
+            metadata: { requiredProperty: ['Hello'] },
+            accessControl: AccessControl.RESTRICTED
+          }
+        )
+      );
+
+      requireSuccess(
+        await fixture.service.moveAssets(
+          fixture.archive,
+          [asset.id],
+          otherCollection.id
+        )
+      );
+      const oldCollectionAssets = await fixture.service.listAssets(
+        fixture.archive,
+        fixture.assetCollection.id
+      );
+      const newCollectionAssets = await fixture.service.listAssets(
+        fixture.archive,
+        otherCollection.id
+      );
+
+      expect(oldCollectionAssets.total).toBe(0);
+      expect(newCollectionAssets.total).toBe(1);
+    });
+  });
+
+  test('assets cannot be moved between incompatible collections', async () => {
+    const fixture = await setup();
+
+    const database = await fixture.givenAControlledDatabaseWithSchema([]);
+
+    const asset = requireSuccess(
+      await fixture.service.createAsset(
+        fixture.archive,
+        fixture.assetCollection.id,
+        {
+          metadata: { requiredProperty: ['Hello'] },
+          accessControl: AccessControl.RESTRICTED
+        }
+      )
+    );
+
+    requireFailure(
+      await fixture.service.moveAssets(fixture.archive, [asset.id], database.id)
+    );
+    const oldCollectionAssets = await fixture.service.listAssets(
+      fixture.archive,
+      fixture.assetCollection.id
+    );
+    const newCollectionAssets = await fixture.service.listAssets(
+      fixture.archive,
+      database.id
+    );
+
+    expect(oldCollectionAssets.total).toBe(1);
+    expect(newCollectionAssets.total).toBe(0);
+  });
 });
 
 async function setup() {
@@ -536,7 +608,7 @@ async function setup() {
   const collectionService = new CollectionService();
   const mediaService = new MediaFileService();
   const service = new AssetService(collectionService, mediaService);
-  const rootCollection = await collectionService.getRootAssetCollection(
+  const rootAssetCollection = await collectionService.getRootAssetCollection(
     archive
   );
   const rootDbCollection = await collectionService.getRootDatabaseCollection(
@@ -544,15 +616,21 @@ async function setup() {
   );
   await collectionService.updateCollectionSchema(
     archive,
-    rootCollection.id,
+    rootAssetCollection.id,
     SCHEMA
+  );
+
+  const assetCollection = await collectionService.createCollection(
+    archive,
+    rootAssetCollection.id,
+    { schema: [], title: 'My Collection' }
   );
 
   return {
     givenTheSchema: async (schema: SchemaProperty[]) => {
       await collectionService.updateCollectionSchema(
         archive,
-        rootCollection.id,
+        rootAssetCollection.id,
         schema
       );
       return schema;
@@ -580,7 +658,9 @@ async function setup() {
     },
     archive,
     collectionService,
-    rootCollection,
+    rootAssetCollection,
+    rootDbCollection,
+    assetCollection,
     mediaService,
     service
   };

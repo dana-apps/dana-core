@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, Ref, MutableRefObject } from 'react';
 
 /**
  * Listens to an eventemitter and tears down the subscription on unmount.
@@ -29,4 +29,16 @@ export function useEventEmitter<T extends unknown[], Key extends string>(
       genericEmitter.off(event, handle);
     };
   }, [genericEmitter, event]);
+}
+
+export function useMergedRefs<T>(...refs: (Ref<T> | undefined)[]) {
+  return (val: T) => {
+    for (const x of refs) {
+      if (typeof x === 'function') {
+        x(val);
+      } else if (x && typeof x === 'object') {
+        (x as MutableRefObject<T>).current = val;
+      }
+    }
+  };
 }

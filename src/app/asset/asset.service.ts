@@ -1,12 +1,14 @@
 import { EventEmitter } from 'eventemitter3';
 import {
   AccessControl,
+  AggregatedValidationError,
   Asset,
+  CollectionType,
   ReferentialIntegrityError,
   SchemaProperty,
   SchemaPropertyType
 } from '../../common/asset.interfaces';
-import { mapValues, sumBy, uniq } from 'lodash';
+import { mapValues, size, sumBy, uniq } from 'lodash';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { error, FetchError, ok, Result } from '../../common/util/error';
@@ -18,6 +20,7 @@ import { AssetCollectionEntity, AssetEntity } from './asset.entity';
 import { CollectionService } from './collection.service';
 import { SchemaPropertyValue } from './metadata.entity';
 import { never, required } from '../../common/util/assert';
+import { DefaultMap } from '../../common/util/collection';
 
 interface CreateAssetOpts {
   /** Metadata to associate with the asset. This must be valid according to the archive schema */
@@ -247,10 +250,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
       const result = {
         ...entities,
-        items: await Promise.all(
-          entities.items.map(async (entity) =>
-            this.entityToAsset(archive, entity, { shallow: false })
-          )
+        items: await this.entitiesToAssets(
+          archive,
+          entities.items,
+          collectionId,
+          { shallow: false }
         )
       };
 
@@ -323,10 +327,13 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
       return {
         ...entities,
-        items: await Promise.all(
-          entities.items.map(async (entity) =>
-            this.entityToAsset(archive, entity, { shallow: false })
-          )
+        items: await this.entitiesToAssets(
+          archive,
+          entities.items,
+          collectionId,
+          {
+            shallow: false
+          }
         )
       };
     });
@@ -398,6 +405,106 @@ export class AssetService extends EventEmitter<AssetEvents> {
     });
   }
 
+  async validateMoveAssets(
+    archive: ArchivePackage,
+    assetIds: string[],
+    collectionId: string
+  ) {
+    return archive.useDb(async (db) => {
+      const targetCollection = await this.collectionService.getCollection(
+        archive,
+        collectionId
+      );
+      const sourceCollectons = new DefaultMap((id: string) =>
+        this.collectionService.getCollection(archive, id)
+      );
+
+      if (!targetCollection) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      const assets = await db.find(AssetEntity, { id: assetIds });
+      const errors: AggregatedValidationError = {};
+
+      for (const asset of assets) {
+        const source = await sourceCollectons.get(asset.collection.id);
+        if (!source) {
+          errors[asset.id] = [
+            { count: 1, message: 'Source collection does not exist' }
+          ];
+          continue;
+        }
+
+        if (
+          source.type === CollectionType.ASSET_COLLECTION &&
+          targetCollection.type === CollectionType.ASSET_COLLECTION
+        ) {
+          continue;
+        }
+
+        if (source.id !== targetCollection.id) {
+          errors[asset.id] = [
+            {
+              count: 1,
+              message: 'Record is incompatible with target collection'
+            }
+          ];
+        }
+      }
+
+      if (size(errors) > 0) {
+        return error(errors);
+      }
+
+      return ok();
+    });
+  }
+
+  /**
+   * Move one or more assets into another collection
+   *
+   * @param archive
+   * @param assetIds
+   * @param collectionId
+   * @returns
+   */
+  async moveAssets(
+    archive: ArchivePackage,
+    assetIds: string[],
+    collectionId: string
+  ): Promise<Result<object, FetchError | AggregatedValidationError>> {
+    const res = await archive.useDb(async (db) => {
+      const validationResult = await this.validateMoveAssets(
+        archive,
+        assetIds,
+        collectionId
+      );
+      if (validationResult.status === 'error') {
+        return validationResult;
+      }
+
+      const assets = await db.find(AssetEntity, { id: assetIds });
+
+      const collection = await db.findOne(AssetCollectionEntity, collectionId);
+      if (!collection) {
+        return error(FetchError.DOES_NOT_EXIST);
+      }
+
+      for (const asset of assets) {
+        asset.collection = collection;
+      }
+
+      db.persist(assets);
+      return ok();
+    });
+
+    if (res.status === 'ok') {
+      this.emit('change', { updated: assetIds, created: [], deleted: [] });
+    }
+
+    return res;
+  }
+
   /**
    * Delete a group of assets. Rejects if the assets cannot be deleted.
    *
@@ -409,6 +516,9 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async deleteAssets(archive: ArchivePackage, deletedIds: string[]) {
     return archive.useDb(async (db) => {
       const deletedSet = new Set<unknown>(deletedIds);
+      const schemas = new DefaultMap((key: string) =>
+        this.collectionService.getCollectionSchema(archive, key)
+      );
 
       // Return true if, once `deletedIds` are removed, the property will have at least one remaining value
       const hasRemainingValuesAfterDeletingAssets = (
@@ -459,13 +569,15 @@ export class AssetService extends EventEmitter<AssetEvents> {
                 'Cannot resolve entity by id'
               );
 
+              const referencedSchema = await schemas.get(collection.id);
+
               errors.push({
                 assetId: reference.id,
                 collectionId: collection.id,
                 collectionTitle: collection.title,
                 propertyId: property.id,
                 propertyLabel:
-                  collection.schema.find((x) => x.id === property.id)?.label ??
+                  referencedSchema.find((x) => x.id === property.id)?.label ??
                   property.id,
                 assetTitle: asset.title
               });
@@ -511,6 +623,32 @@ export class AssetService extends EventEmitter<AssetEvents> {
   }
 
   /**
+   * Convert many database entities in the same collection to Asset values sutable for returning to the frontend
+   * or passing to other areas of the application.
+   *
+   * This is more efficient than entityToAsset and should be used whenever you have a list of multiple assets.
+   *
+   * @param archive
+   * @param entity
+   * @param opts
+   * @returns
+   */
+  private async entitiesToAssets(
+    archive: ArchivePackage,
+    entities: AssetEntity[],
+    collectionId: string,
+    opts: GetAssetOpts | undefined
+  ) {
+    const schema =
+      opts?.schema ??
+      (await this.collectionService.getCollectionSchema(archive, collectionId));
+
+    return Promise.all(
+      entities.map((e) => this.entityToAsset(archive, e, { ...opts, schema }))
+    );
+  }
+
+  /**
    * Convert a database entity representing to an Asset value sutable for returning to the frontend or passing to other
    * areas of the application.
    *
@@ -521,11 +659,17 @@ export class AssetService extends EventEmitter<AssetEvents> {
    * @param opts
    * @returns
    */
-  private entityToAsset(
+  private async entityToAsset(
     archive: ArchivePackage,
     entity: AssetEntity,
     opts: GetAssetOpts | undefined
   ) {
+    const schema =
+      opts?.schema ??
+      (await this.collectionService.getCollectionSchema(
+        archive,
+        entity.collection.id
+      ));
     const { shallow } = opts ?? {};
     const titleField = entity.collection.schema.find(
       (x) => x.type === SchemaPropertyType.FREE_TEXT
@@ -551,9 +695,11 @@ export class AssetService extends EventEmitter<AssetEvents> {
           ? {}
           : Object.fromEntries(
               await Promise.all(
-                entity.collection.schema.map(async (property) => [
+                schema.map(async (property) => [
                   property.id,
-                  await property.convertToMetadataItems(
+                  await SchemaPropertyValue.fromJson(
+                    property
+                  ).convertToMetadataItems(
                     {
                       archive,
                       collections: this.collectionService,
@@ -638,6 +784,11 @@ interface GetAssetOpts {
    * avoid an infinite recursion.
    **/
   shallow?: boolean;
+
+  /**
+   * Schema to use to interpret the metadata associated with the asset.
+   */
+  schema?: SchemaProperty[];
 }
 
 interface AssetEvents {
