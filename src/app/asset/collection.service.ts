@@ -5,7 +5,8 @@ import {
   AggregatedValidationError,
   Collection,
   CollectionType,
-  SchemaProperty
+  SchemaProperty,
+  SchemaPropertyType
 } from '../../common/asset.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
 import { compactDict, DefaultMap } from '../../common/util/collection';
@@ -272,7 +273,11 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
       throw Error('Collection does not exist: ' + collectionId);
     }
 
-    return this.validateItemsForSchema(archive, collection.schema, items);
+    return this.validateItemsForSchema(
+      archive,
+      await this.getMergedSchema(archive, collection),
+      items
+    );
   }
 
   async validateMetaedataForCollection(
@@ -301,14 +306,18 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
       db.find(AssetCollectionEntity, {})
     );
 
-    return allCollections.flatMap((collection) => {
-      return collection.schema
-        .filter(
-          (property) =>
-            property.referencedCollectionId() === referencedCollectionId
-        )
-        .map((property) => ({ property, collection }));
-    });
+    return Promise.all(
+      allCollections.map(async (collection) => {
+        const schema = await this.getMergedSchema(archive, collection);
+
+        return schema
+          .filter(
+            (property) =>
+              property.referencedCollectionId() === referencedCollectionId
+          )
+          .map((property) => ({ property, collection }));
+      })
+    ).then((colls) => colls.flat());
   }
 
   /**
@@ -362,10 +371,52 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     yield await collection.assets.loadItems();
   }
 
+  /**
+   * Return the schema property that is used
+   *
+   * This is currently defined as the first free text property in the schema. It may in future change to something more
+   * explicit.
+   *
+   * @returns The scehma property used as the label for the asset, or undefined if no suitable property exists.
+   */
   async getTitleProperty(archive: ArchivePackage, collectionId: string) {
-    return archive
-      .get(AssetCollectionEntity, collectionId)
-      .then((x) => x?.getTitleProperty());
+    const collection = await archive.get(AssetCollectionEntity, collectionId);
+    const schema = await this.getMergedSchema(archive, collection);
+
+    return schema.find((x) => x.type === SchemaPropertyType.FREE_TEXT);
+  }
+
+  /**
+   * If this collection can hold 'label records', return the metadata for a label record given a string value to be the
+   * label.
+   *
+   * A 'label record' is a record where the only required property (if any) is its title property. These can be created
+   * easily from a string value.
+   *
+   * @param title The title property for the label record
+   * @returns A Dict of metadata for creating/updating a label record.
+   */
+  async getLabelRecordMetadata(
+    archive: ArchivePackage,
+    collectionId: string,
+    title: string
+  ) {
+    const collection = await archive.get(AssetCollectionEntity, collectionId);
+    const schema = await this.getMergedSchema(archive, collection);
+    const titleProperty = await this.getTitleProperty(archive, collectionId);
+
+    const canBeLabelRecord =
+      !!titleProperty &&
+      schema.every((x) => !x.required || x.id === titleProperty.id);
+
+    return canBeLabelRecord ? { [titleProperty.id]: [title] } : undefined;
+  }
+
+  async getCollectionSchema(archive: ArchivePackage, collectionId: string) {
+    const collection = await archive.get(AssetCollectionEntity, collectionId);
+    return this.getMergedSchema(archive, collection).then((s) =>
+      s.map((s) => s.toJson())
+    );
   }
 
   /**
@@ -394,12 +445,58 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     archive: ArchivePackage,
     entity: AssetCollectionEntity
   ): Promise<Collection> {
+    const schema = await this.getMergedSchema(archive, entity);
+
     return {
       id: entity.id,
-      schema: entity.schema.map((e) => e.toJson()),
+      schema: schema.map((e) => Object.assign({}, e.toJson())),
       title: entity.title,
       type: await this.inferCollectionType(archive, entity)
     };
+  }
+
+  /**
+   * Merge the collection schema together with the inherited schema of its parent collection.
+   *
+   * Child collections may properties from their parent.
+   *
+   * @param archive Archive owning the schema
+   * @param entity Collection to query for schemas
+   * @returns
+   */
+  private getMergedSchema(
+    archive: ArchivePackage,
+    entity: AssetCollectionEntity | undefined
+  ) {
+    return archive.useDb(async (db) => {
+      const mergedSchema: SchemaPropertyValue[] = [];
+      const overrideSet = new Set<string>();
+
+      while (entity) {
+        const inheritedProperties: SchemaPropertyValue[] = [];
+
+        for (const property of entity.schema || []) {
+          if (overrideSet.has(property.id)) {
+            continue;
+          }
+
+          overrideSet.add(property.id);
+          inheritedProperties.push(property);
+        }
+
+        mergedSchema.unshift(...inheritedProperties);
+
+        if (entity.parent) {
+          entity =
+            (await db.findOne(AssetCollectionEntity, entity.parent.id)) ??
+            undefined;
+        } else {
+          entity = undefined;
+        }
+      }
+
+      return mergedSchema;
+    });
   }
 
   private inferCollectionType(

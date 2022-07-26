@@ -3,7 +3,7 @@
 import { FC } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Plus } from 'react-bootstrap-icons';
-import { Box, Flex, IconButton, Text } from 'theme-ui';
+import { Box, Flex, IconButton } from 'theme-ui';
 
 import {
   ExportCollection,
@@ -21,35 +21,28 @@ import {
   NavListSection,
   ArchiveWindowLayout
 } from '../ui/components/page-layouts.component';
-import { WindowDragArea, WindowInset, WindowTitle } from '../ui/window';
+import { WindowInset, WindowTitle } from '../ui/window';
 import { useContextMenu } from '../ui/hooks/menu.hooks';
 import {
   CreateCollection,
   defaultSchemaProperty,
   GetRootAssetsCollection,
   GetRootDatabaseCollection,
-  GetSubcollections,
   UpdateCollection
 } from '../../common/asset.interfaces';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
-import { useFrontendConfig } from '../config';
+import { CollectionBrowser } from '../ui/components/collection-browser.component';
 
 /**
  * The wrapper component for an archive window. Shows the screen's top-level navigation and renders the active route.
  */
 export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
   const imports = useListAll(ListIngestSession, () => ({}), []);
-  const config = useFrontendConfig();
   const rpc = useRPC();
-  const assetRoot = unwrapGetResult(useGet(GetRootAssetsCollection));
   const navigate = useNavigate();
 
+  const assetRoot = unwrapGetResult(useGet(GetRootAssetsCollection));
   const databaseRoot = unwrapGetResult(useGet(GetRootDatabaseCollection));
-  const databases = useListAll(
-    GetSubcollections,
-    () => (databaseRoot ? { parent: databaseRoot.id } : 'skip'),
-    [databaseRoot]
-  );
 
   const createMenu = useCreateMenu();
   const renameCollection = async (id: string, title: string) => {
@@ -68,7 +61,7 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
     await rpc(ExportCollection, { collectionId });
   };
 
-  if (!assetRoot) {
+  if (!assetRoot || !databaseRoot) {
     return null;
   }
 
@@ -95,49 +88,47 @@ export const ArchiveScreen: FC<{ title?: string }> = ({ title }) => {
 
             {/* Assets */}
             <NavListSection title="Collections">
-              <NavListItem
-                title="Main Collection"
-                path={`/collection/${assetRoot.id}`}
-                contextMenuItems={[
-                  {
-                    action: () => startImport(assetRoot.id),
-                    id: 'start-import',
-                    label: 'Import assets'
-                  },
-                  {
-                    action: () => startExport(assetRoot.id),
-                    id: 'start-export',
-                    label: 'Export assets'
-                  }
-                ]}
+              <CollectionBrowser
+                parentId={assetRoot.id}
+                itemProps={(collection) => ({
+                  onRename: (title) => renameCollection(collection.id, title),
+                  contextMenuItems: [
+                    {
+                      action: () => startImport(assetRoot.id),
+                      id: 'start-import',
+                      label: 'Import assets'
+                    },
+                    {
+                      action: () => startExport(assetRoot.id),
+                      id: 'start-export',
+                      label: 'Export assets'
+                    }
+                  ]
+                })}
               />
             </NavListSection>
 
             {/* Databases */}
-            {renderIfPresent(databases, (databases) => (
-              <NavListSection title="Databases">
-                {databases.map((db) => (
-                  <NavListItem
-                    key={db.id}
-                    title={db.title}
-                    path={`/collection/${db.id}`}
-                    onRename={(title) => renameCollection(db.id, title)}
-                    contextMenuItems={[
-                      {
-                        action: () => startImport(db.id),
-                        id: 'start-import',
-                        label: 'Import database records'
-                      },
-                      {
-                        action: () => startExport(db.id),
-                        id: 'start-export',
-                        label: 'Export database'
-                      }
-                    ]}
-                  />
-                ))}
-              </NavListSection>
-            ))}
+            <NavListSection title="Databases">
+              <CollectionBrowser
+                parentId={databaseRoot.id}
+                itemProps={(collection) => ({
+                  onRename: (title) => renameCollection(collection.id, title),
+                  contextMenuItems: [
+                    {
+                      action: () => startImport(collection.id),
+                      id: 'start-import',
+                      label: 'Import database records'
+                    },
+                    {
+                      action: () => startExport(collection.id),
+                      id: 'start-export',
+                      label: 'Export database'
+                    }
+                  ]
+                })}
+              />
+            </NavListSection>
           </Box>
         </>
       }
@@ -204,19 +195,17 @@ function renderIfPresent<T extends Resource[], Return>(
 function useCreateMenu() {
   const rpc = useRPC();
   const error = useErrorDisplay();
-  const root = useGet(GetRootDatabaseCollection);
+  const rootDb = unwrapGetResult(useGet(GetRootDatabaseCollection));
+  const rootAssets = unwrapGetResult(useGet(GetRootAssetsCollection));
   const navigate = useNavigate();
 
-  const createControlledDatabase = async () => {
-    if (!root || root.status !== 'ok') {
-      return;
-    }
-
+  const collectionCreator = (parentId: string, title: string) => async () => {
     const res = await rpc(CreateCollection, {
-      parent: root.value.id,
+      parent: parentId,
       schema: [{ ...defaultSchemaProperty(0), label: 'Title' }],
-      title: 'New Database'
+      title
     });
+
     if (res.status !== 'ok') {
       return error.unexpected(res.error);
     }
@@ -227,10 +216,15 @@ function useCreateMenu() {
   return useContextMenu({
     on: 'click',
     options: [
-      {
+      rootDb && {
         id: 'newControlledDatabase',
         label: 'New Controlled Database',
-        action: createControlledDatabase
+        action: collectionCreator(rootDb.id, 'New Database')
+      },
+      rootAssets && {
+        id: 'newAssetCollection',
+        label: 'New Asset Collection',
+        action: collectionCreator(rootAssets.id, 'New Collection')
       }
     ]
   });

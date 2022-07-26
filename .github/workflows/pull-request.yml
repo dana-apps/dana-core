@@ -38,4 +38,4 @@ jobs:
         run: yarn tsc --noemit
 
       - name: Lint
-        run: yarn eslint . && yarn prettier .
+        run: yarn eslint . && yarn prettier --check src

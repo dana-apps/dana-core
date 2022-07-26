@@ -29,10 +29,14 @@ import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
 import { guessTextWidth } from './grid-cell.component';
 import { ContextMenuChoice, useContextMenu } from '../hooks/menu.hooks';
+import { Draggable, DragItem, DropSpec } from './dnd.component';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
   data: ListCursor<T>;
+
+  /** Drag specs */
+  dragConfig?: (item: T) => DragItem & { type: string };
 
   /** Specification of the grid columns */
   columns: GridColumn<T, any>[];
@@ -56,6 +60,7 @@ export function DataGrid<T extends Resource>({
   data,
   columns,
   fontSize: fontSizeParam = 1,
+  dragConfig,
   contextMenuItems,
   onDoubleClickItem,
   ...props
@@ -199,6 +204,7 @@ export function DataGrid<T extends Resource>({
                     rowHeight,
                     columnOffsets,
                     columnSizes,
+                    dragConfig,
                     onResize: (i, val) => {
                       setColumnSizes(
                         produce((draft) => {
@@ -294,8 +300,13 @@ function Row<T extends Resource>({
   index
 }: ListChildComponentProps<CellData<T>>) {
   const { current: selection, setSelection } = SelectionContext.useContainer();
-  const { columnSizes, width, contextMenuItems, onDoubleClickItem } =
-    useContext(GridContext);
+  const {
+    columnSizes,
+    width,
+    contextMenuItems,
+    onDoubleClickItem,
+    dragConfig
+  } = useContext(GridContext);
   const colData = cursor.get(index);
   const plainBg = index % 2 === 1 ? 'background' : 'foreground';
   const selected = selection && selection === colData?.id;
@@ -317,7 +328,7 @@ function Row<T extends Resource>({
     return <div sx={sx} style={style} />;
   }
 
-  return (
+  const contents = (
     <div
       sx={sx}
       style={{ ...style, minWidth: width }}
@@ -345,6 +356,12 @@ function Row<T extends Resource>({
         </div>
       ))}
     </div>
+  );
+
+  return dragConfig ? (
+    <Draggable {...dragConfig(colData)}>{contents}</Draggable>
+  ) : (
+    contents
   );
 }
 
@@ -461,6 +478,7 @@ const GridContext = createContext<{
   columnSizes?: number[];
   width: number;
   columnOffsets?: number[];
+  dragConfig?: (item: any) => DragItem & { type: string };
   rowHeight: number;
 }>({
   onResize: noop,
