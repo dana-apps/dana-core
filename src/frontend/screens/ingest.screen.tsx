@@ -5,7 +5,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Flex, Text } from 'theme-ui';
 import {
   Asset,
-  AssetMetadata,
   GetCollection,
   SchemaProperty
 } from '../../common/asset.interfaces';

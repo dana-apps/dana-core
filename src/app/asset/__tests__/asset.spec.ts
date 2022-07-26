@@ -1,3 +1,4 @@
+import { pick, zip } from 'lodash';
 import {
   AccessControl,
   defaultSchemaProperty,
@@ -43,6 +44,18 @@ const SCHEMA: SchemaProperty[] = [
   }
 ];
 
+function expectEvents(
+  actual: AssetsChangedEvent[],
+  expected: Partial<AssetsChangedEvent>[]
+) {
+  expect(actual.length).toEqual(expected.length);
+
+  for (const [exp, act] of zip(expected, actual)) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    expect(pick(act, Object.keys(exp!))).toEqual(exp);
+  }
+}
+
 describe(AssetService, () => {
   test('Creating and updating asset metadata replaces its metadata only with properties defined in the schema and emits the correct events', async () => {
     const fixture = await setup();
@@ -67,11 +80,16 @@ describe(AssetService, () => {
       )
     );
 
-    expect(createEvents.events).toEqual([
-      expect.objectContaining({
-        created: [asset.id],
+    expectEvents(createEvents.events, [
+      {
+        created: [
+          expect.objectContaining({
+            id: asset.id,
+            collectionId: fixture.assetCollection.id
+          })
+        ],
         updated: []
-      })
+      }
     ]);
 
     expect(
@@ -104,10 +122,10 @@ describe(AssetService, () => {
       }
     });
 
-    expect(updateEvents.events).toEqual([
-      expect.objectContaining({
-        updated: [asset.id]
-      })
+    expectEvents(updateEvents.events, [
+      {
+        updated: [expect.objectContaining({ id: asset.id })]
+      }
     ]);
 
     expect(

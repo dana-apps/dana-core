@@ -116,12 +116,14 @@ describe(CollectionService, () => {
         id: 'dogtype',
         label: 'Dog Type',
         required: true,
+        visible: true,
         repeated: false,
         type: SchemaPropertyType.FREE_TEXT
       },
       {
         id: 'fluffiness',
         label: 'Fluffyness',
+        visible: true,
         required: true,
         repeated: true,
         type: SchemaPropertyType.FREE_TEXT

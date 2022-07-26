@@ -4,7 +4,7 @@ import { Readable } from 'stream';
 import { createReadStream, createWriteStream } from 'fs';
 import { RequiredEntityData } from '@mikro-orm/core';
 import { Logger } from 'tslog';
-import { mkdir, rename, rm, rmdir, unlink } from 'fs/promises';
+import { mkdir, rename, rm, unlink } from 'fs/promises';
 
 import {
   AcceptAssetRequest,

@@ -1,4 +1,4 @@
-import path, { basename, dirname, extname, join } from 'path';
+import path, { basename, dirname, extname } from 'path';
 import * as xlsx from 'xlsx';
 import * as SecureJSON from 'secure-json-parse';
 import { Logger } from 'tslog';

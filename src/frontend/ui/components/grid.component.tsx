@@ -29,7 +29,7 @@ import { SelectionContext } from '../hooks/selection.hooks';
 import { PageRange } from '../../../common/ipc.interfaces';
 import { guessTextWidth } from './grid-cell.component';
 import { ContextMenuChoice, useContextMenu } from '../hooks/menu.hooks';
-import { Draggable, DragItem, DropSpec } from './dnd.component';
+import { Draggable, DragItem } from './dnd.component';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */

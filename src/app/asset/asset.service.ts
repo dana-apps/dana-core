@@ -1,7 +1,7 @@
 import { EventEmitter } from 'eventemitter3';
 import {
-  AggregatedValidationError,
   AccessControl,
+  AggregatedValidationError,
   Asset,
   CollectionType,
   ReferentialIntegrityError,

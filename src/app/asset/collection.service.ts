@@ -518,7 +518,7 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
     archive: ArchivePackage,
     entity: AssetCollectionEntity | undefined
   ) {
-    return archive.useDb(async (db): Promise<CollectionType> => {
+    return archive.useDb(async (): Promise<CollectionType> => {
       while (entity) {
         if (entity.id === CollectionService.ROOT_ASSET_ID) {
           return CollectionType.ASSET_COLLECTION;

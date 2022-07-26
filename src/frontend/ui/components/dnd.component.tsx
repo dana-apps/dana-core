@@ -22,7 +22,8 @@ export interface DragItem {
 }
 
 export const Draggable: FC<DraggableProps> = ({ children, type, id }) => {
-  const [collected, drag, dragPreview] = useDrag<DragItem>(() => ({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [collected, drag] = useDrag<DragItem>(() => ({
     type,
     item: { id }
   }));
