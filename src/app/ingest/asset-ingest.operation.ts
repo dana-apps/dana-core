@@ -1,6 +1,5 @@
-import path, { basename, dirname, extname } from 'path';
+import path, { extname } from 'path';
 import * as xlsx from 'xlsx';
-import * as SecureJSON from 'secure-json-parse';
 import { Logger } from 'tslog';
 import { compact, keyBy, mapValues } from 'lodash';
 import { ObjectQuery } from '@mikro-orm/core';
@@ -27,7 +26,7 @@ import { AssetService } from '../asset/asset.service';
 import { error, FetchError, ok } from '../../common/util/error';
 import { arrayify } from '../../common/util/collection';
 import { required } from '../../common/util/assert';
-import { MetadataFileSchema, DanaPack, openDanapack } from './danapack';
+import { Danapack, openDanapack } from './danapack';
 
 /**
  * Encapsulates an import operation.
@@ -226,50 +225,36 @@ export class AssetIngestOperation implements IngestSession {
   async readPackageMetadata() {
     this.log.info('Reading metadata package', this.basePath);
 
-    const archive = openDanapack(this.basePath);
+    const archive = await openDanapack(this.basePath);
 
-    if (!archive.metadataEntry) {
-      await this.archive.useDb((db) => {
-        this.session.phase = IngestPhase.ERROR;
-        db.persist(this.session);
-      });
+    for (const loadEntry of archive.metadataEntries) {
+      const entry = await loadEntry();
+      if (entry.status === 'error') {
+        this.log.error(
+          'Metadata file validation failed with error:',
+          entry.error
+        );
 
-      this.emitStatus();
-      return;
-    }
+        await this.archive.useDb((db) => {
+          this.session.phase = IngestPhase.ERROR;
+          db.persist(this.session);
+        });
 
-    const metadataFileContents = await new Promise<object>(
-      (resolve, reject) => {
-        archive.metadataEntry.getDataAsync((data, err) => {
-          if (data) {
-            resolve(SecureJSON.parse(data));
-          } else {
-            reject(err);
-          }
+        this.emitStatus();
+        return;
+      }
+
+      const { collection, assets } = entry.value;
+
+      if (collection && collection !== this.targetCollectionId) {
+        continue;
+      }
+
+      for (const [key, val] of Object.entries(assets)) {
+        await this.readMetadataObject(val.metadata, val.files ?? [], key, {
+          convert: !collection
         });
       }
-    );
-
-    const metadata = MetadataFileSchema.safeParse(metadataFileContents);
-    if (!metadata.success) {
-      this.log.error(
-        'Metadata file validation failed with error:',
-        metadata.error
-      );
-
-      await this.archive.useDb((db) => {
-        this.session.phase = IngestPhase.ERROR;
-        db.persist(this.session);
-      });
-
-      this.emitStatus();
-      return;
-    }
-
-    for (const [key, val] of Object.entries(metadata.data.assets)) {
-      await this.readMetadataObject(val.metadata, val.files ?? [], key, {
-        convert: !metadata.data.collection
-      });
     }
   }
 
@@ -488,7 +473,7 @@ export class AssetIngestOperation implements IngestSession {
       return;
     }
 
-    const pack = openDanapack(this.basePath);
+    const pack = await openDanapack(this.basePath);
 
     await this.archive.useDb(async (db) => {
       const assetsRepository = db.getRepository(AssetImportEntity);
@@ -532,7 +517,7 @@ export class AssetIngestOperation implements IngestSession {
    * @param asset Imported asset to find media files for
    * @param pack DanaPack file to import media from
    **/
-  async readAssetMediaFiles(asset: AssetImportEntity, pack: DanaPack) {
+  async readAssetMediaFiles(asset: AssetImportEntity, pack: Danapack) {
     this.log.info('Read media file for asset', asset.path);
 
     await this.archive.useDb(async (db) => {
@@ -546,19 +531,9 @@ export class AssetIngestOperation implements IngestSession {
         }
 
         try {
-          const packEntry = pack.getMedia(file.path);
           const res = await this.mediaService.putFile(this.archive, {
             extension: extname(file.path),
-            extractTo: (dest) => {
-              pack.zipFile.extractEntryTo(
-                packEntry,
-                dirname(dest),
-                true,
-                false,
-                false,
-                basename(dest)
-              );
-            }
+            extractTo: (dest) => pack.extractMedia(file.path, dest)
           });
 
           if (this._filesRead !== undefined) {
