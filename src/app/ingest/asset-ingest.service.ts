@@ -168,6 +168,7 @@ export class AssetIngestService extends EventEmitter<Events> {
           title: entity.id,
           accessControl: entity.accessControl,
           collectionId: ingestOperation.targetCollectionId,
+          redactedProperties: entity.redactedProperties,
           metadata: mapValues(entity.metadata, (rawValue) => ({
             rawValue,
             presentationValue: rawValue.map((x) => ({
@@ -226,6 +227,7 @@ export class AssetIngestService extends EventEmitter<Events> {
               session.targetCollectionId,
               {
                 forceId: forceIds ? assetImport.path : undefined,
+                redactedProperties: [],
                 metadata: assetImport.metadata,
                 accessControl: assetImport.accessControl,
                 media: compact(
@@ -254,6 +256,7 @@ export class AssetIngestService extends EventEmitter<Events> {
             session.targetCollectionId,
             {
               metadata: assetImport.metadata,
+              redactedProperties: [],
               accessControl: assetImport.accessControl,
               media: compact(
                 assetImport.files.getItems().map((item) => item.media)

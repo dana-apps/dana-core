@@ -43,7 +43,9 @@
       "name": "asset_collection",
       "indexes": [
         {
-          "columnNames": ["parent_id"],
+          "columnNames": [
+            "parent_id"
+          ],
           "composite": false,
           "keyName": "asset_collection_parent_id_index",
           "primary": false,
@@ -51,7 +53,9 @@
         },
         {
           "keyName": "primary",
-          "columnNames": ["id"],
+          "columnNames": [
+            "id"
+          ],
           "composite": false,
           "primary": true,
           "unique": true
@@ -61,9 +65,13 @@
       "foreignKeys": {
         "asset_collection_parent_id_foreign": {
           "constraintName": "asset_collection_parent_id_foreign",
-          "columnNames": ["parent_id"],
+          "columnNames": [
+            "parent_id"
+          ],
           "localTableName": "asset_collection",
-          "referencedColumnNames": ["id"],
+          "referencedColumnNames": [
+            "id"
+          ],
           "referencedTableName": "asset_collection",
           "deleteRule": "set null",
           "updateRule": "cascade"
@@ -128,7 +136,9 @@
       "name": "import_session",
       "indexes": [
         {
-          "columnNames": ["target_collection_id"],
+          "columnNames": [
+            "target_collection_id"
+          ],
           "composite": false,
           "keyName": "import_session_target_collection_id_index",
           "primary": false,
@@ -136,7 +146,9 @@
         },
         {
           "keyName": "primary",
-          "columnNames": ["id"],
+          "columnNames": [
+            "id"
+          ],
           "composite": false,
           "primary": true,
           "unique": true
@@ -146,9 +158,13 @@
       "foreignKeys": {
         "import_session_target_collection_id_foreign": {
           "constraintName": "import_session_target_collection_id_foreign",
-          "columnNames": ["target_collection_id"],
+          "columnNames": [
+            "target_collection_id"
+          ],
           "localTableName": "import_session",
-          "referencedColumnNames": ["id"],
+          "referencedColumnNames": [
+            "id"
+          ],
           "referencedTableName": "asset_collection",
           "updateRule": "cascade"
         }
@@ -182,6 +198,15 @@
           "primary": false,
           "nullable": true,
           "mappedType": "text"
+        },
+        "redaxcted_properties": {
+          "name": "redaxcted_properties",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
         },
         "session_id": {
           "name": "session_id",
@@ -230,7 +255,9 @@
       "name": "asset_import",
       "indexes": [
         {
-          "columnNames": ["session_id"],
+          "columnNames": [
+            "session_id"
+          ],
           "composite": false,
           "keyName": "asset_import_session_id_index",
           "primary": false,
@@ -238,7 +265,9 @@
         },
         {
           "keyName": "primary",
-          "columnNames": ["id"],
+          "columnNames": [
+            "id"
+          ],
           "composite": false,
           "primary": true,
           "unique": true
@@ -248,9 +277,13 @@
       "foreignKeys": {
         "asset_import_session_id_foreign": {
           "constraintName": "asset_import_session_id_foreign",
-          "columnNames": ["session_id"],
+          "columnNames": [
+            "session_id"
+          ],
           "localTableName": "asset_import",
-          "referencedColumnNames": ["id"],
+          "referencedColumnNames": [
+            "id"
+          ],
           "referencedTableName": "import_session",
           "deleteRule": "cascade",
           "updateRule": "cascade"
@@ -294,12 +327,23 @@
           "primary": false,
           "nullable": false,
           "mappedType": "text"
+        },
+        "redacted_properties": {
+          "name": "redacted_properties",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "mappedType": "json"
         }
       },
       "name": "asset",
       "indexes": [
         {
-          "columnNames": ["collection_id"],
+          "columnNames": [
+            "collection_id"
+          ],
           "composite": false,
           "keyName": "asset_collection_id_index",
           "primary": false,
@@ -307,7 +351,9 @@
         },
         {
           "keyName": "primary",
-          "columnNames": ["id"],
+          "columnNames": [
+            "id"
+          ],
           "composite": false,
           "primary": true,
           "unique": true
@@ -317,9 +363,13 @@
       "foreignKeys": {
         "asset_collection_id_foreign": {
           "constraintName": "asset_collection_id_foreign",
-          "columnNames": ["collection_id"],
+          "columnNames": [
+            "collection_id"
+          ],
           "localTableName": "asset",
-          "referencedColumnNames": ["id"],
+          "referencedColumnNames": [
+            "id"
+          ],
           "referencedTableName": "asset_collection",
           "updateRule": "cascade"
         }
@@ -367,7 +417,9 @@
       "name": "media_file",
       "indexes": [
         {
-          "columnNames": ["asset_id"],
+          "columnNames": [
+            "asset_id"
+          ],
           "composite": false,
           "keyName": "media_file_asset_id_index",
           "primary": false,
@@ -375,7 +427,9 @@
         },
         {
           "keyName": "primary",
-          "columnNames": ["id"],
+          "columnNames": [
+            "id"
+          ],
           "composite": false,
           "primary": true,
           "unique": true
@@ -385,9 +439,13 @@
       "foreignKeys": {
         "media_file_asset_id_foreign": {
           "constraintName": "media_file_asset_id_foreign",
-          "columnNames": ["asset_id"],
+          "columnNames": [
+            "asset_id"
+          ],
           "localTableName": "media_file",
-          "referencedColumnNames": ["id"],
+          "referencedColumnNames": [
+            "id"
+          ],
           "referencedTableName": "asset",
           "deleteRule": "set null",
           "updateRule": "cascade"
@@ -450,14 +508,18 @@
       "name": "file_import",
       "indexes": [
         {
-          "columnNames": ["asset_id"],
+          "columnNames": [
+            "asset_id"
+          ],
           "composite": false,
           "keyName": "file_import_asset_id_index",
           "primary": false,
           "unique": false
         },
         {
-          "columnNames": ["media_id"],
+          "columnNames": [
+            "media_id"
+          ],
           "composite": false,
           "keyName": "file_import_media_id_index",
           "primary": false,
@@ -465,7 +527,9 @@
         },
         {
           "keyName": "primary",
-          "columnNames": ["id"],
+          "columnNames": [
+            "id"
+          ],
           "composite": false,
           "primary": true,
           "unique": true
@@ -475,18 +539,26 @@
       "foreignKeys": {
         "file_import_asset_id_foreign": {
           "constraintName": "file_import_asset_id_foreign",
-          "columnNames": ["asset_id"],
+          "columnNames": [
+            "asset_id"
+          ],
           "localTableName": "file_import",
-          "referencedColumnNames": ["id"],
+          "referencedColumnNames": [
+            "id"
+          ],
           "referencedTableName": "asset_import",
           "deleteRule": "cascade",
           "updateRule": "cascade"
         },
         "file_import_media_id_foreign": {
           "constraintName": "file_import_media_id_foreign",
-          "columnNames": ["media_id"],
+          "columnNames": [
+            "media_id"
+          ],
           "localTableName": "file_import",
-          "referencedColumnNames": ["id"],
+          "referencedColumnNames": [
+            "id"
+          ],
           "referencedTableName": "media_file",
           "deleteRule": "set null",
           "updateRule": "cascade"

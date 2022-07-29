@@ -21,7 +21,11 @@ export function useAssets(collectionId: string) {
     () => ({
       updateMetadata: async (
         asset: Asset,
-        edits: { metadata?: AssetMetadata; accessControl?: AccessControl }
+        edits: {
+          metadata?: AssetMetadata;
+          accessControl?: AccessControl;
+          redactedProperties?: string[];
+        }
       ): Promise<undefined | SingleValidationError> => {
         const metadata = edits.metadata && {
           ...asset.metadata,
@@ -30,7 +34,8 @@ export function useAssets(collectionId: string) {
         const res = await rpc(UpdateAssetMetadata, {
           assetId: asset.id,
           accessControl: edits.accessControl,
-          payload: mapValues(metadata, (item) => item.rawValue)
+          payload: mapValues(metadata, (item) => item.rawValue),
+          redactedProperties: edits.redactedProperties
         });
 
         if (res.status === 'error') {

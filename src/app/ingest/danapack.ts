@@ -4,7 +4,7 @@ import zipPath from 'path/posix';
 import systemPath, { extname } from 'path';
 import * as SecureJSON from 'secure-json-parse';
 import { z } from 'zod';
-import { Collection } from '../../common/asset.interfaces';
+import { AccessControl, Collection } from '../../common/asset.interfaces';
 import { error, ok, Result } from '../../common/util/error';
 import { createReadStream, createWriteStream } from 'fs';
 import { streamEnded } from '../util/stream-utils';
@@ -175,7 +175,9 @@ const writeZip = async <T>(
  **/
 export const MetadataRecordSchema = z.object({
   metadata: z.record(z.array(z.unknown())),
-  files: z.optional(z.array(z.string()))
+  files: z.optional(z.array(z.string())),
+  redactedProperties: z.array(z.string()).optional(),
+  accessControl: z.nativeEnum(AccessControl).optional()
 });
 export type MetadataRecordSchema = z.TypeOf<typeof MetadataRecordSchema>;
 

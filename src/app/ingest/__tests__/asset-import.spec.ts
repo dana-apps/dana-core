@@ -11,6 +11,7 @@ import { IngestPhase } from '../../../common/ingest.interfaces';
 import { error, ok } from '../../../common/util/error';
 import { collectEvents, waitUntilEvent } from '../../../test/event';
 import { requireSuccess } from '../../../test/result';
+import { onCleanup } from '../../../test/teardown';
 import { getTempfiles, getTempPackage } from '../../../test/tempfile';
 import { AssetsChangedEvent, AssetService } from '../../asset/asset.service';
 import { CollectionService } from '../../asset/collection.service';
@@ -692,10 +693,16 @@ const setup = async (seedContent?: string) => {
     importService
   );
 
+  const seed = async (seedContent: string) => {
+    const a = requireSuccess(
+      await bootstrap.boostrapArchiveFromDanapack(seedContent, temp())
+    );
+    onCleanup(() => archives.closeArchive(a.id));
+    return a;
+  };
+
   const archive = seedContent
-    ? requireSuccess(
-        await bootstrap.boostrapArchiveFromDanapack(seedContent, temp())
-      )
+    ? await seed(seedContent)
     : await getTempPackage(temp());
 
   const rootCollection = await collectionService.getRootAssetCollection(

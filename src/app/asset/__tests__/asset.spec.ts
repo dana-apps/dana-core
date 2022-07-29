@@ -70,6 +70,7 @@ describe(AssetService, () => {
         fixture.assetCollection.id,
         {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {
             requiredProperty: ['1'],
             optionalProperty: ['2'],
@@ -156,6 +157,7 @@ describe(AssetService, () => {
       fixture.assetCollection.id,
       {
         accessControl: AccessControl.RESTRICTED,
+        redactedProperties: [],
         metadata: {}
       }
     );
@@ -177,6 +179,7 @@ describe(AssetService, () => {
         fixture.assetCollection.id,
         {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {
             requiredProperty: ['1']
           }
@@ -264,6 +267,7 @@ describe(AssetService, () => {
         const referencedAsset = requireSuccess(
           await fixture.service.createAsset(fixture.archive, db.id, {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: { title: ['Value'] }
           })
         );
@@ -362,6 +366,7 @@ describe(AssetService, () => {
       const targetRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {}
         })
       );
@@ -371,6 +376,7 @@ describe(AssetService, () => {
           fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: { [dbProperty.id]: [targetRecord.id] }
           }
         )
@@ -408,6 +414,7 @@ describe(AssetService, () => {
       const targetRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {}
         })
       );
@@ -418,6 +425,7 @@ describe(AssetService, () => {
           fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: { [dbProperty.id]: [targetRecord.id] }
           }
         )
@@ -455,6 +463,7 @@ describe(AssetService, () => {
       const targetRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {}
         })
       );
@@ -462,6 +471,7 @@ describe(AssetService, () => {
       const anotherRecord = requireSuccess(
         await fixture.service.createAsset(fixture.archive, targetDb.id, {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {}
         })
       );
@@ -472,6 +482,7 @@ describe(AssetService, () => {
           fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: { [dbProperty.id]: [targetRecord.id, anotherRecord.id] }
           }
         )
@@ -510,12 +521,14 @@ describe(AssetService, () => {
         requireSuccess(
           await fixture.service.createAsset(fixture.archive, targetDb.id, {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: {}
           })
         ),
         requireSuccess(
           await fixture.service.createAsset(fixture.archive, targetDb.id, {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: {}
           })
         )
@@ -529,6 +542,7 @@ describe(AssetService, () => {
           fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: {
               [dbProperty.id]: targedRecordIds
             }
@@ -560,6 +574,7 @@ describe(AssetService, () => {
           fixture.assetCollection.id,
           {
             accessControl: AccessControl.RESTRICTED,
+            redactedProperties: [],
             metadata: { requiredProperty: ['Hello'] }
           }
         )
@@ -597,6 +612,7 @@ describe(AssetService, () => {
         fixture.assetCollection.id,
         {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: { requiredProperty: ['Hello'] }
         }
       )

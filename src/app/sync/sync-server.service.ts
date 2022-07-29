@@ -213,6 +213,7 @@ export class SyncServer {
             'assets',
             Array.from(t.assets ?? []),
             (data) => ({
+              redactedProperties: [],
               accessControl: data.accessControl,
               collection: data.collection,
               metadata: data.metadata

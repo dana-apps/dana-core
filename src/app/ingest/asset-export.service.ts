@@ -5,7 +5,12 @@ import { CollectionService } from '../asset/collection.service';
 import { PageRangeAll } from '../entry/lib';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
-import { MetadataFileSchema, saveDanapack, SaveDanapackOpts } from './danapack';
+import {
+  MetadataFileSchema,
+  MetadataRecordSchema,
+  saveDanapack,
+  SaveDanapackOpts
+} from './danapack';
 
 export class AssetExportService {
   constructor(
@@ -66,10 +71,12 @@ export class AssetExportService {
         { offset: 0, limit: Infinity }
       );
 
-      const exports = items.map((asset) => [
+      const exports = items.map((asset): [string, MetadataRecordSchema] => [
         asset.id,
         {
           metadata: mapValues(asset.metadata, (md) => md.rawValue),
+          accessControl: asset.accessControl,
+          redactedProperties: asset.redactedProperties,
           files: asset.media.map((media) =>
             this.mediaService.getMediaPath(archive, media)
           )

@@ -239,6 +239,7 @@ async function setupInstance(schema?: SchemaProperty[]) {
       return requireSuccess(
         await assets.createAsset(archive, colllection.id, {
           accessControl: opts.accessControl ?? AccessControl.PUBLIC,
+          redactedProperties: [],
           metadata,
           media
         })

@@ -73,7 +73,10 @@ export const Asset = z.object({
   accessControl: z.nativeEnum(AccessControl),
 
   /** Parent collection */
-  collectionId: z.string()
+  collectionId: z.string(),
+
+  /** List of redacted properties */
+  redactedProperties: z.string().array()
 });
 export type Asset = z.TypeOf<typeof Asset>;
 export type AssetMetadata = Asset['metadata'];
@@ -326,7 +329,8 @@ export const CreateAsset = RpcInterface({
   request: z.object({
     collection: z.string(),
     metadata: z.record(z.array(z.unknown())),
-    accessControl: z.nativeEnum(AccessControl)
+    accessControl: z.nativeEnum(AccessControl),
+    redactedProperties: z.string().array()
   }),
   response: Asset,
   error: z.nativeEnum(FetchError)
@@ -393,7 +397,8 @@ export const UpdateAssetMetadata = RpcInterface({
   request: z.object({
     assetId: z.string(),
     payload: z.record(z.array(z.unknown())).optional(),
-    accessControl: z.nativeEnum(AccessControl).optional()
+    accessControl: z.nativeEnum(AccessControl).optional(),
+    redactedProperties: z.string().array().optional()
   }),
   response: z.object({}),
   error: z.nativeEnum(FetchError).or(SingleValidationError)

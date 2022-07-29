@@ -46,6 +46,12 @@ export class AssetEntity {
    */
   @Property({ type: 'string', nullable: false })
   accessControl: AccessControl = AccessControl.RESTRICTED;
+
+  /**
+   * Key-value metadata properties. Keys are the id of schema property
+   */
+  @Property({ type: 'json', nullable: false })
+  redactedProperties: string[] = [];
 }
 
 /**

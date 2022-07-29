@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { ArchiveHooks, ArchiveService } from '../app/package/archive.service';
+import { requireSuccess } from './result';
 import { onCleanup } from './teardown';
 
 /**
@@ -47,13 +48,9 @@ export const getTempfiles = async (root?: string) => {
  */
 export async function getTempPackage(location: string, hooks?: ArchiveHooks) {
   const archiveService = new ArchiveService(hooks);
-  const archive = await archiveService.openArchive(location);
+  const archive = requireSuccess(await archiveService.openArchive(location));
 
-  onCleanup(() => archiveService.closeArchive(location));
+  onCleanup(() => archiveService.closeArchive(archive.id));
 
-  if (archive.status === 'error') {
-    throw Error(archive.error);
-  }
-
-  return archive.value;
+  return archive;
 }

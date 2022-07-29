@@ -26,7 +26,7 @@ import { AssetService } from '../asset/asset.service';
 import { error, FetchError, ok } from '../../common/util/error';
 import { arrayify } from '../../common/util/collection';
 import { required } from '../../common/util/assert';
-import { Danapack, openDanapack } from './danapack';
+import { Danapack, MetadataRecordSchema, openDanapack } from './danapack';
 
 /**
  * Encapsulates an import operation.
@@ -251,7 +251,7 @@ export class AssetIngestOperation implements IngestSession {
       }
 
       for (const [key, val] of Object.entries(assets)) {
-        await this.readMetadataObject(val.metadata, val.files ?? [], key, {
+        await this.readMetadataObject(val, key, {
           convert: !collection
         });
       }
@@ -276,8 +276,7 @@ export class AssetIngestOperation implements IngestSession {
         const locator = `${sheetName},${i}`;
 
         await this.readMetadataObject(
-          mapValues(metadata, (value) => [value]),
-          [],
+          { metadata: mapValues(metadata, (value) => [value]) },
           locator
         );
 
@@ -294,8 +293,12 @@ export class AssetIngestOperation implements IngestSession {
    * @param locator Unique string representing the location (path, path + line number, etc) this item was imported from
    */
   async readMetadataObject(
-    metadata: Dict<unknown[]>,
-    files: string[],
+    {
+      metadata,
+      files = [],
+      accessControl = AccessControl.RESTRICTED,
+      redactedProperties = []
+    }: MetadataRecordSchema,
     locator: string,
     { convert = true }: { convert?: boolean } = {}
   ) {
@@ -335,7 +338,8 @@ export class AssetIngestOperation implements IngestSession {
         path: locator,
         session: this.session,
         phase: IngestPhase.READ_FILES,
-        accessControl: AccessControl.RESTRICTED,
+        redactedProperties,
+        accessControl,
         validationErrors: validationResult.success
           ? undefined
           : validationResult.errors

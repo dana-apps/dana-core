@@ -175,6 +175,7 @@ describe(CollectionService, () => {
     const testAsset = requireSuccess(
       await fixture.assets.createAsset(fixture.archive, root.id, {
         accessControl: AccessControl.RESTRICTED,
+        redactedProperties: [],
         metadata: {}
       })
     );
@@ -266,6 +267,7 @@ describe(CollectionService, () => {
       const dbRecord = requireSuccess(
         await fixture.assets.createAsset(fixture.archive, db.id, {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {
             title: ['My Database Record']
           }
@@ -277,6 +279,7 @@ describe(CollectionService, () => {
         fixture.assetCollection.id,
         {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {
             dbRef: [dbRecord.id]
           }
@@ -295,6 +298,7 @@ describe(CollectionService, () => {
         fixture.assetCollection.id,
         {
           accessControl: AccessControl.RESTRICTED,
+          redactedProperties: [],
           metadata: {
             dbRef: ['this is not a valid id']
           }

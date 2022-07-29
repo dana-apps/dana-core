@@ -59,6 +59,10 @@ export class AssetImportEntity {
   @Property({ type: 'string', nullable: true })
   accessControl!: AccessControl;
 
+  /** Unique and deterministic string representing the source of the ingested asset */
+  @Property({ type: 'json', nullable: false })
+  redactedProperties: string[] = [];
+
   /** Import session that this asset is managed by */
   @ManyToOne(() => ImportSessionEntity, {
     nullable: false,

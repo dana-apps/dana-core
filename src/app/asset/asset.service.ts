@@ -34,6 +34,9 @@ interface CreateAssetOpts {
 
   /** Force an id value to use for the asset */
   forceId?: string;
+
+  /** Property keys to redact from public */
+  redactedProperties: string[];
 }
 
 /**
@@ -61,7 +64,13 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async createAsset(
     archive: ArchivePackage,
     collectionId: string,
-    { metadata, media = [], accessControl, forceId }: CreateAssetOpts
+    {
+      metadata,
+      media = [],
+      accessControl,
+      forceId,
+      redactedProperties
+    }: CreateAssetOpts
   ) {
     const res = await archive.useDb(async (db) => {
       const collection = await db.findOne(AssetCollectionEntity, collectionId);
@@ -70,7 +79,8 @@ export class AssetService extends EventEmitter<AssetEvents> {
         mediaFiles: [],
         collection,
         metadata: {},
-        accessControl
+        accessControl,
+        redactedProperties
       });
 
       const validationResult = await this.setMetadataAndMedia(
@@ -735,6 +745,7 @@ export class AssetService extends EventEmitter<AssetEvents> {
               entity.mediaFiles.getIdentifiers()
             ),
         accessControl: entity.accessControl,
+        redactedProperties: entity.redactedProperties,
         metadata: shallow
           ? {}
           : Object.fromEntries(

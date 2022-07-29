@@ -289,6 +289,7 @@ export class ControlledDatabaseSchemaPropertyValue
       this.databaseId,
       {
         accessControl: AccessControl.RESTRICTED,
+        redactedProperties: [],
         metadata
       }
     );
