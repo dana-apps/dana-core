@@ -150,10 +150,11 @@ export class CollectionService extends EventEmitter<CollectionEvents> {
   ) {
     return archive.useDbTransaction(async (db) => {
       const collection = db.create(AssetCollectionEntity, {
+        id: opts.forceId,
         parent: parentId,
         ...opts
       });
-      db.persistAndFlush(collection);
+      await db.persistAndFlush(collection);
       this.emit('change', { archive, created: [collection.id] });
 
       return this.toCollectionValue(archive, collection);
@@ -552,4 +553,6 @@ type ValidateItemsResult =
   | { success: true; id: string; metadata: Dict<unknown[]> }
   | { success: false; id: string; errors: Dict<string[]> };
 
-type CreateCollectionOpts = Pick<Collection, 'schema' | 'title'>;
+type CreateCollectionOpts = Pick<Collection, 'schema' | 'title'> & {
+  forceId?: string;
+};

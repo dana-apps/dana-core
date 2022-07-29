@@ -224,7 +224,7 @@ export class ControlledDatabaseSchemaPropertyValue
   protected getValueSchema({ archive }: CollectionContext) {
     return z.string().superRefine(async (refId, ctx) => {
       const referencedItem = await archive.useDb((db) =>
-        db.count(AssetEntity, { collection: this.databaseId, id: refId })
+        db.findOne(AssetEntity, { collection: this.databaseId, id: refId })
       );
 
       if (!referencedItem) {

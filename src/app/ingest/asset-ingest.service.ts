@@ -1,17 +1,19 @@
 import { EventEmitter } from 'eventemitter3';
 import { compact, mapValues } from 'lodash';
+import { Asset } from '../../common/asset.interfaces';
 
 import { IngestPhase, IngestedAsset } from '../../common/ingest.interfaces';
 import { PageRange } from '../../common/ipc.interfaces';
 import { ResourceList } from '../../common/resource';
 import { DefaultMap } from '../../common/util/collection';
-import { error, FetchError, ok } from '../../common/util/error';
+import { error, FetchError, ok, Result } from '../../common/util/error';
 import { AssetService } from '../asset/asset.service';
 import { CollectionService } from '../asset/collection.service';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { AssetImportEntity, ImportSessionEntity } from './asset-import.entity';
 import { AssetIngestOperation } from './asset-ingest.operation';
+import { openDanapack } from './danapack';
 
 export class AssetIngestService extends EventEmitter<Events> {
   /** Supported file extensions for metadata sheets */
@@ -192,13 +194,23 @@ export class AssetIngestService extends EventEmitter<Events> {
    * @param archive Archive to import files into.
    * @param sessionId Id of the session to return.
    */
-  async commitSession(archive: ArchivePackage, sessionId: string) {
+  async commitSession(
+    archive: ArchivePackage,
+    sessionId: string,
+    opts: { danapack?: boolean } = {}
+  ) {
     const session = this.getSession(archive, sessionId);
     if (!session) {
       return error(FetchError.DOES_NOT_EXIST);
     }
 
-    const res = await archive.useDbTransaction(async (db) => {
+    const forceIds =
+      opts.danapack &&
+      (await openDanapack(session.basePath)).metadataEntries.every((x) =>
+        x().then((x) => x.status === 'ok' && x.value.collection)
+      );
+
+    const res = await archive.useDbTransaction(async (db): Promise<Result> => {
       const assets = await db.find(AssetImportEntity, { session: sessionId });
 
       for (const assetImport of assets) {
@@ -210,6 +222,7 @@ export class AssetIngestService extends EventEmitter<Events> {
           archive,
           session.targetCollectionId,
           {
+            forceId: forceIds ? assetImport.path : undefined,
             metadata: assetImport.metadata,
             accessControl: assetImport.accessControl,
             media: compact(

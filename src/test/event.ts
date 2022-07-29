@@ -7,17 +7,20 @@ import { Dict } from '../common/util/types';
  *
  * @param emitter Eventemitter to test
  * @param event Event to wait for
- * @param payload Expected arguments for the event (deep equality)
+ * @param expectedPayload Expected arguments for the event (deep equality)
  */
-export function waitUntilEvent(
+export function waitUntilEvent<Params extends unknown[]>(
   emitter: EventEmitter<Dict>,
   event: string,
-  ...payload: unknown[]
+  ...expectedPayload: unknown[]
 ) {
-  return new Promise<unknown[]>((resolve) => {
+  return new Promise<Params>((resolve) => {
     emitter.on(event, (...payloadVal) => {
-      if (isEqual(payload, payloadVal)) {
-        resolve(payloadVal);
+      if (
+        expectedPayload.length === 0 ||
+        isEqual(expectedPayload, payloadVal)
+      ) {
+        resolve(payloadVal as Params);
       }
     });
   });

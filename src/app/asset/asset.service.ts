@@ -31,6 +31,9 @@ interface CreateAssetOpts {
 
   /** Access control rights on the file */
   accessControl: AccessControl;
+
+  /** Force an id value to use for the asset */
+  forceId?: string;
 }
 
 /**
@@ -58,11 +61,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async createAsset(
     archive: ArchivePackage,
     collectionId: string,
-    { metadata, media = [], accessControl }: CreateAssetOpts
+    { metadata, media = [], accessControl, forceId }: CreateAssetOpts
   ) {
     const res = await archive.useDb(async (db) => {
       const collection = await db.findOne(AssetCollectionEntity, collectionId);
       const asset = db.create(AssetEntity, {
+        id: forceId,
         mediaFiles: [],
         collection,
         metadata: {},
