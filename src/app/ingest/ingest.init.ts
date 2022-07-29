@@ -3,6 +3,7 @@ import { extname } from 'path';
 import {
   CancelIngestSession,
   CommitIngestSession,
+  ExportAll,
   ExportCollection,
   GetIngestSession,
   ListIngestAssets,
@@ -212,6 +213,27 @@ export async function initIngest(
         ? res.filePath
         : res.filePath + '.danapack';
     return assetExport.exportCollection(archive, collectionId, outpath);
+  });
+
+  router.bindArchiveRpc(ExportAll, async (archive) => {
+    const res = await dialog.showSaveDialog(
+      undefined as unknown as BrowserWindow,
+      {
+        buttonLabel: 'Export',
+        title: 'Export Collection',
+        properties: ['showOverwriteConfirmation'],
+        filters: [createFileFilter('Dana Package', ['danapack'])]
+      }
+    );
+    if (res.canceled || !res.filePath) {
+      return ok();
+    }
+
+    const outpath =
+      extname(res.filePath) === '.danapack'
+        ? res.filePath
+        : res.filePath + '.danapack';
+    return assetExport.exportEntireArchive(archive, outpath);
   });
 
   return {

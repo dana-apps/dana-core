@@ -113,10 +113,10 @@ export async function saveDanapack({
 
       mdIndex += 1;
     }
-
-    zip.finalize();
-    await streamEnded(writer);
   }
+
+  zip.finalize();
+  await streamEnded(writer);
 }
 
 type Lazy<T> = () => Promise<Result<T>>;

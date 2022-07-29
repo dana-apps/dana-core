@@ -52,4 +52,46 @@ export class AssetExportService {
     await saveDanapack(output);
     return ok();
   }
+
+  async exportEntireArchive(archive: ArchivePackage, outpath: string) {
+    const collections = await this.collectionService
+      .allCollections(archive, PageRangeAll)
+      .then((x) => x.items);
+    const metadata: MetadataFileSchema[] = [];
+
+    for (const collection of collections) {
+      const { items } = await this.assetService.listAssets(
+        archive,
+        collection.id,
+        { offset: 0, limit: Infinity }
+      );
+
+      const exports = items.map((asset) => [
+        asset.id,
+        {
+          metadata: mapValues(asset.metadata, (md) => md.rawValue),
+          files: asset.media.map((media) =>
+            this.mediaService.getMediaPath(archive, media)
+          )
+        }
+      ]);
+
+      metadata.push({
+        assets: Object.fromEntries(exports),
+        collection: collection.id
+      });
+    }
+
+    const output: SaveDanapackOpts = {
+      filepath: outpath,
+      metadataFiles: metadata,
+      manifest: {
+        archiveId: archive.id,
+        collections
+      }
+    };
+
+    await saveDanapack(output);
+    return ok();
+  }
 }

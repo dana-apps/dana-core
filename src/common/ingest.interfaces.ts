@@ -208,6 +208,12 @@ export const ExportCollection = RpcInterface({
   response: z.unknown()
 });
 
+export const ExportAll = RpcInterface({
+  id: 'ingest/export-archive',
+  request: z.undefined(),
+  response: z.unknown()
+});
+
 /**
  * Bootstrap an archive from a danapack
  */
