@@ -59,7 +59,7 @@ async function setup() {
   const migrationsPath = temp();
   await mkdir(migrationsPath, { recursive: true });
 
-  const db = await MikroORM.init<SqliteDriver>({
+  const db = await MikroORM.init({
     type: 'sqlite',
     dbName: temp(),
     migrations: {
@@ -73,6 +73,6 @@ async function setup() {
   await db.getMigrator().up();
 
   return {
-    archive: new ArchivePackage(temp(), db)
+    archive: new ArchivePackage(temp(), db, randomUUID())
   };
 }

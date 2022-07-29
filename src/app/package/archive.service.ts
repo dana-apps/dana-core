@@ -1,15 +1,18 @@
 import { AnyEntity, Constructor, EntityClass, MikroORM } from '@mikro-orm/core';
 import { Migration } from '@mikro-orm/migrations';
 import { SqliteDriver } from '@mikro-orm/sqlite';
+import { randomUUID } from 'crypto';
 import { EventEmitter } from 'eventemitter3';
 import { mkdir } from 'fs/promises';
 import { sortBy } from 'lodash';
 import path from 'path';
 import { Logger } from 'tslog';
+import { z } from 'zod';
 import { ArchiveOpeningError } from '../../common/interfaces/archive.interfaces';
 
 import { required } from '../../common/util/assert';
 import { error, ok } from '../../common/util/error';
+import { readJson, writeJson } from '../util/json-utils';
 import { discoverModuleExports } from '../util/module-utils';
 import { ArchivePackage, ArchiveSyncConfig } from './archive-package';
 
@@ -32,10 +35,24 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
    * @param location Absolute path to the archive package on disk
    * @returns An ArchivePackage instance
    */
-  async openArchive(location: string) {
+  async openArchive(location: string, id?: string) {
     const { entities, migrations } = readSchema();
+    const manifest = await this.readManifest(location);
 
-    const db = await MikroORM.init<SqliteDriver>({
+    if (manifest) {
+      if (id && manifest.id !== id) {
+        return error(ArchiveOpeningError.DATABASE_INCONSISTENCY);
+      }
+      id = manifest.id;
+    } else {
+      id = id ?? randomUUID();
+      await mkdir(location, { recursive: true });
+      await writeJson(path.join(location, 'manifest.json'), ArchiveManifest, {
+        id
+      });
+    }
+
+    const db = (await MikroORM.init<SqliteDriver>({
       type: 'sqlite',
       dbName: path.join(location, 'db.sqlite3'),
       debug: !!process.env.SQL_LOG_ENABLED,
@@ -46,7 +63,7 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
       discovery: {
         disableDynamicFileAccess: true
       }
-    });
+    })) as MikroORM;
 
     try {
       await db.getMigrator().up();
@@ -68,9 +85,10 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
     const archive = new ArchivePackage(
       normalizedLocation,
       db,
+      id,
       await this.hooks.getCmsSyncConfig?.(normalizedLocation)
     );
-    this._archives.set(normalizedLocation, archive);
+    this._archives.set(id, archive);
 
     this.emit('opened', {
       archive
@@ -98,6 +116,13 @@ export class ArchiveService extends EventEmitter<ArchiveEvents> {
     });
 
     await archive.teardown();
+  }
+
+  async readManifest(archiveLocation: string) {
+    return readJson(
+      path.join(archiveLocation, 'manifest.json'),
+      ArchiveManifest
+    );
   }
 
   /**
@@ -161,3 +186,7 @@ function readSchema() {
 export interface ArchiveHooks {
   getCmsSyncConfig?(path: string): Promise<ArchiveSyncConfig | undefined>;
 }
+
+const ArchiveManifest = z.object({
+  id: z.string()
+});

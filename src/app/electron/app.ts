@@ -1,9 +1,7 @@
-import { dialog, ipcMain } from 'electron';
-import {
-  OpenArchive,
-  ArchiveOpeningError
-} from '../../common/interfaces/archive.interfaces';
-import { error } from '../../common/util/error';
+import { randomUUID } from 'crypto';
+import { app, ipcMain } from 'electron';
+import path from 'path';
+import { OpenArchive } from '../../common/interfaces/archive.interfaces';
 import { UnwrapPromise } from '../../common/util/types';
 import { ArchiveService } from '../package/archive.service';
 import { getUserConfig } from './config';
@@ -25,27 +23,12 @@ export async function initApp() {
   });
   const router = new ElectronRouter(ipcMain, archiveService);
 
-  router.bindRpc(OpenArchive, async ({ create }) => {
-    const location = create
-      ? await dialog
-          .showSaveDialog({
-            title: 'New Archive',
-            message: 'Chose a location to store files for the new archive'
-          })
-          .then((x) => x.filePath)
-      : await dialog
-          .showOpenDialog({
-            title: 'Open Archive',
-            message: 'Find a dana archive to open',
-            properties: ['openDirectory']
-          })
-          .then((x) => x.filePaths[0]);
+  router.bindRpc(OpenArchive, async ({}) => {
+    const docs = path.join(app.getPath('documents'), 'dana');
+    const id = randomUUID();
+    const location = path.join(docs, 'New Archive_' + id);
 
-    if (!location) {
-      return error(ArchiveOpeningError.CANCELLED);
-    }
-
-    return archiveService.openArchive(location);
+    return archiveService.openArchive(location, id);
   });
 
   return {

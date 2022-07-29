@@ -16,6 +16,7 @@ const UserConfig = z.object({
   /** List of archives to automatically open on load */
   archives: z.record(
     z.object({
+      id: z.string().optional(),
       autoload: z.boolean(),
       syncConfig: z
         .object({

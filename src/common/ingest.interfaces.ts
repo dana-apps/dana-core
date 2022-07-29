@@ -207,3 +207,13 @@ export const ExportCollection = RpcInterface({
   }),
   response: z.unknown()
 });
+
+/**
+ * Bootstrap an archive from a danapack
+ */
+
+export const BootstrapArchive = RpcInterface({
+  id: 'ingest/bootstrap-archive',
+  request: z.object({}),
+  response: z.object({})
+});

@@ -1,4 +1,4 @@
-import { app as electronApp, BrowserWindow, ipcMain, Menu } from 'electron';
+import { app as electronApp, BrowserWindow, dialog, ipcMain } from 'electron';
 import { platform } from 'os';
 import path from 'path';
 import { autoUpdater } from 'electron-updater';
@@ -11,16 +11,19 @@ import {
   SHOW_DEVTOOLS,
   updateUserConfig
 } from '../electron/config';
-import { getSystray } from '../electron/systray';
 import { createFrontendWindow, initWindows } from '../electron/window';
 import { initIngest } from '../ingest/ingest.init';
 import { initMedia } from '../media/media.init';
 import { ArchivePackage } from '../package/archive-package';
 import { Logger } from 'tslog';
-import { stat } from 'fs/promises';
+import { mkdir, stat } from 'fs/promises';
 import { MediaFileService } from '../media/media-file.service';
 import { WindowSize } from '../../common/ui.interfaces';
 import { initSync } from '../sync/sync.init';
+import { BootstrapArchive } from '../../common/ingest.interfaces';
+import { openDanapack } from '../ingest/danapack';
+import { error, ok } from '../../common/util/error';
+import { randomUUID } from 'crypto';
 
 async function main() {
   let newArchiveWindow: BrowserWindow | undefined;
@@ -30,7 +33,7 @@ async function main() {
   /** Setup the business logic of the app */
   const media = initMedia();
   const assets = initAssets(app.router, media.fileService);
-  await initIngest(
+  const ingest = await initIngest(
     app.router,
     app.archiveService,
     media.fileService,
@@ -42,6 +45,39 @@ async function main() {
     assets.assetService,
     media.fileService
   );
+
+  /** Bind a few misc events that don't make sense elsewhere */
+  app.router.bindRpc(BootstrapArchive, async () => {
+    const openRes = await dialog.showOpenDialog(
+      undefined as unknown as BrowserWindow,
+      {
+        filters: [{ name: 'Danapack', extensions: ['danapack'] }]
+      }
+    );
+
+    const docs = path.join(electronApp.getPath('documents'), 'dana');
+    const danapackLocation = openRes.filePaths[0];
+    const id = await openDanapack(danapackLocation)
+      .then((d) => d.manifest())
+      .then((x) => x.status === 'ok' && x.value.archiveId);
+
+    if (!id) {
+      return error('invalid danapack');
+    }
+
+    await mkdir(docs, { recursive: true });
+    const storageLocation = path.join(
+      docs,
+      path.basename(danapackLocation, path.extname(danapackLocation)) + '_' + id
+    );
+
+    const archive = await ingest.bootstrap.boostrapArchiveFromDanapack(
+      danapackLocation,
+      storageLocation
+    );
+
+    return archive.status === 'ok' ? ok() : archive;
+  });
 
   ipcMain.on('restart', () => {
     electronApp.relaunch();
@@ -102,17 +138,25 @@ async function main() {
    * Show the window for an archive.
    */
   async function showArchiveWindow(archive: ArchivePackage) {
+    const baseTitle = path.basename(
+      archive.location,
+      path.extname(archive.location)
+    );
+
     const window = await createFrontendWindow({
-      title: path.basename(archive.location, path.extname(archive.location)),
+      title: baseTitle.replace(
+        /_[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/,
+        ''
+      ),
       config: { documentId: archive.id, type: 'archive' },
       resolveMedia: (uri) => MediaFileService.resolveRenditionUri(archive, uri),
       router: app.router
     });
 
-    app.router.addWindow(window.webContents, archive.location);
+    app.router.addWindow(window.webContents, archive.id);
 
     window.on('close', () => {
-      app.archiveService.closeArchive(archive.location);
+      app.archiveService.closeArchive(archive.id);
     });
   }
 
@@ -135,7 +179,7 @@ async function main() {
       }
 
       if (opts.autoload) {
-        await app.archiveService.openArchive(location);
+        await app.archiveService.openArchive(location, opts.id);
         hasAutoloaded = true;
       }
     }

@@ -21,6 +21,7 @@ import { MediaFileService } from '../media/media-file.service';
 import { ArchiveService } from '../package/archive.service';
 import { AssetExportService } from './asset-export.service';
 import { AssetIngestService } from './asset-ingest.service';
+import { BooststrapService } from './bootstrap.service';
 
 /**
  * Starts the ingest-related application services and binds them to the frontend.
@@ -44,6 +45,12 @@ export async function initIngest(
     collectionService,
     assetService,
     mediaService
+  );
+
+  const bootstrap = new BooststrapService(
+    archiveService,
+    collectionService,
+    assetIngest
   );
 
   // When an archive opens, start managing its ingest operations
@@ -208,6 +215,7 @@ export async function initIngest(
   });
 
   return {
+    bootstrap,
     assetExport,
     assetIngest
   };

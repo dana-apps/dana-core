@@ -20,15 +20,9 @@ export class ArchivePackage {
   constructor(
     readonly location: string,
     private db: MikroORM,
+    readonly id: string,
     readonly syncConfig?: ArchiveSyncConfig
   ) {}
-
-  /**
-   * Unique id for the archive.
-   */
-  get id() {
-    return this.location;
-  }
 
   /**
    * Teardown any long-running processes managed by this object.

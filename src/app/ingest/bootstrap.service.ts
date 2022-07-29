@@ -40,7 +40,10 @@ export class BooststrapService extends EventEmitter<BootstrapEvents> {
       return error('cannot bootstrap');
     }
 
-    const archive = await this.archives.openArchive(storageLocation);
+    const archive = await this.archives.openArchive(
+      storageLocation,
+      manifest.value.archiveId
+    );
     if (archive.status === 'error') {
       return error('archive opening error');
     }
