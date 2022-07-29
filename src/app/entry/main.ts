@@ -58,7 +58,6 @@ async function main() {
   await initUpdates();
   await initWindows(app.router);
   await initDevtools();
-  await initSystray();
   await initRouter();
   await initArchives();
   await showInitialScreen();
@@ -168,27 +167,6 @@ async function main() {
     });
 
     newArchiveWindow = window;
-  }
-
-  /**
-   * Setup the systray menu and bind its event handlers.
-   */
-  async function initSystray() {
-    const systray = getSystray();
-    systray.on('click', showInitialScreen);
-
-    systray.setContextMenu(
-      Menu.buildFromTemplate([
-        {
-          label: 'Exit',
-          click: () => {
-            process.exit();
-          }
-        }
-      ])
-    );
-
-    electronApp.dock?.hide();
   }
 
   /** If we're running in dev mode, show the de */

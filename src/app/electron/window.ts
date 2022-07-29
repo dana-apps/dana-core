@@ -180,8 +180,6 @@ export async function createFrontendWindow({
     showWindowAfterFirstRender(mergedConfig, frontendWindow)
   ]);
 
-  app.dock?.show();
-
   frontendWindow.focus();
 
   return frontendWindow;
