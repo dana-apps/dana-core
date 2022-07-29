@@ -29,6 +29,13 @@ describe('bootstrap', () => {
       'e2216ff2-095d-4fa6-97ce-dca4a77a5eac'
     );
     expect(assets.items).toHaveLength(2);
+    expect(
+      assets.items.map(
+        (x) =>
+          x.metadata['24b77aa4-3752-4daf-9b88-70b879e6b876']
+            ?.presentationValue[0]?.label
+      )
+    ).toContain('My Keyword');
   });
 });
 
