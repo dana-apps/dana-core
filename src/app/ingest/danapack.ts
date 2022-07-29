@@ -79,7 +79,7 @@ export async function saveDanapack({
   manifest,
   metadataFiles
 }: SaveDanapackOpts) {
-  const rootDir = systemPath.basename(filepath);
+  const rootDir = systemPath.basename(filepath, systemPath.extname(filepath));
   const zip = new ZipStream();
   const writer = createWriteStream(filepath);
   zip.pipe(writer);

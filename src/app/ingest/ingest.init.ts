@@ -172,7 +172,7 @@ export async function initIngest(
   );
 
   router.bindArchiveRpc(CommitIngestSession, async (archive, { sessionId }) => {
-    await assetIngest.commitSession(archive, sessionId);
+    await assetIngest.commitSession(archive, sessionId, { danapack: true });
     return ok();
   });
 

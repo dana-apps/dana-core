@@ -17,6 +17,7 @@ import { CollectionService } from '../../asset/collection.service';
 import { assetMetadata, assetMetadataItem } from '../../asset/test-utils';
 import { MediaFile } from '../../media/media-file.entity';
 import { MediaFileService } from '../../media/media-file.service';
+import { ArchiveService } from '../../package/archive.service';
 import { AssetExportService } from '../asset-export.service';
 import {
   AssetImportEntity,
@@ -27,6 +28,7 @@ import {
   AssetIngestService,
   ImportStateChanged
 } from '../asset-ingest.service';
+import { BooststrapService } from '../bootstrap.service';
 
 describe('AssetImportOperation', () => {
   if (!process.env.NO_OVERRIDE_TIMEOUTS) {
@@ -559,11 +561,117 @@ describe('AssetImportOperation', () => {
       expect.arrayContaining(exportedAssets.items.map((item) => item.metadata))
     );
   });
+
+  test('Imports a danapack exported from a collection', async () => {
+    const exportInstance = await setup();
+    const importInstance = await setup();
+    const exportedFile = exportInstance.temp() + '.danapack';
+
+    await exportInstance.givenThatAFileHasBeenImportedToTheMainCollection();
+
+    requireSuccess(
+      await exportInstance.exportService.exportCollection(
+        exportInstance.archive,
+        exportInstance.rootCollection.id,
+        exportedFile
+      )
+    );
+
+    await importInstance.givenThatAFileHasBeenImportedToTheMainCollection(
+      exportedFile
+    );
+
+    const exportedAssets = await exportInstance.assetService.listAssets(
+      exportInstance.archive,
+      exportInstance.rootCollection.id
+    );
+    const importedAssets = await importInstance.assetService.listAssets(
+      importInstance.archive,
+      importInstance.rootCollection.id
+    );
+
+    expect(importedAssets.total).toBe(2);
+    expect(importedAssets.items.map((item) => item.metadata)).toEqual(
+      expect.arrayContaining(exportedAssets.items.map((item) => item.metadata))
+    );
+  });
+
+  test('Updates a danapack exported from another instance of the archive', async () => {
+    const exportInstance = await setup();
+    const importInstance = await setup();
+    const exportedFile = exportInstance.temp() + '.danapack';
+
+    await exportInstance.givenThatAFileHasBeenImportedToTheMainCollection();
+
+    requireSuccess(
+      await exportInstance.exportService.exportCollection(
+        exportInstance.archive,
+        exportInstance.rootCollection.id,
+        exportedFile
+      )
+    );
+
+    await importInstance.givenThatAFileHasBeenImportedToTheMainCollection(
+      exportedFile
+    );
+
+    const exportedAssets = await exportInstance.assetService.listAssets(
+      exportInstance.archive,
+      exportInstance.rootCollection.id
+    );
+    const importedAssets = await importInstance.assetService.listAssets(
+      importInstance.archive,
+      importInstance.rootCollection.id
+    );
+
+    expect(importedAssets.total).toBe(2);
+    expect(importedAssets.items.map((item) => item.metadata)).toEqual(
+      expect.arrayContaining(exportedAssets.items.map((item) => item.metadata))
+    );
+  });
+
+  test('Imports a danapack exported from the same archive containing updates', async () => {
+    const instance = await setup(BOOTSTRAP_EXAMPLE);
+
+    const session = await instance.givenThatAnImportSessionHasRunSuccessfuly(
+      BOOTSTRAP_EXAMPLE_UPDATE,
+      'e2216ff2-095d-4fa6-97ce-dca4a77a5eac'
+    );
+
+    const assets = await instance.importService.listSessionAssets(
+      instance.archive,
+      session.id
+    );
+    expect(assets.items).toHaveLength(2);
+
+    await instance.importService.commitSession(instance.archive, session.id, {
+      danapack: true
+    });
+
+    const updated = await instance.assetService.get(
+      instance.archive,
+      '74022118-de3e-4ffb-b32b-174fa21c2753'
+    );
+    const added = await instance.assetService.get(
+      instance.archive,
+      'fccd9d9e-0419-4bb0-96cc-150e187830d5'
+    );
+
+    expect(
+      updated.metadata['bf0ef7ef-a393-4d9a-9a01-fa084623f9ad']
+    ).toMatchObject({
+      rawValue: ['hello changed']
+    });
+    expect(
+      added.metadata['bf0ef7ef-a393-4d9a-9a01-fa084623f9ad']
+    ).toMatchObject({
+      rawValue: ['world']
+    });
+  });
 });
 
-const setup = async () => {
+const setup = async (seedContent?: string) => {
   const temp = await getTempfiles();
-  const archive = await getTempPackage(temp());
   const mediaService = new MediaFileService();
   const collectionService = new CollectionService();
   const assetService = new AssetService(collectionService, mediaService);
@@ -577,10 +685,22 @@ const setup = async () => {
     assetService,
     collectionService
   );
+  const archives = new ArchiveService();
+  const bootstrap = new BooststrapService(
+    archives,
+    collectionService,
+    importService
+  );
+
+  const archive = seedContent
+    ? requireSuccess(
+        await bootstrap.boostrapArchiveFromDanapack(seedContent, temp())
+      )
+    : await getTempPackage(temp());
+
   const rootCollection = await collectionService.getRootAssetCollection(
     archive
   );
-
   const givenThatAnImportSessionHasRunSuccessfuly = async (
     example: string = BASIC_EXAMPLE,
     collection = rootCollection.id
@@ -614,6 +734,7 @@ const setup = async () => {
     assetService,
     collectionService,
     rootCollection,
+    bootstrap,
     temp,
     givenACollectionMetadataSchema,
     statusEvents: <T>(fn: (event: ImportStateChanged) => T) => {
@@ -639,6 +760,18 @@ const BASIC_EXAMPLE = path.join(
   __dirname,
   'fixtures',
   'basic-fixture.danapack'
+);
+
+const BOOTSTRAP_EXAMPLE = path.join(
+  __dirname,
+  'fixtures',
+  'bootstrap-fixture.danapack'
+);
+
+const BOOTSTRAP_EXAMPLE_UPDATE = path.join(
+  __dirname,
+  'fixtures',
+  'bootstrap-fixture-update.danapack'
 );
 
 const BASIC_EXAMPLE_SCHEMA: SchemaProperty[] = [

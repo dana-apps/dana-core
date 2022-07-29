@@ -2,10 +2,11 @@
 
 import { FC } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Plus } from 'react-bootstrap-icons';
+import { Plus, Share } from 'react-bootstrap-icons';
 import { Box, Flex, IconButton } from 'theme-ui';
 
 import {
+  ExportAll,
   ExportCollection,
   IngestPhase,
   IngestSession,
@@ -94,12 +95,12 @@ export const ArchiveScreen: FC<{ title?: string }> = () => {
                   onRename: (title) => renameCollection(collection.id, title),
                   contextMenuItems: [
                     {
-                      action: () => startImport(assetRoot.id),
+                      action: () => startImport(collection.id),
                       id: 'start-import',
                       label: 'Import assets'
                     },
                     {
-                      action: () => startExport(assetRoot.id),
+                      action: () => startExport(collection.id),
                       id: 'start-export',
                       label: 'Export assets'
                     }
@@ -136,6 +137,10 @@ export const ArchiveScreen: FC<{ title?: string }> = () => {
         <>
           <IconButton {...createMenu.triggerProps}>
             <Plus size={32} />
+          </IconButton>
+
+          <IconButton onClick={() => rpc(ExportAll, {})}>
+            <Share size={14} />
           </IconButton>
         </>
       }

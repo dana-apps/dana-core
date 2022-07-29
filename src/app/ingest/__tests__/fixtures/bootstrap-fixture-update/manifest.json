@@ -1,0 +1,58 @@
+{
+  "archiveId": "d8aef83f-5dc8-4fbe-8155-fe6e712a465d",
+  "collections": [
+    {
+      "id": "$root",
+      "schema": [
+        {
+          "id": "bf0ef7ef-a393-4d9a-9a01-fa084623f9ad",
+          "label": "Title",
+          "type": "FREE_TEXT",
+          "required": false,
+          "repeated": false,
+          "visible": true
+        },
+        {
+          "id": "24b77aa4-3752-4daf-9b88-70b879e6b876",
+          "label": "Keywords",
+          "type": "CONTROLLED_DATABASE",
+          "required": false,
+          "repeated": true,
+          "visible": true,
+          "databaseId": "cc40501b-2577-4d14-9157-8c435001c673"
+        }
+      ],
+      "title": "Assets",
+      "type": "ASSET_COLLECTION"
+    },
+    {
+      "id": "$databases",
+      "schema": [],
+      "title": "Databases",
+      "type": "CONTROLLED_DATABASE"
+    },
+    {
+      "id": "e2216ff2-095d-4fa6-97ce-dca4a77a5eac",
+      "schema": [],
+      "title": "My Assets",
+      "type": "ASSET_COLLECTION",
+      "parent": "$root"
+    },
+    {
+      "id": "cc40501b-2577-4d14-9157-8c435001c673",
+      "schema": [
+        {
+          "id": "951a7c06-dafd-427b-b691-e9d685262332",
+          "label": "Title",
+          "type": "FREE_TEXT",
+          "required": false,
+          "repeated": false,
+          "visible": true
+        }
+      ],
+      "title": "Keyword",
+      "type": "CONTROLLED_DATABASE",
+      "parent": "$databases"
+    }
+  ]
+}

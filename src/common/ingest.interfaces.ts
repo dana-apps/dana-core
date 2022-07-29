@@ -210,7 +210,7 @@ export const ExportCollection = RpcInterface({
 
 export const ExportAll = RpcInterface({
   id: 'ingest/export-archive',
-  request: z.undefined(),
+  request: z.object({}),
   response: z.unknown()
 });
 

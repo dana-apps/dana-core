@@ -1,0 +1,19 @@
+{
+  "collection": "e2216ff2-095d-4fa6-97ce-dca4a77a5eac",
+  "assets": {
+    "74022118-de3e-4ffb-b32b-174fa21c2753": {
+      "metadata": {
+        "bf0ef7ef-a393-4d9a-9a01-fa084623f9ad": ["hello changed"],
+        "24b77aa4-3752-4daf-9b88-70b879e6b876": [
+          "416cd567-8047-40d6-a032-26dbd0d2c3d8"
+        ]
+      },
+      "files": ["a.png", "b.jpg"]
+    },
+    "fccd9d9e-0419-4bb0-96cc-150e187830d5": {
+      "metadata": {
+        "bf0ef7ef-a393-4d9a-9a01-fa084623f9ad": ["world"]
+      }
+    }
+  }
+}

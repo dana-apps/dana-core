@@ -8,7 +8,7 @@ import { ArchivePackage } from '../package/archive-package';
 import { ArchiveService } from '../package/archive.service';
 import { AssetIngestOperation } from './asset-ingest.operation';
 import { AssetIngestService } from './asset-ingest.service';
-import { ManifestFileSchema, openDanapack } from './danapack';
+import { openDanapack } from './danapack';
 
 export class BooststrapService extends EventEmitter<BootstrapEvents> {
   constructor(

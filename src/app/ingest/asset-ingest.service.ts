@@ -218,18 +218,49 @@ export class AssetIngestService extends EventEmitter<Events> {
           populate: ['media']
         });
 
-        const createResult = await this.assetService.createAsset(
-          archive,
-          session.targetCollectionId,
-          {
-            forceId: forceIds ? assetImport.path : undefined,
-            metadata: assetImport.metadata,
-            accessControl: assetImport.accessControl,
-            media: compact(
-              assetImport.files.getItems().map((item) => item.media)
-            )
+        let createResult;
+        if (forceIds) {
+          try {
+            createResult = await this.assetService.createAsset(
+              archive,
+              session.targetCollectionId,
+              {
+                forceId: forceIds ? assetImport.path : undefined,
+                metadata: assetImport.metadata,
+                accessControl: assetImport.accessControl,
+                media: compact(
+                  assetImport.files.getItems().map((item) => item.media)
+                )
+              }
+            );
+          } catch {
+            createResult = await this.assetService.updateAsset(
+              archive,
+              assetImport.path,
+              {
+                forceId: forceIds ? assetImport.path : undefined,
+                metadata: assetImport.metadata,
+                accessControl: assetImport.accessControl,
+                // TODO: media should be deleted if dropped?
+                media: compact(
+                  assetImport.files.getItems().map((item) => item.media)
+                )
+              }
+            );
           }
-        );
+        } else {
+          createResult = await this.assetService.createAsset(
+            archive,
+            session.targetCollectionId,
+            {
+              metadata: assetImport.metadata,
+              accessControl: assetImport.accessControl,
+              media: compact(
+                assetImport.files.getItems().map((item) => item.media)
+              )
+            }
+          );
+        }
 
         if (createResult.status !== 'ok') {
           return createResult;
