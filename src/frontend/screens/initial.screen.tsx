@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useCallback } from 'react';
-import { Button, Heading } from 'theme-ui';
+import { Button } from 'theme-ui';
 import { BootstrapArchive } from '../../common/ingest.interfaces';
 import { OpenArchive } from '../../common/interfaces/archive.interfaces';
 import { useRPC } from '../ipc/ipc.hooks';
@@ -28,6 +28,17 @@ export const InitialScreen: FC = () => {
     }
   }, [rpc]);
 
+  const buttonStyling = {
+    background: '#001FCD',
+    border: '1px solid #001FCD',
+    width: '100%',
+    height: '36px',
+    fontStyle: 'normal',
+    fontWeight: 700,
+    fontSize: '12px',
+    lineHeight: '16px'
+  };
+
   return (
     <WindowDragArea
       sx={{
@@ -41,16 +52,25 @@ export const InitialScreen: FC = () => {
         color: 'primaryContrast'
       }}
     >
-      {/* <WindowInset /> */}
-      <Heading>Dana Core</Heading>
-
       <span sx={{ flex: 1 }} />
 
-      <Button variant="secondaryTransparent" onClick={newArchive}>
+      <Button
+        variant="secondaryTransparent"
+        onClick={newArchive}
+        sx={{ ...buttonStyling, marginBottom: '20px' }}
+      >
         Create empty archive
       </Button>
 
-      <Button variant="secondaryTransparent" onClick={openDanapack}>
+      <Button
+        variant="secondaryTransparent"
+        onClick={openDanapack}
+        sx={{
+          ...buttonStyling,
+          backgroundColor: 'white',
+          color: '#001FCD'
+        }}
+      >
         Create archive from Danapack
       </Button>
 

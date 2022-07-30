@@ -1,7 +1,8 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, HTMLAttributes, useCallback, useEffect, useState } from 'react';
-import { BoxProps, Text } from 'theme-ui';
+import { ThreeDots } from 'react-bootstrap-icons';
+import { BoxProps, Button, Flex, Text } from 'theme-ui';
 import { FrontendPlatform } from '../../common/frontend-config';
 import {
   MaximizationState,
@@ -270,22 +271,49 @@ export const WindowTitle: FC<{ showVersion?: boolean } & BoxProps> = ({
       sx={{
         py: 5,
         px: 4,
-        bg: 'gray1',
+        bg: 'offWhite',
         position: 'relative'
       }}
       {...props}
     >
-      <Text sx={{ fontWeight: 600 }}>{children || title}</Text>
+      <Flex sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text
+          sx={{
+            fontWeight: 800,
+            fontFamily: 'body',
+            fontSize: '18px',
+            lineHeight: '25px'
+          }}
+        >
+          {children || title}
+        </Text>
+        {/* <Button
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingX: '13px',
+            paddingY: '13px',
+            width: '93px'
+          }}
+        >
+          <ThreeDots /> Options
+        </Button> */}
+      </Flex>
+
       {showVersion && (
         <Text
           sx={{
-            position: 'absolute',
-            right: 0,
             bottom: 0,
-            fontSize: 0,
-            textAlign: 'right',
+            color: '#818388',
+            fontSize: '14px',
+            fontWeight: 500,
+            lineHeight: ' 14px',
             p: 1,
-            px: 3
+            position: 'absolute',
+            px: 3,
+            right: 0,
+            textAlign: 'right'
           }}
         >
           v{version} ({releaseDate.replace(/T\d\d.*/, '')})

@@ -39,7 +39,19 @@ export const NavListSection: FC<NavListSectionProps> = ({
   ...props
 }) => (
   <Box sx={{ pb: 5 }} {...props}>
-    <Heading sx={{ p: 2, px: 3 }} variant="section" as="h3">
+    <Heading
+      sx={{
+        p: 2,
+        px: 3,
+        fontStyle: 'normal',
+        fontWeight: '800',
+        fontSize: '10px',
+        lineHeight: '14px',
+        color: '#818388'
+      }}
+      variant="section"
+      as="h3"
+    >
       {title}
     </Heading>
 
@@ -171,13 +183,16 @@ export const NavListItem: FC<NavListItemProps> = forwardRef(
           alignItems: 'center',
           bg: isActive ? 'highlight' : undefined,
           p: 2,
+          minHeight: '30px',
           px: 3,
-          fontSize: 1,
           marginTop: '1px',
           color: isActive ? 'highlightContrast' : undefined,
           '&:hover': {
             bg: isActive ? undefined : 'highlightHint'
-          }
+          },
+          fontWeight: '500',
+          fontSize: '14px',
+          lineHeight: '16px'
         }}
         {...props}
       >
@@ -223,7 +238,14 @@ export const NavListItem: FC<NavListItemProps> = forwardRef(
     } else {
       return (
         <NavLink
-          sx={{ color: 'inherit', textDecoration: 'inherit' }}
+          sx={{
+            fontFamily: 'body',
+            textDecoration: 'inherit',
+            color: 'white',
+            fontWeight: '500',
+            fontSize: '12px',
+            lineHeight: '16px'
+          }}
           to={path}
           {...props}
         >
@@ -287,8 +309,8 @@ export const ArchiveWindowLayout: FC<ArchiveWindowLayoutProps> = ({
               justifyContent: 'flex-start',
               flexShrink: 0,
               borderTop: '1px solid var(--theme-ui-colors-border)',
-              color: 'muted',
-              bg: 'gray1',
+              color: 'white',
+              bg: 'black',
               '> *': {
                 marginInlineEnd: 2
               }
@@ -323,7 +345,6 @@ export const BottomBar: FC<BottomBarProps> = ({
   <Flex
     sx={{
       padding: 4,
-      bg: 'gray1',
       borderTop: 'primary',
       flexDirection: 'row',
       justifyContent: 'flex-end',

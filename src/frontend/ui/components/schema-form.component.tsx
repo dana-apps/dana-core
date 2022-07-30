@@ -288,7 +288,11 @@ const ReadonlyDisplay: FC<{
     const sx = {
       overflow: 'hidden',
       textOverflow: 'ellipsis',
-      display: 'block'
+      display: 'block',
+      fontFamily: 'body',
+      fontWeight: 'body',
+      fontSize: '10px',
+      lineHeight: '14px'
     };
 
     if (!value || value.rawValue.length === 0) {
@@ -320,7 +324,9 @@ const ReadonlyDisplay: FC<{
 
   return (
     <Box sx={{ position: 'relative' }} {...props}>
-      <Label>{property.label}</Label>
+      <Label sx={{ fontWeight: 'bold', lineHeight: '14px', fontSize: '10px' }}>
+        {property.label}
+      </Label>
 
       <Text>{getValue()}</Text>
     </Box>

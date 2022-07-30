@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 
 import { FC, useCallback, useState } from 'react';
-import { Plus, X } from 'react-bootstrap-icons';
+import { PencilFill, Plus, X } from 'react-bootstrap-icons';
 import {
   Label,
   Box,
@@ -110,7 +110,7 @@ export const RecordInspector: FC<RecordInspectorProps> = ({
   };
 
   return (
-    <Box sx={{ bg: 'gray1', height: '100%', overflowY: 'auto' }} {...props}>
+    <Box sx={{ height: '100%', overflowY: 'auto' }} {...props}>
       {showMedia && (
         <AssetFilesList
           onAddFile={editMedia ? handleAddFile : undefined}
@@ -178,20 +178,27 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
           py: 3,
           flexDirection: 'row',
           alignItems: 'baseline',
-          justifyContent: 'space-between',
-          bg: 'gray1'
+          justifyContent: 'space-between'
         }}
       >
-        <Label sx={{ width: 'auto', pt: 1 }}>Metadata</Label>
+        <Label
+          sx={{
+            width: 'auto',
+            pt: 1,
+            fontWeight: 'heavy',
+            textTransform: 'uppercase',
+            color: 'lightGrey',
+            fontSize: '10px',
+            lineHeight: '14px'
+          }}
+        >
+          Schematised Metadata
+        </Label>
 
         {onStartEditing && !isEditing && (
-          <Button
-            sx={{ fontSize: 1, p: 0 }}
-            variant="primaryTransparent"
-            onClick={onStartEditing}
-          >
-            Edit
-          </Button>
+          <IconButton onClick={onStartEditing}>
+            <PencilFill sx={{ height: '10px', color: '#818388' }} />
+          </IconButton>
         )}
       </Flex>
 
@@ -203,15 +210,12 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
           '> :not(:last-child)': { mb: 5 }
         }}
       >
-        {!hideRecordId && (
-          <Box>
-            <Label>Record ID</Label>
-            <Text sx={{ userSelect: 'all' }}>{asset.id}</Text>
-          </Box>
-        )}
-
         <Box>
-          <Label>Access Control</Label>
+          <Label
+            sx={{ fontWeight: 'bold', lineHeight: '14px', fontSize: '10px' }}
+          >
+            Access Control
+          </Label>
 
           {isEditing ? (
             <Select
@@ -231,7 +235,9 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
               ))}
             </Select>
           ) : (
-            getAccessControlLabel(asset.accessControl)
+            <Text sx={{ fontSize: '10px' }}>
+              {getAccessControlLabel(asset.accessControl)}
+            </Text>
           )}
         </Box>
 
@@ -254,6 +260,27 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
             )}
           </Box>
         ))}
+
+        {!hideRecordId && (
+          <Box>
+            <Label
+              sx={{ fontWeight: 'bold', lineHeight: '14px', fontSize: '10px' }}
+            >
+              Record ID
+            </Label>
+            <Text
+              sx={{
+                userSelect: 'all',
+                fontFamily: 'body',
+                fontWeight: 'body',
+                fontSize: '10px',
+                lineHeight: '14px'
+              }}
+            >
+              {asset.id}
+            </Text>
+          </Box>
+        )}
       </Box>
 
       {isEditing && onCommitEdits && (
@@ -263,9 +290,9 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
             flexDirection: 'row',
             position: 'sticky',
             bottom: 0,
-            bg: 'gray1',
             p: 4,
-            borderTop: 'light'
+            borderTop: 'light',
+            backgroundColor: 'offWhite'
           }}
         >
           {onCancelEdits && (
@@ -298,7 +325,6 @@ export const AssetFilesList: FC<MediaFileListProps> = ({
     <Box {...props}>
       <Flex
         sx={{
-          bg: 'gray1',
           p: 4,
           py: 3,
           flexDirection: 'row',
@@ -307,16 +333,28 @@ export const AssetFilesList: FC<MediaFileListProps> = ({
           borderTop: 'light'
         }}
       >
-        <Label sx={{ width: 'auto', pt: 1 }}>Media Files</Label>
+        <Label
+          sx={{
+            width: 'auto',
+            pt: 1,
+            fontWeight: 'heavy',
+            textTransform: 'uppercase',
+            color: 'lightGrey',
+            fontSize: '10px',
+            lineHeight: '14px'
+          }}
+        >
+          Media Files
+        </Label>
 
         {onAddFile && (
           <Button
             onClick={onAddFile}
             sx={{ fontSize: 1, p: 0 }}
             variant="primaryTransparent"
+            title="Add media"
           >
             <Plus sx={{ pb: 1 }} size={18} />
-            Add Media
           </Button>
         )}
       </Flex>
@@ -324,38 +362,40 @@ export const AssetFilesList: FC<MediaFileListProps> = ({
       {asset.media.map((file) => (
         <Flex
           sx={{
-            '&:last-child': { borderBottom: 'light' },
-            borderTop: 'light',
-            flexDirection: 'row',
+            flexDirection: 'column',
             p: 4,
             bg: 'background'
           }}
           key={file.id}
         >
-          <Image
-            key={file.rendition}
-            src={file.rendition}
-            sx={{ objectFit: 'contain', maxHeight: 80, width: 80 }}
-          />
-          <Box
+          <Image key={file.rendition} src={file.rendition} />
+          <Flex
             sx={{
-              flex: 1,
-              pl: 3,
-              fontSize: 1
+              flexDirection: 'row',
+              paddingTop: '10px',
+              alignItems: 'center'
             }}
           >
-            <div sx={{ pb: 2 }}>{fileType(file.mimeType)}</div>
-            <div>{megabytes(file.fileSize)}MB</div>
-          </Box>
-
-          {onDeleteFile && (
-            <IconButton
-              onClick={() => onDeleteFile(file)}
-              sx={{ width: 18, height: 18, p: 0 }}
+            <Text
+              sx={{
+                flex: 1,
+                flexDirection: 'row',
+                fontSize: '10px'
+              }}
             >
-              <X size={18} />
-            </IconButton>
-          )}
+              {fileType(file.mimeType)}
+            </Text>
+
+            <Text sx={{ fontSize: '10px' }}>{megabytes(file.fileSize)}MB</Text>
+            {onDeleteFile && (
+              <IconButton
+                onClick={() => onDeleteFile(file)}
+                sx={{ width: 18, height: 18, p: 0 }}
+              >
+                <X size={18} />
+              </IconButton>
+            )}
+          </Flex>
         </Flex>
       ))}
     </Box>

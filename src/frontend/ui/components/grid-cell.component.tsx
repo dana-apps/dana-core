@@ -21,39 +21,52 @@ export const MetadataItemCell: DataGridCell<{
   const ctx = useContext(MetadataItemContext);
   const redactedProps = value?.redactedProps;
   const redacted = value?.redactedProps?.includes(property);
+
   return (
-    <div
-      sx={{
-        p: '2px',
-        border: redacted ? '1px solid black' : 'none',
-        '&:hover > .show-hover': { opacity: 1 }
-      }}
-    >
-      <span>{presentationValue(value?.metadata)}</span>
-      {redactedProps && (
-        <button
-          onClick={() =>
-            value &&
-            ctx.setRedactedProperties?.(
-              value?.id,
+    <div>
+      <span
+        sx={{
+          border: redacted ? '1px solid black' : 'none',
+          p: '2px',
+          '&:hover .show-hover': { opacity: 1 }
+        }}
+        title={
+          redacted
+            ? 'This is redacted - it will not be exported or shown outside of this archive'
+            : ''
+        }
+      >
+        {presentationValue(value?.metadata)}
+        {redactedProps && (
+          <button
+            onClick={() =>
+              value &&
+              ctx.setRedactedProperties?.(
+                value?.id,
+                redacted
+                  ? redactedProps?.filter((x) => x !== property)
+                  : [...redactedProps, property]
+              )
+            }
+            className="show-hover"
+            sx={{
+              p: 0,
+              pl: 2,
+              border: 'none',
+              bg: 'transparent',
+              opacity: redacted ? 1 : 0,
+              display: 'inline-block'
+            }}
+            title={
               redacted
-                ? redactedProps?.filter((x) => x !== property)
-                : [...redactedProps, property]
-            )
-          }
-          className="show-hover"
-          sx={{
-            p: 0,
-            pl: 2,
-            border: 'none',
-            bg: 'transparent',
-            opacity: redacted ? 1 : 0,
-            display: 'inline-block'
-          }}
-        >
-          <img sx={{ width: 10, height: 10 }} src={redactedIcon} />
-        </button>
-      )}
+                ? 'Unredact - field will be allowed to be exported from this archive'
+                : 'Redact - no longer allow export outside of this archive'
+            }
+          >
+            <img sx={{ width: 10, height: 10 }} src={redactedIcon} />
+          </button>
+        )}
+      </span>
     </div>
   );
 };

@@ -4,24 +4,25 @@ import { Scale } from '@theme-ui/css';
 import { Dict } from '../../common/util/types';
 
 const controlHover = {
-  '&:hover:not(:disabled):not(:active):not([aria-selected="true"])': {
-    opacity: 0.5
-  },
-  '&:disabled:not(:active):not([aria-selected="true"])': {
-    opacity: 0.5
-  }
+  cursor: 'pointer'
 };
 
-const colors = {
+export const colors = {
   dark: '#010000',
   gray: '#D9D4D3',
-  gray1: '#EDE9E9',
+  gray1: '#F5F5F5',
   gray2: '#F9F7F7',
   green: '#60D39B',
   muted: '#818B88',
   brown: '#81683E',
   charcoal: '#3C3746',
-  blue: '#28108A'
+  blue: '#28108A',
+  brightBlue: '#001FCD',
+  black: '#0A0A0A',
+  lightGrey: ' #818388',
+  lightBlue: '#C5CCEF',
+  offWhite: '#E6EAED',
+  washedGrey: '#DCE2E7'
 };
 
 const scaleGet = <T>(scale: Scale<T> | undefined, key: string | number) =>
@@ -44,12 +45,12 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
       error: polished.setHue(0, colors.green),
       warn: polished.setHue(26, colors.green),
       border: colors.gray,
-      highlight: colors.charcoal,
+      highlight: colors.brightBlue,
       highlightHint: polished.transparentize(0.8, colors.charcoal),
       highlightContrast: 'white',
-      background: colors.gray2,
+      background: colors.offWhite,
       foreground: 'white',
-      primary: colors.blue,
+      primary: colors.black,
       primaryContrast: 'white',
       secondary: '#81683E',
       accent: '#008FFF',
@@ -71,16 +72,17 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
       selected: '0 0 0 2px var(--theme-ui-colors-accent)'
     },
     fonts: {
-      body: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
-      heading:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
+      body: '"Manrope", sans-serif',
+      heading: '"Manrope", sans-serif',
       monospace: 'Menlo, monospace'
     },
     fontSizes: [12, 14, 16, 20, 24, 32, 48, 64, 72],
     fontWeights: {
       body: 400,
       heading: 400,
-      display: 600
+      display: 600,
+      bold: 700,
+      heavy: 800
     },
     lineHeights: {
       body: 1.5,
@@ -90,7 +92,8 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
       label: {
         fontSize: 1,
         paddingBottom: 2,
-        fontWeight: 600
+        fontWeight: 600,
+        fontFamily: 'body'
       },
       select: {
         boxSizing: 'border-box',
@@ -108,7 +111,8 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
         backgroundColor: 'var(--theme-ui-colors-background)'
       },
       input: {
-        padding: '8px'
+        padding: '8px',
+        fontFamily: 'body'
       }
     },
     listItems: {
@@ -118,6 +122,9 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
       }
     },
     text: {
+      default: {
+        fontFamily: 'body'
+      },
       heading: (theme) => ({
         fontFamily: scaleGet(theme.fonts, 'heading'),
         fontWeight: scaleGet(theme.fontWeights, 'heading'),
@@ -132,10 +139,12 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
       }),
       section: {
         textTransform: 'uppercase',
-        fontWeight: 700,
-        fontSize: 0,
-        color: 'grey',
-        letterSpacing: 0.95
+        fontWeight: 800,
+        letterSpacing: 0.95,
+        fontStyle: 'normal',
+        fontSize: '10px',
+        lineHeight: '14px',
+        color: 'lightGrey'
       }
     },
     images: {
@@ -152,8 +161,8 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
         paddingLeft: 6,
         paddingRight: 6,
         color: scaleGet(theme.colors, 'primaryContrast'),
-        backgroundColor: scaleGet(theme.fonts, 'primary'),
-        borderRadius: scaleGet(theme.radii, 'control'),
+        backgroundColor: colors.brightBlue,
+        borderRadius: 0,
         '&:disabled': {
           bg: scaleGet(theme.colors, 'muted')
         }

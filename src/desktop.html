@@ -6,7 +6,15 @@
     <meta name="theme-color" content="#000000" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' media: data:;"
+      content="default-src 'self'; font-src fonts.gstatic.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; img-src 'self' media: data:;"
+    />
+
+    <!-- As an offline first application, the fonts in /static/ should be used - this is for speed of application for the moment. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
     />
 
     <script type="module" src="./frontend/entry/main.desktop.tsx"></script>

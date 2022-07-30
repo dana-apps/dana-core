@@ -30,6 +30,7 @@ import { PageRange } from '../../../common/ipc.interfaces';
 import { guessTextWidth } from './grid-cell.component';
 import { ContextMenuChoice, useContextMenu } from '../hooks/menu.hooks';
 import { Draggable, DragItem } from './dnd.component';
+import { colors } from '../theme';
 
 export interface DataGridProps<T extends Resource> extends BoxProps {
   /** Data to present */
@@ -69,8 +70,7 @@ export function DataGrid<T extends Resource>({
   const selection = SelectionContext.useContainer();
 
   const fontSize = Number(theme.fontSizes?.[fontSizeParam]) ?? 13;
-  const padding = Number(theme.space?.[2]) ?? 3;
-  const rowHeight = 2 * padding + fontSize;
+  const rowHeight = 45;
 
   const dataVal = useMemo(
     (): CellData<T> => ({ cursor: data, columns }),
@@ -319,9 +319,10 @@ function Row<T extends Resource>({
     variant: contextMenu.visible && !selected ? 'listItems.active' : undefined,
     display: 'flex',
     flexDirection: 'row',
-    bg: selected ? 'primary' : plainBg,
-    color: selected ? 'primaryContrast' : undefined,
-    position: 'relative'
+    bg: selected ? 'lightBlue' : plainBg,
+    color: 'black',
+    position: 'relative',
+    fontFamily: 'body'
   };
 
   if (!colData || !columnSizes) {
@@ -348,7 +349,9 @@ function Row<T extends Resource>({
             textOverflow: 'ellipsis',
             '&:not:first-of-type': {
               borderLeft: '1px solid var(--theme-ui-colors-border)'
-            }
+            },
+            display: 'flex',
+            alignItems: 'center'
           }}
           style={{ width: columnSizes.length === 1 ? width : columnSizes[i] }}
         >
@@ -389,7 +392,8 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
               position: 'sticky',
               zIndex: 2,
               fontWeight: 700,
-              bg: 'background'
+              bg: 'background',
+              fontFamily: 'body'
             }}
           >
             {columns.map((col, i) => (
@@ -408,7 +412,7 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
                     columns.length === 1
                       ? 'none'
                       : '1px solid var(--theme-ui-colors-border)',
-                  borderBottom: '1px solid var(--theme-ui-colors-border)',
+                  borderTop: '1px solid var(--theme-ui-colors-border)',
                   textAlign: 'center'
                 }}
               >
@@ -416,7 +420,13 @@ const GridWrapper = forwardRef<HTMLDivElement, HTMLAttributes<unknown>>(
                   sx={{
                     position: 'relative',
                     top: '50%',
-                    transform: 'translateY(-50%)'
+                    transform: 'translateY(-50%)',
+                    color: 'lightGrey',
+                    fontWeight: 'heavy',
+                    fontSize: '10px',
+                    lineHeight: '14px',
+                    textAlign: 'left',
+                    paddingLeft: 10
                   }}
                 >
                   {col.label}

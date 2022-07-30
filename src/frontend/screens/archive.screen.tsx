@@ -70,7 +70,7 @@ export const ArchiveScreen: FC<{ title?: string }> = () => {
     <ArchiveWindowLayout
       sidebar={
         <>
-          <Box sx={{ bg: 'gray1', height: '100%' }}>
+          <Box sx={{ bg: 'black', height: '100%', paddingLeft: '30px' }}>
             <WindowInset />
 
             {/* Import Sessions */}
@@ -97,12 +97,12 @@ export const ArchiveScreen: FC<{ title?: string }> = () => {
                     {
                       action: () => startImport(collection.id),
                       id: 'start-import',
-                      label: 'Import assets'
+                      label: 'Import collection'
                     },
                     {
                       action: () => startExport(collection.id),
                       id: 'start-export',
-                      label: 'Export assets'
+                      label: 'Export collection'
                     }
                   ]
                 })}
@@ -135,18 +135,24 @@ export const ArchiveScreen: FC<{ title?: string }> = () => {
       }
       sidebarButtons={
         <>
-          <IconButton {...createMenu.triggerProps}>
+          <IconButton
+            {...createMenu.triggerProps}
+            title="Create new collection or database"
+          >
             <Plus size={32} />
           </IconButton>
 
-          <IconButton onClick={() => rpc(ExportAll, {})}>
+          <IconButton
+            onClick={() => rpc(ExportAll, {})}
+            title="Export to Danapack"
+          >
             <Share size={14} />
           </IconButton>
         </>
       }
       main={
         <Flex sx={{ height: '100%', flexDirection: 'column' }}>
-          <WindowTitle showVersion />
+          <WindowTitle />
 
           <Outlet />
         </Flex>

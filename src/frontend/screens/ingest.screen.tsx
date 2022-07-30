@@ -121,7 +121,7 @@ export const ArchiveIngestScreen: FC = () => {
         sx={{ flex: 1, width: '100%', position: 'relative' }}
         detail={detailView}
       >
-        <Flex sx={{ py: 5, px: 4, bg: 'gray1', flexDirection: 'column' }}>
+        <Flex sx={{ py: 5, px: 4, flexDirection: 'column' }}>
           <Text sx={{ fontSize: 1 }}>
             Importing from <strong>{session.title}</strong> into{' '}
             <strong>{collection.title}</strong>

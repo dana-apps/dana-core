@@ -160,10 +160,18 @@ export const CollectionScreen: FC = () => {
         <BottomBar
           actions={
             <>
-              <IconButton onClick={assetOps.addNew} aria-label="Add">
+              <IconButton
+                onClick={assetOps.addNew}
+                aria-label="Add"
+                title="Add new asset"
+              >
                 <Plus />
               </IconButton>
-              <IconButton aria-label="Settings" {...configMenu.triggerProps}>
+              <IconButton
+                aria-label="Settings"
+                {...configMenu.triggerProps}
+                title="Configuration"
+              >
                 <Gear />
               </IconButton>
             </>
