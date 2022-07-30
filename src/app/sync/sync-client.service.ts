@@ -21,7 +21,9 @@ import { MediaFile } from '../media/media-file.entity';
 import { MediaFileService } from '../media/media-file.service';
 import { ArchivePackage } from '../package/archive-package';
 import { stat } from 'fs/promises';
-import { AccessControl } from '../entry/lib';
+import { AccessControl, SchemaProperty } from '../entry/lib';
+import { Dict } from '../../common/util/types';
+import { keyBy, mapValues } from 'lodash';
 
 export interface SyncTransport {
   beginSync(
@@ -58,6 +60,11 @@ export class SyncClient {
     }
 
     return this.scheduler.run(async () => {
+      const { items: collections } = await this.collections.allCollections(
+        archive,
+        PageRangeAll
+      );
+
       const sync = await this.prepareSync(archive);
       if (sync.status !== 'ok') {
         this.logger.error('Initiating sync failed with error', sync.error);
@@ -93,9 +100,19 @@ export class SyncClient {
         db.find(AssetEntity, { id: sync.value.wantAssets })
       );
 
+      const hiddenProperties = mapValues(
+        keyBy(collections, (x) => x.id),
+        (collection) =>
+          new Set(
+            collection.schema
+              .filter((prop) => !prop.visible)
+              .map((prop) => prop.id)
+          )
+      );
+
       this.logger.info('Syncing', assets.length, 'assets');
       await this.transport.acceptAssets(archive, sync.value.id, {
-        assets: assets.map((a) => this.assetJson(a))
+        assets: assets.map((a) => this.assetJson(a, hiddenProperties))
       });
 
       this.logger.info('Commit sync', sync.value.id);
@@ -120,6 +137,16 @@ export class SyncClient {
       PageRangeAll
     );
 
+    const hiddenProperties = mapValues(
+      keyBy(collections, (x) => x.id),
+      (collection) =>
+        new Set(
+          collection.schema
+            .filter((prop) => !prop.visible)
+            .map((prop) => prop.id)
+        )
+    );
+
     const assets = await archive.list(
       AssetEntity,
       { $not: { accessControl: AccessControl.RESTRICTED } },
@@ -135,7 +162,7 @@ export class SyncClient {
       collections: collections,
       assets: assets.items.map((asset) => ({
         id: asset.id,
-        sha256: hashAsset(this.assetJson(asset))
+        sha256: hashAsset(this.assetJson(asset, hiddenProperties))
       })),
       media: media.items.map((asset) => ({
         id: asset.id,
@@ -144,12 +171,26 @@ export class SyncClient {
     });
   }
 
-  private assetJson(e: AssetEntity) {
+  private assetJson(e: AssetEntity, hiddenProperties: Dict<Set<string>>) {
+    const hddenColumns = hiddenProperties[e.collection.id];
+
     return AcceptedAsset.parse({
       accessControl: e.accessControl,
       collection: e.collection.id,
       id: e.id,
-      metadata: e.metadata
+      metadata: Object.fromEntries(
+        Object.entries(e.metadata).flatMap(([key, val]) => {
+          if (e.redactedProperties.includes(key)) {
+            return [];
+          }
+
+          if (hddenColumns.has(key)) {
+            return [];
+          }
+
+          return [[key, val]];
+        })
+      )
     });
   }
 
