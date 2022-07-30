@@ -8,7 +8,8 @@ import {
   GetCollection,
   GetRootAssetsCollection,
   ListAssets,
-  SchemaProperty
+  SchemaProperty,
+  UpdateAssetMetadata
 } from '../../common/asset.interfaces';
 import { required } from '../../common/util/assert';
 import {
@@ -28,7 +29,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useContextMenu } from '../ui/hooks/menu.hooks';
 import { IconButton } from 'theme-ui';
 import { Gear, Plus } from 'react-bootstrap-icons';
-import { MetadataItemCell } from '../ui/components/grid-cell.component';
+import {
+  MetadataItemCell,
+  MetadataItemContext
+} from '../ui/components/grid-cell.component';
 import { useErrorDisplay } from '../ui/hooks/error.hooks';
 import { useModal } from '../ui/hooks/window.hooks';
 import {
@@ -43,6 +47,7 @@ import { useAssets } from '../ui/hooks/asset.hooks';
 export const CollectionScreen: FC = () => {
   const navigate = useNavigate();
   const selection = SelectionContext.useContainer();
+  const rpc = useRPC();
 
   const collectionId = required(
     useParams().collectionId,
@@ -132,14 +137,25 @@ export const CollectionScreen: FC = () => {
         sx={{ flex: 1, width: '100%', position: 'relative' }}
         detail={detailView}
       >
-        <DataGrid
-          sx={{ flex: 1, width: '100%' }}
-          columns={gridColumns}
-          data={assets}
-          contextMenuItems={assetContextMenu}
-          onDoubleClickItem={assetOps.openDetailView}
-          dragConfig={(asset) => ({ type: 'asset', id: asset.id })}
-        />
+        <MetadataItemContext.Provider
+          value={{
+            setRedactedProperties: (id, vals) => {
+              rpc(UpdateAssetMetadata, {
+                assetId: id,
+                redactedProperties: vals
+              });
+            }
+          }}
+        >
+          <DataGrid
+            sx={{ flex: 1, width: '100%' }}
+            columns={gridColumns}
+            data={assets}
+            contextMenuItems={assetContextMenu}
+            onDoubleClickItem={assetOps.openDetailView}
+            dragConfig={(asset) => ({ type: 'asset', id: asset.id })}
+          />
+        </MetadataItemContext.Provider>
 
         <BottomBar
           actions={
@@ -169,7 +185,11 @@ const getGridColumns = (schema: SchemaProperty[]) =>
     return {
       id: property.id,
       cell: MetadataItemCell,
-      getData: (x) => x.metadata[property.id],
+      getData: (x) => ({
+        id: x.id,
+        metadata: x.metadata[property.id],
+        redactedProps: x.redactedProperties
+      }),
       label: property.label
     };
   });

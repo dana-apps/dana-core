@@ -136,7 +136,12 @@ export class AssetService extends EventEmitter<AssetEvents> {
   async updateAsset(
     archive: ArchivePackage,
     assetId: string,
-    { metadata, media, accessControl }: Partial<CreateAssetOpts>
+    {
+      metadata,
+      media,
+      accessControl,
+      redactedProperties
+    }: Partial<CreateAssetOpts>
   ) {
     const res = await archive.useDb(async (db) => {
       const asset = await db.findOne(
@@ -150,6 +155,10 @@ export class AssetService extends EventEmitter<AssetEvents> {
 
       if (accessControl) {
         asset.accessControl = accessControl;
+      }
+
+      if (redactedProperties) {
+        asset.redactedProperties = redactedProperties;
       }
 
       const validationResult = await this.setMetadataAndMedia(
