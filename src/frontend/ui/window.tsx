@@ -266,6 +266,7 @@ export const WindowTitle: FC<{ showVersion?: boolean } & BoxProps> = ({
   ...props
 }) => {
   const { title, version, releaseDate } = useFrontendConfig();
+
   return (
     <WindowDragArea
       sx={{

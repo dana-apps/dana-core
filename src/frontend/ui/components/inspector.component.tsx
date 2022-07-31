@@ -171,7 +171,7 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
   const accessControl = edits?.accessControl ?? asset.accessControl;
 
   return (
-    <Box {...props}>
+    <Box sx={{ marginX: '30px' }} {...props}>
       <Flex
         sx={{
           p: 4,
@@ -211,11 +211,7 @@ export const MetadataInspector: FC<MetadataInspectorProps> = ({
         }}
       >
         <Box>
-          <Label
-            sx={{ fontWeight: 'bold', lineHeight: '14px', fontSize: '10px' }}
-          >
-            Access Control
-          </Label>
+          <Label>Access Control</Label>
 
           {isEditing ? (
             <Select
@@ -322,15 +318,17 @@ export const AssetFilesList: FC<MediaFileListProps> = ({
   ...props
 }) => {
   return (
-    <Box {...props}>
+    <Box
+      sx={{ paddingX: '30px', paddingTop: '26px', borderTop: 'light' }}
+      {...props}
+    >
       <Flex
         sx={{
           p: 4,
           py: 3,
           flexDirection: 'row',
           justifyContent: 'space-between',
-          alignItems: 'baseline',
-          borderTop: 'light'
+          alignItems: 'baseline'
         }}
       >
         <Label

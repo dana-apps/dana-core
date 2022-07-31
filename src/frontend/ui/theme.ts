@@ -90,10 +90,11 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
     },
     forms: {
       label: {
-        fontSize: 1,
+        fontSize: '10px',
         paddingBottom: 2,
-        fontWeight: 600,
-        fontFamily: 'body'
+        fontFamily: 'body',
+        fontWeight: 'bold',
+        lineHeight: '14px'
       },
       select: {
         boxSizing: 'border-box',
@@ -103,7 +104,7 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
         width: '100%',
         padding: '5px',
         appearance: 'none',
-        fontSize: 'inherit',
+        fontSize: '10px',
         lineHeight: 'inherit',
         border: '1px solid',
         borderRadius: '4px',
@@ -111,8 +112,10 @@ export const theme: Theme & { listItems?: Record<string, ThemeUIStyleObject> } =
         backgroundColor: 'var(--theme-ui-colors-background)'
       },
       input: {
-        padding: '8px',
-        fontFamily: 'body'
+        fontFamily: 'body',
+        fontSize: '10px',
+        padding: '5px',
+        borderColor: 'black'
       }
     },
     listItems: {
