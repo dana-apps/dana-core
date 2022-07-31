@@ -87,36 +87,48 @@ export async function saveDanapack({
   await writeZip(zip, `${rootDir}/manifest.json`, manifest, ManifestFileSchema);
 
   let mdIndex = 1;
+
   for await (const metadataFile of metadataFiles) {
-    for (const record of Object.values(metadataFile.assets)) {
-      if (record.files) {
+    for (const asset of Object.values(metadataFile.assets)) {
+      if (asset.files) {
         let fileIndex = 0;
-        for (const mediaFilepath of record.files) {
+
+        for (const mediaFilepath of asset.files) {
+          console.log(`Handling file ${mediaFilepath}`);
+
           const basename = randomUUID() + extname(mediaFilepath);
+
+          console.log(`New file in Danapack will be ${basename}`);
+
           await writeZip(
             zip,
             `${rootDir}/media/${basename}`,
             createReadStream(mediaFilepath)
           );
 
-          record.files[fileIndex] = basename;
+          asset.files[fileIndex] = basename;
           fileIndex += 1;
         }
       }
-
-      await writeZip(
-        zip,
-        `${rootDir}/metadata/${mdIndex}.json`,
-        metadataFile,
-        MetadataFileSchema
-      );
-
-      mdIndex += 1;
     }
+
+    console.log(`Writing to ${rootDir}/metadata/${mdIndex}.json`);
+
+    await writeZip(
+      zip,
+      `${rootDir}/metadata/${mdIndex}.json`,
+      metadataFile,
+      MetadataFileSchema
+    );
+
+    mdIndex += 1;
   }
+  console.log('Saving Danapack');
 
   zip.finalize();
   await streamEnded(writer);
+
+  console.log('Danapack saved');
 }
 
 type Lazy<T> = () => Promise<Result<T>>;
