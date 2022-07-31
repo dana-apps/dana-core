@@ -348,7 +348,7 @@ export const BottomBar: FC<BottomBarProps> = ({
       borderTop: 'primary',
       flexDirection: 'row',
       justifyContent: 'flex-end',
-      alignItems: 'baseline',
+      alignItems: 'center',
       '> *:not(:last-of-type)': {
         mr: 6
       }

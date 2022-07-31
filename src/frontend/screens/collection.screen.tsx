@@ -165,14 +165,14 @@ export const CollectionScreen: FC = () => {
                 aria-label="Add"
                 title="Add new asset"
               >
-                <Plus />
+                <Plus size={32} />
               </IconButton>
               <IconButton
                 aria-label="Settings"
                 {...configMenu.triggerProps}
                 title="Configuration"
               >
-                <Gear />
+                <Gear size={14} />
               </IconButton>
             </>
           }
