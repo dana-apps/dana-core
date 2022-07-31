@@ -272,6 +272,7 @@ export function RelationSelect<
           ...(theme.forms?.select as CSSObjectWithLabel),
           padding: 0,
           display: 'flex',
+          fontFamily: 'Manrope',
           '&:hover': {
             borderColor: String(theme.forms?.borderColor || 'none')
           }
