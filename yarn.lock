@@ -1933,13 +1933,13 @@
     mikro-orm "^5.1.2"
     reflect-metadata "0.1.13"
 
-"@mikro-orm/knex@^5.1.3":
-  version "5.1.3"
-  resolved "https://registry.yarnpkg.com/@mikro-orm/knex/-/knex-5.1.3.tgz#d93cd67961cd494dc00d2de3550e0f12b13f6755"
-  integrity sha512-wBJsvETrx6NIdThBrrUk49kLrPY1PyL9R+su9D3b/oIfdB2W3m+KaUu8ybju0rB2K26giWNONtbyd9eKd8PrIw==
+"@mikro-orm/knex@^5.1.3", "@mikro-orm/knex@^5.3.0":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@mikro-orm/knex/-/knex-5.3.0.tgz#06cf949e66f52522cd6a8c015b02592f2f9c9448"
+  integrity sha512-GmPnHj+1ncGlVjEODkNhQrd1+55zgxyDMudcmNxHTpku+SNUSDI9W42LE0vMvT0XhhbZoJQr6YXYv4wEdYUdtg==
   dependencies:
     fs-extra "10.1.0"
-    knex "2.0.0"
+    knex "2.2.0"
     sqlstring "2.3.3"
 
 "@mikro-orm/migrations@^5.1.1":
@@ -1952,14 +1952,14 @@
     knex "2.0.0"
     umzug "3.1.1"
 
-"@mikro-orm/sqlite@^5.1.1":
-  version "5.1.3"
-  resolved "https://registry.yarnpkg.com/@mikro-orm/sqlite/-/sqlite-5.1.3.tgz#0ddbc5d7bb638de967b74798940140c3ce636919"
-  integrity sha512-/QQXxFdjQogdUxDL7RZ+V0Qj5tCFCnXBAsaRtsvcxPgwEEhdmSYydKV8xtCT5O9VJCOOFCsbwvag02l3dOLtKA==
+"@mikro-orm/sqlite@^5.3.0":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@mikro-orm/sqlite/-/sqlite-5.3.0.tgz#e40453d165e4df526bab103ec27632556b11d719"
+  integrity sha512-SCSIfBYxSkBps8yKlttD9FttssoKZ3pjmRH3QcGdq6w9iJPt/LK6/pntKNqtbmIz5Axwdmd+l+LsmIQ0iqSM4w==
   dependencies:
-    "@mikro-orm/knex" "^5.1.3"
+    "@mikro-orm/knex" "^5.3.0"
     fs-extra "10.1.0"
-    sqlite3 "5.0.5"
+    sqlite3 "5.0.10"
     sqlstring-sqlite "0.1.1"
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
@@ -5745,6 +5745,11 @@ colorette@2.0.16, colorette@^2.0.16:
   version "2.0.16"
   resolved "https://registry.yarnpkg.com/colorette/-/colorette-2.0.16.tgz#713b9af84fdb000139f04546bd4a93f62a5085da"
   integrity sha512-hUewv7oMjCp+wkBv5Rm0v87eJhq4woh5rSR+42YSQJKecCqgIqNkZ6lAlQms/BwHPJA5NKMRlpxPRv0n8HQW6g==
+
+colorette@2.0.19:
+  version "2.0.19"
+  resolved "https://registry.yarnpkg.com/colorette/-/colorette-2.0.19.tgz#cdf044f47ad41a0f4b56b3a0d5b4e6e1a2d5a798"
+  integrity sha512-3tlv/dIP7FWvj3BsbHrGLJ6l/oKh1O3TcgBqMn+yyCagOxc23fyzDS6HypQbgxWbkpDnf52p1LuR4eWDQ/K9WQ==
 
 colors@1.0.3:
   version "1.0.3"
@@ -10101,6 +10106,26 @@ knex@2.0.0:
     tarn "^3.0.2"
     tildify "2.0.0"
 
+knex@2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/knex/-/knex-2.2.0.tgz#86a3176924d37303b3f9ff7f70087418c263ce7a"
+  integrity sha512-yhm1Qe9Ok0TeXBq3nNHqZYJPrQ4Iw2tq9k/HxjrZ/EWec2ifOjJlkNHr26v8cQrWtk5iG3iwfUazTIWy+VKG5g==
+  dependencies:
+    colorette "2.0.19"
+    commander "^9.1.0"
+    debug "4.3.4"
+    escalade "^3.1.1"
+    esm "^3.2.25"
+    get-package-type "^0.1.0"
+    getopts "2.3.0"
+    interpret "^2.2.0"
+    lodash "^4.17.21"
+    pg-connection-string "2.5.0"
+    rechoir "^0.8.0"
+    resolve-from "^5.0.0"
+    tarn "^3.0.2"
+    tildify "2.0.0"
+
 language-subtag-registry@~0.3.2:
   version "0.3.21"
   resolved "https://registry.yarnpkg.com/language-subtag-registry/-/language-subtag-registry-0.3.21.tgz#04ac218bea46f04cb039084602c6da9e788dd45a"
@@ -13400,10 +13425,10 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-sqlite3@5.0.5:
-  version "5.0.5"
-  resolved "https://registry.yarnpkg.com/sqlite3/-/sqlite3-5.0.5.tgz#e8768ffcb4800a72216846898cd6c363ba1d83c9"
-  integrity sha512-ZZFOMW31IOMbUeSiL23TuWSjNyS7Z83EDJ80HJxCe78OZ+5BJT6IhAwAUnQgPsUl5z+Er0DGx7VjuTP7PKPNcg==
+sqlite3@5.0.10:
+  version "5.0.10"
+  resolved "https://registry.yarnpkg.com/sqlite3/-/sqlite3-5.0.10.tgz#64e1efb1b5a1ae343d2cc64ce9e582e5f5db24ba"
+  integrity sha512-xG4XPp7+b/lIlb/acs4XzBmmahI1Qq3Yhy+jZnZJivwB6DXpoOpGR6QinRbsQkHJIvMZyUsJDXouSva/JXcWFA==
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.0"
     node-addon-api "^4.2.0"
